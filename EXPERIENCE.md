@@ -56,7 +56,7 @@
 > <!-- classes: question-already-answered, guard-not-proven-against-threat, shown-as-link,
 >      claim-before-evidence, owner-decision-not-applied, text-in-agents-world,
 >      etalon-from-dirty-tree, shell-lied, escaping-layer, twins-missed,
->      field-dropped-in-rebuild, subagent-wrong-root, shared-temp-collision -->
+>      field-dropped-in-rebuild, subagent-wrong-root, shared-temp-collision, unverified-reference -->
 >
 > | Class slug | The failure it names |
 > |---|---|
@@ -73,6 +73,7 @@
 > | `field-dropped-in-rebuild` | a field or section silently lost when an artifact was regenerated |
 > | `subagent-wrong-root` | a subagent is pointed at the canon of the chat's project instead of the project its task lives in |
 > | `shared-temp-collision` | two agents share one temp folder and a cleanup of one would delete the other's files |
+> | `unverified-reference` | a number from a recon or a subagent becomes a test target without being re-derived by a second route |
 >
 > The `#tags` are **trigger-tags**: before a task, grep by the task's tags and QUOTE the relevant
 > lessons in your report (id + one line) — or state "no relevant lessons". An unquoted recall is
@@ -81,6 +82,20 @@
 > Skill: `/experience` (capture a lesson · recall relevant lessons).
 
 ## Entries
+
+### EXP-0004 · 2026-11-16 · ❌→✅ · #recon #checkpoint #bem #tests
+class: unverified-reference
+**Context:** plan 02 took recon 01's checkpoints as test targets; the BEM Ct went red (0.878 against 0.84).
+**Tried / did:** before touching the code or the target — two more routes: plain momentum 4aF(1−a) gave 0.835 (the
+recon's number), momentum with Buhl's C_T where a > 0.4 gave 0.878 = the blade-element value.
+**Result:** ❌→✅ — the recon's checkpoint was computed outside its formula's range; corrected where it stood (bugs/01_DONE).
+**Lesson:** a recon checkpoint is a FINDING; when a test against it goes red, re-derive it by a second route of the same
+documented method before moving either the code or the target.   → link: bugs/01_DONE_ct_checkpoint_mismatch.md
+**Repro:** for a red physics criterion, compute the quantity two ways (e.g. blade-element vs momentum) in `.work/tmp` and
+compare with the target before editing anything.
+**Trigger:** a criterion copied from `researches/` goes red → two routes first.
+**Not for:** identities with exact values (Γ(1) = 1) — those are not findings.
+none-cheap: first strike; the cure is a habit of the red run, and the guard for THIS quantity is in the test already.
 
 ### EXP-0003 · 2026-11-16 · ❌→✅ · #stamp #status #clock
 class: claim-before-evidence

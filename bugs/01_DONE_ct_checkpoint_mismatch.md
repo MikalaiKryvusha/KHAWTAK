@@ -1,6 +1,6 @@
 # Bug 01 — recon 01's thrust checkpoint (Ct 0.84) disagrees with recon 01's own thrust definition (0.878)
 
-**Status:** 🔬 research-only — the cause is located by a diagnostic; the reference value is open
+**Status:** ✅ DONE 2026-11-16 — the checkpoint corrected to 0.878 where it stood (see the closing section)
 **Severity:** S2 (a run lost: criterion 3 of plan 02 went red on Ct) · **Version/build:** kalculator core at plan 02 S5 ·
 **When/context:** 2026-11-16, the autonomous stretch the owner ordered at 21:40, implementing S5 (BEM)
 **Fixing:** next session, before S6 — or when an independent reference arrives
@@ -40,6 +40,22 @@ justification in the commit. Until then the test checks the momentum route again
 
 - [AI] The failing Ct assertion was replaced by (a) a check of the momentum route against the recon's 0.84 and (b) a printed,
   unjudged blade-element Ct — not by moving the target to 0.878, because 0.878 has no independent source yet.
+
+## ✅ STATUS: DONE (2026-11-16, the same autonomous stretch)
+
+- **The third route settled it** (`.work/tmp/ct-buhl.mjs`, scratch): momentum thrust with Buhl's empirical C_T in the
+  stations where a > 0.4 (87 of 400) gives **Ct 0.8778 — equal to the blade-element 0.8778**. So recon 01 §1.5's own method
+  is self-consistent at 0.878, and the checkpoint 0.84 was the plain 4aF(1−a) used outside its range. Hypothesis 1 confirmed.
+- **Fix:** criterion 3's Ct target is 0.878 ± 0.01 (plan 02); recon 01 Appendix A corrected where it stands, with the
+  reason; the test also GUARDS the agreement of the two valid routes (± 0.002) and prints the invalid plain route.
+- **Guard** (`kalculator/test.mjs`, the S5 block): THREAT — a thrust checkpoint taken from a formula outside its range ·
+  PROVED-AGAINST — the induction and tip-loss mutants (`--control`, both red) · GAP — no external reference (CCBlade, QBlade)
+  was run; the agreement is between two routes of the same documented method · ON-REAL-PATH — NOT YET (no page).
+- Hygiene: `node kalculator/test.mjs` 47 of 47, `--control` 15 of 15. Functional run: NONE (the page does not exist yet).
+- **Decisions made without the owner** (updated): [AI] the target moved 0.84 → 0.878 on the strength of the recon's own
+  documented method, checked by two routes — not on an external reference; the GAP line says so.
+- **TWINS:** searched `0,84|0\.84` in researches, plans, kalculator, STATUS, bugs — the only checkpoint copies were recon 01
+  Appendix A, plan 02 criterion 3 and the test; all three corrected.
 
 ## Links
 

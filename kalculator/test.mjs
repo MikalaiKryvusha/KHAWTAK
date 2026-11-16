@@ -158,18 +158,24 @@ function run(K, log = true) {
   const flat = () => ({ Cl: 1, Cd: 0 });
   const bem = K.bemRotor({ R: Rb, Rhub: 0.1 * Rb, lambda: lam, blade: schmitz, polar: flat });
   check('criterion 3: BEM, Schmitz blade, λ 6, C_l 1, L/D ∞, hub 0.1R → Cp 0.518 ± 0.005 (researches/01 Appendix A)', near(bem.Cp, 0.518, 0.005), bem.Cp.toFixed(4));
-  // Ct — OPEN (bugs/01_ct_checkpoint_mismatch.md): recon 01's checkpoint 0.84 is reproduced by the MOMENTUM route
-  // 4aF(1−a) (0.835), while recon 01 §1.5 itself defines thrust by blade-element loads T = B∫N′dr (0.878 here). The
-  // momentum route is checked against 0.84; the blade-element Ct is printed, not judged, until an independent reference.
-  let Tm = 0;
+  // Ct (bugs/01_DONE_ct_checkpoint_mismatch.md): recon 01's first checkpoint 0.84 was the plain momentum formula 4aF(1−a)
+  // applied also in Buhl's region a > 0.4 where it does not hold. recon 01 §1.5's own method gives 0.878 by BOTH routes —
+  // blade-element loads, and momentum with Buhl's C_T in the high-induction stations — so the target is 0.878, and the
+  // agreement of the two routes is guarded here; the invalid plain route is printed for the record.
+  let TmBuhl = 0, TmPlain = 0;
   for (let i = 0; i < 200; i++) {
     const r = 0.1 + (i + 0.5) * 0.9 / 200;
     const s = K.bemStation({ r, R: 1, Rhub: 0.1, B: 3, chord: schmitz.chord(r), twist: schmitz.twist(r), lambdaR: 6 * r, polar: flat });
-    Tm += 4 * Math.PI * r * s.a * (1 - s.a) * K.prandtlF(r, 1, 0.1, 3, s.phi) * 0.9 / 200;
+    const F = K.prandtlF(r, 1, 0.1, 3, s.phi);
+    const ctPlain = 4 * s.a * (1 - s.a) * F;
+    const ctLocal = s.a > 0.4 ? 8 / 9 + (4 * F - 40 / 9) * s.a + (50 / 9 - 4 * F) * s.a * s.a : ctPlain;
+    TmBuhl += ctLocal * 2 * Math.PI * r * 0.9 / 200;
+    TmPlain += ctPlain * 2 * Math.PI * r * 0.9 / 200;
   }
-  const ctMom = Tm / (0.5 * Math.PI);
-  check('criterion 3 (Ct, momentum route 4aF(1−a)) → 0.84 ± 0.01 (recon 01 Appendix A); blade-element Ct printed — OPEN, bugs/01',
-    near(ctMom, 0.84, 0.01), `momentum ${ctMom.toFixed(4)} · blade-element ${bem.Ct.toFixed(4)}`);
+  const ctBuhl = TmBuhl / Math.PI, ctPlain = TmPlain / Math.PI;
+  check('criterion 3: Ct 0.878 ± 0.01 by blade-element loads (recon 01 §1.5; corrected checkpoint, bugs/01)', near(bem.Ct, 0.878, 0.01), bem.Ct.toFixed(4));
+  check('Ct: momentum with Buhl in the a > 0.4 stations agrees with the blade-element Ct ± 0.002',
+    near(ctBuhl, bem.Ct, 0.002), `momentum+Buhl ${ctBuhl.toFixed(4)} · blade-element ${bem.Ct.toFixed(4)} · plain 4aF(1−a) ${ctPlain.toFixed(4)} (invalid for a > 0.4)`);
   check('BEM stays under the Betz limit 16/27 = 0.593', bem.Cp < 16 / 27, bem.Cp.toFixed(4));
   const Fmid = K.prandtlF(0.5, 1, 0.1, 3, 0.2), Ftip = K.prandtlF(0.999, 1, 0.1, 3, 0.2);
   check('Prandtl F: ≈ 1 mid-span, → 0 at the tip', Fmid > 0.99 && Ftip < 0.1, `${Fmid.toFixed(4)}, ${Ftip.toFixed(4)}`);
