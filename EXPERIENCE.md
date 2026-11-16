@@ -92,7 +92,9 @@ inside a table cell, with no date next to it.
 **Repro:** `NOW="$(date '+%H:%M')"` in the command that performs the event, then write `$NOW` into the document.
 **Trigger:** writing «✅ HH:MM» or «done at HH:MM» → the event already happened and the probe printed that minute.
 **Not for:** planned times the owner named («until 23:00»).
-none-cheap: first strike in this project; teaching `stamp-gate` bare `HH:MM` stamps costs false hits on every time span.
+Second strike, minutes later: «идёт с 21:21» written by `sed` while the probe of the same command printed 21:20.
+mechanized: .kaif/hooks/clock-now.mjs — write a moment only through Write/Edit with the NOW placeholder (the word NOW in white
+square brackets), which the hook fills from the machine's clock; never type a minute into a `sed` or `echo` line.
 
 ### EXP-0002 · 2026-11-16 · ❌→✅ · #subagent #tmp #cleanup
 class: shared-temp-collision

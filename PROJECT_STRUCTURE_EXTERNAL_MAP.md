@@ -19,7 +19,7 @@ KHAWTAK/
 │   ├── index.html          # (planned) UI + i18n (RU/EN) + the core between CORE-BEGIN / CORE-END
 │   └── test.mjs            # (planned) extracts the core and tests it in Node
 ├── design/
-│   ├── icon/               # build-icons.mjs → khawtak-icon-<a..f>.svg + khawtak-icon-variants.html (round 1, homeworks/01)
+│   ├── icon/               # build-icons.mjs → khawtak-icon.svg (the owner's choice A) + variants a..f + the comparison page (homeworks/01)
 │   └── flow-map/           # (planned) the KUIPS sheet
 ├── tools/
 │   ├── hooks/*.mjs         # four Claude Code hooks ported from KUMM via KATAK (scratch-sweep, stamp-gate, no-backslash-heredoc, no-permission-question)
