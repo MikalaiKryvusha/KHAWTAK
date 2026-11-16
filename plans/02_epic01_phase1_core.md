@@ -30,9 +30,10 @@ that cannot fail.
 Each step quotes its anchor in the epic: «ядро расчёта … место и сдвиг ветра; БЭМ …; лопасть Шмитца …; профили …; кривая
 мощности и выработка; нагрузки IEC 61400-2 …; затяжка `F₀ ≥ M/k + F_c`, выбор самой тонкой шпильки …».
 
-- [ ] **S1 · skeleton.** `kalculator/index.html` with the empty core markers and `kalculator/test.mjs` that cuts the core out
+- [x] **S1 · skeleton.** ✅ `node kalculator/test.mjs` runs (2026-11-16). `kalculator/index.html` with the empty core markers and `kalculator/test.mjs` that cuts the core out
   and runs it in Node — the KATAK pattern (`researches/04` §1). Check: `node kalculator/test.mjs` exits 0 with «0 of 0».
-- [ ] **S2 · air and wind.** ρ from altitude and temperature, log and power shear, Weibull/Rayleigh, the energy integral
+- [x] **S2 · air and wind.** ✅ criterion 1 green, 14 of 14 with the Γ / shear / Weibull identities; `--control` 4 of 4
+  mutants red (2026-11-16); criterion 7 still waits for recon 03. ρ from altitude and temperature, log and power shear, Weibull/Rayleigh, the energy integral
   (`researches/01` §5.1). Criterion 1; criterion 7 when recon 03 lands.
 - [ ] **S3 · airfoil.** NACA 4-digit camber + thickness by formula (`researches/04` §2.1), t/c(r) linear root → tip, cosine
   spacing, printable trailing edge ≥ 2 lines, the stud axis at 0.40c. Criterion 4.

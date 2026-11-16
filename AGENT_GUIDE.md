@@ -86,7 +86,7 @@ relies entirely on this document to get to work.
 8. Read the relevant plan         # plans/<feature>.md, if the task touches a specific feature. Code by citing the plan: before implementing a step, QUOTE the anchor line you are doing right now — if you can't name the line, that's scope drift caught BEFORE the diff. A HEAVY task with no plan yet → build the ladder first (Planning discipline below; /plan-task for ordinary work, /plan-epic for epics). Filing a plan/bug/idea → goal vector + acceptance criteria FIRST, per REQUIREMENTS_FRAMEWORK.md
 9. Recon before code (external truth)  # the task rests on an external truth (an old/reference system, a foreign API, prod behavior, a vendor doc)? The FIRST artifact is a recon doc in researches/ — code is forbidden until it exists; then code by the document, not from recall. Recon docs are reused by every future session. The same door opens for an ENGINEERING FORK with a price of error (the fourth door, PHILOSOPHY.md): recon of the domain's authorities BEFORE the choice, never the agent's own reasoning alone
 10. Check the map & blast radius   # before editing code: PROJECT_ARCHITECTURE_INTERNAL_MAP.md — who is affected. Understood something new about the project, or saw a doc say other than you observe → write it into that doc (map · STATUS.md · EXPERIENCE.md · house rules) before the next step of the work and before any question to the owner — not at the commit, not only in the chat; the closing and loop rituals ask for it by the KNOWLEDGE: line
-11. Run the build (if touching code)   # node kalculator/test.mjs (PLANNED)
+11. Run the build (if touching code)   # node kalculator/test.mjs  (+ `--control`: every mutant must go red)
 12. Use the test harness          # node tools/ui-run.mjs (PLANNED) — drive/observe the software without a human
 13. Comment the code              # comment blocks, classes, modules, important lines — with a test-status marker: fresh raw content gets [NOT-TESTED]; verified-by-observation flips to [TESTED: date · how] (TESTING_FRAMEWORK.md)
 14. Reflect on bugs in bugs/      # one md per bug; follow BUG_FIXING_FRAMEWORK.md
@@ -518,7 +518,7 @@ UI only calls it. The product page loads nothing from the network to compute or 
 node kalculator/test.mjs
 ```
 
-**PLANNED — the file does not exist yet** (2026-11-16: the project holds the vision and the recon only). There will be no
+Exists since 2026-11-16 (plan 02, steps S1–S2; `--control` runs the gate-5 mutants). There is no
 compile step: `kalculator/index.html` ships as written (one file, `<script type="module">`, zero dependencies). The
 command extracts the core from the page and runs it in Node ≥ 18 (Node v24 on the owner's machine) — numbers, mesh
 closure, STL bytes. Hooks of the project: `node tools/test-hooks.mjs` (exists). Windows only, no WSL (`HOUSE_RULES.md` R6).

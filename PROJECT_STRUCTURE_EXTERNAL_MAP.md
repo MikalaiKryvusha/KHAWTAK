@@ -15,9 +15,9 @@ KHAWTAK/
 ├── researches/             # recon notes, in Russian (HOUSE_RULES R4)
 │   ├── 01_hawt_aero_generator_loads/   # BEM, airfoils, generator matching, site energy, IEC 61400-2 loads
 │   └── 02_segmented_printed_blade/     # sections, joints, studs, preload, PETG, walls/infill, hub, size classes
-├── kalculator/             # (planned) the product: one offline HTML page
-│   ├── index.html          # (planned) UI + i18n (RU/EN) + the core between CORE-BEGIN / CORE-END
-│   └── test.mjs            # (planned) extracts the core and tests it in Node
+├── kalculator/             # the product: one offline HTML page
+│   ├── index.html          # the core between CORE-BEGIN / CORE-END (plan 02: S2 air and wind so far); the UI comes after KUIPS
+│   └── test.mjs            # extracts the core and tests it in Node; `--control` = gate-5 mutants
 ├── design/
 │   ├── icon/               # build-icons.mjs → khawtak-icon.svg (the owner's choice A) + variants a..f + the comparison page (homeworks/01)
 │   └── flow-map/           # (planned) the KUIPS sheet

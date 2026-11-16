@@ -54,7 +54,7 @@ when the current one is exhausted (see step 8).
      AND mark `STATUS.md` "❓ awaiting human review: …". Then take ANOTHER task and continue.
    - If a task needs **human actions** (test on real hardware, external accounts) — file **homework** in
      `homeworks/` and move on.
-3. **Do it**: code → build (`node kalculator/test.mjs` — PLANNED, the file does not exist yet) → deploy → test on the harness (`node tools/ui-run.mjs` — PLANNED, the file does not exist yet),
+3. **Do it**: code → build (`node kalculator/test.mjs`) → deploy → test on the harness (`node tools/ui-run.mjs` — PLANNED, the file does not exist yet),
    verify objectively. Use the high-level harness commands; if one is missing, do it the low-level way,
    then ADD a command to the harness so next time it's one step. Execute the item by the fable loop
    (`/fable-method`; `/fable-loop` for substantive items) — its gates and forced artifacts

@@ -45,7 +45,7 @@ Until one fires — don't stop, don't wait for confirmations, work.
    - Make technical/implementation decisions yourself.
    - ONLY brand/UX/architecture-defining decisions — file an `/interview` + mark `STATUS.md`, take another task.
    - Tasks needing human actions (real hardware, external accounts) — file homework in `homeworks/`.
-3. **Do it**: code → build (`node kalculator/test.mjs` — PLANNED, the file does not exist yet) → deploy → test on the harness (`node tools/ui-run.mjs` — PLANNED, the file does not exist yet),
+3. **Do it**: code → build (`node kalculator/test.mjs`) → deploy → test on the harness (`node tools/ui-run.mjs` — PLANNED, the file does not exist yet),
    verify objectively. High-level harness commands first; if missing, do it low-level then ADD the command.
    Execute the item by the fable loop (`/fable-method`; `/fable-loop` for substantive items) — its gates
    and forced artifacts (`INTENT`/`AUTH`/`TWINS`/`PENDING`) apply inside the cycle too. A HEAVY item

@@ -59,7 +59,7 @@ without those resources.
    loop (`/fable-method`; `/fable-loop` for substantive items) — its gates and forced artifacts
    (`INTENT`/`AUTH`/`TWINS`/`PENDING`) apply inside the cycle too. A HEAVY item with no plan yet →
    build the ladder first (`/plan-epic`: research → meta-plan), then execute phase by phase.
-4. **Build** (`node kalculator/test.mjs` — PLANNED, the file does not exist yet). If errors — fix them, don't commit broken state.
+4. **Build** (`node kalculator/test.mjs`). If errors — fix them, don't commit broken state.
 5. **Deploy/run** as your project requires.
 6. **Verify autonomously** on the harness (`node tools/ui-run.mjs` — PLANNED, the file does not exist yet). Look at the result carefully — don't
    wishful-think; verify objectively.

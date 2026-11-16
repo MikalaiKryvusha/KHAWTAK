@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KHAWTAK</title>
+<!-- KHAWTAK — KRINIK Horizontal-Axis (three-blade) Wind Turbine Automated Kalculator. One self-contained offline page
+     (HOUSE_RULES.md R7). Phase 1 of epic 01 (plans/02_epic01_phase1_core.md): only the calculation core lives here yet;
+     the page itself is designed after the KUIPS mock-ups (epic phase 3). -->
+<style>
+  :root { --bg: #0D0D0D; --fg: #f3d6e6; --accent: #FF1A8C; --accent-soft: #FF5FB0; }
+  body { margin: 0; padding: 32px; background: var(--bg); color: var(--fg); font: 16px/1.5 system-ui, sans-serif; }
+  h1 { color: var(--accent-soft); margin: 0 0 8px; }
+</style>
+</head>
+<body>
+<h1>KHAWTAK</h1>
+<p>Ядро расчёта в разработке · the calculation core is being built.</p>
+<script type="module">
+// ===== CORE-BEGIN (pure functions, no DOM; tested by kalculator/test.mjs)
+// The core of KHAWTAK. Every physical constant carries its source next to it (AGENT_GUIDE.md → Code style).
+// SI units inside; millimetres only at the print/STL boundary.
+
+// ---- S2 · air and wind — researches/01 §5.1 (the same formulas as KATAK, so the two calculators agree)
+// [NOT-TESTED] — hygiene green 2026-11-16: `node kalculator/test.mjs` 14/14 (criterion 1 + the Γ, shear and Weibull
+// identities), `--control` 4/4 mutants red. The marker flips only on a functional run of the page (TESTING_FRAMEWORK.md).
+
+// International Standard Atmosphere: sea-level pressure, lapse rate, sea-level temperature, exponent g·M/(R·L);
+// specific gas constant of dry air. source: researches/01 §5.1 (KATAK researches/01 §3.1).
+const P0_PA = 101325, LAPSE_K_PER_M = 0.0065, T0_K = 288.15, ISA_EXP = 5.25588, R_AIR = 287.05;
+
+/** Air density at altitude h_m (m above sea level) and air temperature t_C (°C), kg/m³. */
+function airDensity(h_m, t_C) {
+  const p = P0_PA * Math.pow(1 - LAPSE_K_PER_M * h_m / T0_K, ISA_EXP);
+  return p / (R_AIR * (t_C + 273.15));
+}
+
+/** Wind at height z from V_ref at z_ref — the log law with roughness length z0 (all in m). source: researches/01 §5.1 */
+function shearLog(vRef, zRef, z, z0) { return vRef * Math.log(z / z0) / Math.log(zRef / z0); }
+
+/** Wind at height z from V_ref at z_ref — the power law with exponent alpha. source: researches/01 §5.1 */
+function shearPower(vRef, zRef, z, alpha) { return vRef * Math.pow(z / zRef, alpha); }
+
+// Lanczos approximation of Γ(x), the g = 7, n = 9 coefficient set as printed in Wikipedia «Lanczos approximation»
+// (https://en.wikipedia.org/wiki/Lanczos_approximation) — written from recall, so it is PROVED by kalculator/test.mjs against
+// exact values (Γ(1) = 1, Γ(5) = 24, Γ(1/2) = √π, Γ(3/2) = √π/2), not trusted by citation.
+const LANCZOS_G = 7;
+const LANCZOS_C = [0.99999999999980993, 676.5203681218851, -1259.1392167224028, 771.32342877765313, -176.61502916214059,
+  12.507343278686905, -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7];
+function gamma(x) {
+  if (x < 0.5) return Math.PI / (Math.sin(Math.PI * x) * gamma(1 - x)); // reflection formula
+  x -= 1;
+  let a = LANCZOS_C[0];
+  const t = x + LANCZOS_G + 0.5;
+  for (let i = 1; i < LANCZOS_C.length; i++) a += LANCZOS_C[i] / (x + i);
+  return Math.sqrt(2 * Math.PI) * Math.pow(t, x + 0.5) * Math.exp(-t) * a;
+}
+
+/** Weibull scale c from the mean wind and the shape k: c = V̄ / Γ(1 + 1/k). source: researches/01 §5.1 */
+function weibullScale(vMean, k) { return vMean / gamma(1 + 1 / k); }
+
+/** Weibull probability density f(v). Rayleigh is k = 2. source: researches/01 §5.1 */
+function weibullPdf(v, k, c) { return v <= 0 ? 0 : (k / c) * Math.pow(v / c, k - 1) * Math.exp(-Math.pow(v / c, k)); }
+
+/** Yearly energy, kWh: AEP = 8760 · Σ P(v)·f(v)·Δv for a power curve power_W(v). source: researches/01 §5.1 */
+function yearlyEnergy_kWh(power_W, vMean, k, { vMax = 30, dv = 0.05 } = {}) {
+  const c = weibullScale(vMean, k);
+  let s = 0;
+  for (let v = dv / 2; v < vMax; v += dv) s += power_W(v) * weibullPdf(v, k, c) * dv;
+  return 8760 * s / 1000;
+}
+
+const KHAWTAK = { airDensity, shearLog, shearPower, gamma, weibullScale, weibullPdf, yearlyEnergy_kWh };
+// ===== CORE-END
+window.KHAWTAK = KHAWTAK;
+</script>
+</body>
+</html>
