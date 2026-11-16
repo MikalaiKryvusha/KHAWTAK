@@ -22,8 +22,8 @@
 // SI units inside; millimetres only at the print/STL boundary.
 
 // ---- S2 · air and wind — researches/01 §5.1 (the same formulas as KATAK, so the two calculators agree)
-// [NOT-TESTED] — hygiene green 2026-11-16: `node kalculator/test.mjs` 62/62 for the whole core so far (criteria 1–7 + the Γ, shear,
-// Weibull, NACA, section, station, Schmitz, BEM, power-curve, stud and shell identities), `--control` 21/21 red. The marker flips only on a functional run of the page (TESTING_FRAMEWORK.md).
+// [NOT-TESTED] — hygiene green 2026-11-16: `node kalculator/test.mjs` 66/66 for the whole core so far (criteria 1–7 + the Γ, shear,
+// Weibull, NACA, section, station, Schmitz, BEM, power-curve, stud, shell, anchor and cut identities), `--control` 23/23. The marker flips only on a functional run of the page (TESTING_FRAMEWORK.md).
 
 // International Standard Atmosphere: sea-level pressure, lapse rate, sea-level temperature, exponent g·M/(R·L);
 // specific gas constant of dry air. source: researches/01 §5.1 (KATAK researches/01 §3.1).
@@ -322,6 +322,23 @@ function shellSection(poly, w_mm) {
   return { A, yc, I, yMax, k: I / (A * yMax) };
 }
 
+// The tip anchor (interview 001 Q3) presses a steel plate into a solid cell of the tip section: long-term bearing pressure
+// on printed PETG should stay ≤ 3–7 MPa. source: researches/02 §5.2 [ОЦЕНКА — an estimate; PETG creep is unmeasured, §5.3]
+const ANCHOR_BEARING_MPA = { ok: 3, limit: 7 };
+
+/** Bearing pressure of the anchor plate (MPa) and its verdict: 'ok' ≤ 3 · 'caution' ≤ 7 · 'too high' above. */
+function anchorBearing(F_N, plateW_mm, plateL_mm) {
+  const p = F_N / (plateW_mm * plateL_mm);
+  return { p, verdict: p <= ANCHOR_BEARING_MPA.ok ? 'ok' : p <= ANCHOR_BEARING_MPA.limit ? 'caution' : 'too high' };
+}
+
+/** Cut the printed span (mm) into the fewest equal sections no taller than the bed's height maxZ_mm (printed upright,
+ *  researches/02 §2.1): returns the section boundaries from the root, mm. */
+function sectionCuts(span_mm, maxZ_mm) {
+  const n = Math.ceil(span_mm / maxZ_mm);
+  return Array.from({ length: n + 1 }, (_, i) => span_mm * i / n);
+}
+
 // The owner's site as the default: a village in Brest region (owner 2026-11-16 21:16), 160 m above sea level; the
 // reference wind 3.0 m/s at 10 m over open ground, Weibull k 1.8 (Baranovichi WMO 26941, 1991–2020), mean air 7.4 °C.
 // source: researches/03 §0, §2.4, Appendix A.
@@ -330,7 +347,8 @@ const SITE_DEFAULT = { name: 'Brest region', altitude_m: 160, t_C: 7.4, vRef: 3.
 const KHAWTAK = { airDensity, shearLog, shearTwoLayer, shearPower, gamma, weibullScale, weibullPdf, yearlyEnergy_kWh, SITE_DEFAULT,
   nacaHalfThickness, nacaCamber, minChordForStud_mm, printableTrailingEdgeX, airfoilSection, polygonArea, pointInPolygon,
   schmitzPhi, schmitzChord, schmitzTwist, linearBlade, prandtlF, bemStation, bemRotor, PERF_DEFAULT, powerCurve, tipSpeed,
-  STUDS, studCapacity_kN, smallestStud, jointPreload_N, wrenchTorque_Nm, TC_DEFAULT, bladeStations, shellSection };
+  STUDS, studCapacity_kN, smallestStud, jointPreload_N, wrenchTorque_Nm, TC_DEFAULT, bladeStations, shellSection,
+  anchorBearing, sectionCuts };
 // ===== CORE-END
 window.KHAWTAK = KHAWTAK;
 </script>

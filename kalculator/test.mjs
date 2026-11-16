@@ -39,6 +39,8 @@ const MUTANTS = [
   ['return M_Nm * 1000 / k_mm + Fc_N', 'return M_Nm * 1000 / k_mm'],     // breaks the preload (criterion 5)
   ['tc: tcRoot + (tcTip - tcRoot) * f', 'tc: tcRoot + (tcTip - tcRoot) * f * f'], // breaks the linear t/c along the span
   ['(a * a + a * b + b * b) / 3', '(a * a + b * b) / 2'], // breaks the exact segment integral of the shell's I
+  ['{ ok: 3, limit: 7 }', '{ ok: 3, limit: 9 }'],       // breaks the anchor-bearing limit
+  ['Math.ceil(span_mm / maxZ_mm)', 'Math.round(span_mm / maxZ_mm)'], // breaks the section count (a section taller than the bed)
 ];
 
 function load(src) {
@@ -223,6 +225,12 @@ function run(K, log = true) {
     `A ${box.A}, I ${box.I.toFixed(1)}, k ${box.k.toFixed(4)}`);
   const shifted = K.shellSection([[0, 5], [100, 5], [100, 25], [0, 25]], 1);
   check('shell section: moving the box does not change I and k (centroidal axis)', near(shifted.I, box.I, 1e-6) && near(shifted.k, box.k, 1e-9) && near(shifted.yc, 15, 1e-12));
+  const ab = K.anchorBearing(2600, 12, 40);
+  check('tip anchor: 2.6 kN on a 12 × 40 mm plate → 5.42 MPa, «caution» (3–7 MPa, researches/02 §5.2)', near(ab.p, 5.417, 1e-3) && ab.verdict === 'caution', `${ab.p.toFixed(3)} MPa, ${ab.verdict}`);
+  check('tip anchor: verdicts on both sides — 1 kN → ok, 4 kN → too high', K.anchorBearing(1000, 12, 40).verdict === 'ok' && K.anchorBearing(4000, 12, 40).verdict === 'too high');
+  const cuts = K.sectionCuts(630, 240);
+  check('sections: 630 mm span, bed 240 mm → 3 equal sections of 210 mm', cuts.length === 4 && near(cuts[1], 210, 1e-9) && near(cuts[3], 630, 1e-9), cuts.join(' / '));
+  check('sections: exactly one bed height fits in one section (240 → 1), one millimetre more needs two', K.sectionCuts(240, 240).length === 2 && K.sectionCuts(241, 240).length === 3);
 
   return { bad, total };
 }

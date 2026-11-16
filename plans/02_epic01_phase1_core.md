@@ -68,7 +68,8 @@ Each step quotes its anchor in the epic: «ядро расчёта … мест�
   `smallestStud`, `jointPreload_N`, `wrenchTorque_Nm`; criteria 5 and 6 green; then `shellSection` — the thin-walled shell
   along the section polygon (A, centroid, flapwise I, k), exact per segment, checked on a hand-computed box; 62 of 62,
   `--control` 21 of 21. Left: flanges, the stud tube and the web added to the shell (then recon 02 §2.4 A1/A2 as a
-  criterion); the tip-anchor bearing. Planned: Thin-walled section properties (shell T(3), flanges, stud tube, web — `researches/02` §0), kern
+  criterion). Then `anchorBearing` (3–7 MPa, recon 02 §5.2, an estimate) and `sectionCuts` (the fewest equal sections no
+  taller than the bed — a geometry helper for phase 2): 66 of 66, `--control` 23 of 23. Planned: Thin-walled section properties (shell T(3), flanges, stud tube, web — `researches/02` §0), kern
   distance k, `F₀ ≥ M/k + F_c` (§2.3), torque `T = K·F·d` (§5.1), the smallest stud M3–M14 for the grade 4.8 · 8.8 · A2-70,
   bearing pressure of the tip anchor plate (§5.2). Criteria 5, 6.
 - [ ] **S9 · control cases and markers.** Break each constant once, watch its criterion go red, restore; every core block
