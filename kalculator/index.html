@@ -22,8 +22,8 @@
 // SI units inside; millimetres only at the print/STL boundary.
 
 // ---- S2 · air and wind — researches/01 §5.1 (the same formulas as KATAK, so the two calculators agree)
-// [NOT-TESTED] — hygiene green 2026-11-16: `node kalculator/test.mjs` 47/47 for the whole core so far (criteria 1, 2, 3, 4, 7 +
-// the Γ, shear, Weibull, NACA, section, Schmitz and BEM identities), `--control` 15/15 mutants red. The marker flips only on a functional run of the page (TESTING_FRAMEWORK.md).
+// [NOT-TESTED] — hygiene green 2026-11-16: `node kalculator/test.mjs` 51/51 for the whole core so far (criteria 1, 2, 3, 4, 7 +
+// the Γ, shear, Weibull, NACA, section, Schmitz, BEM and power-curve identities), `--control` 17/17 mutants red. The marker flips only on a functional run of the page (TESTING_FRAMEWORK.md).
 
 // International Standard Atmosphere: sea-level pressure, lapse rate, sea-level temperature, exponent g·M/(R·L);
 // specific gas constant of dry air. source: researches/01 §5.1 (KATAK researches/01 §3.1).
@@ -239,6 +239,21 @@ function bemRotor({ R, Rhub, B = 3, lambda, blade, polar, n = 200 }) {
   return { Cp: omega * Q / (0.5 * rho * A * V ** 3), Ct: T / (0.5 * rho * A * V * V) };
 }
 
+// ---- S6 · performance — the owner's smart controller holds λ near its optimum (interview 001 Q5), so below rated the
+// rotor delivers ½ρA·Cp_e·V³; above rated the power is held flat (the brake/furling are after the MVP).
+// source: researches/01 §7 (Cp_e 0.25 = rotor Cp 0.33–0.35 × efficiency 0.75; cut-in 3 m/s; rated 10.5 m/s),
+// researches/03 Appendix A (the same model); v_tip warning: researches/01 §6.4. [NOT-TESTED] — hygiene in test.mjs.
+const PERF_DEFAULT = { CpE: 0.25, vCutIn: 3, vRated: 10.5, vTipWarn: 65 };
+
+/** Electrical power curve P(v), W, for rotor diameter D_m at air density rho. */
+function powerCurve({ D_m, rho, CpE = PERF_DEFAULT.CpE, vCutIn = PERF_DEFAULT.vCutIn, vRated = PERF_DEFAULT.vRated }) {
+  const A = Math.PI * D_m * D_m / 4;
+  return (v) => v < vCutIn ? 0 : 0.5 * rho * A * CpE * Math.pow(Math.min(v, vRated), 3);
+}
+
+/** Tip speed λ·V (m/s) and whether it passes the noise/erosion warning (researches/01 §6.4: 60–70 m/s). */
+function tipSpeed(lambda, v) { const vt = lambda * v; return { vTip: vt, warn: vt > PERF_DEFAULT.vTipWarn }; }
+
 // The owner's site as the default: a village in Brest region (owner 2026-11-16 21:16), 160 m above sea level; the
 // reference wind 3.0 m/s at 10 m over open ground, Weibull k 1.8 (Baranovichi WMO 26941, 1991–2020), mean air 7.4 °C.
 // source: researches/03 §0, §2.4, Appendix A.
@@ -246,7 +261,7 @@ const SITE_DEFAULT = { name: 'Brest region', altitude_m: 160, t_C: 7.4, vRef: 3.
 
 const KHAWTAK = { airDensity, shearLog, shearTwoLayer, shearPower, gamma, weibullScale, weibullPdf, yearlyEnergy_kWh, SITE_DEFAULT,
   nacaHalfThickness, nacaCamber, minChordForStud_mm, printableTrailingEdgeX, airfoilSection, polygonArea, pointInPolygon,
-  schmitzPhi, schmitzChord, schmitzTwist, linearBlade, prandtlF, bemStation, bemRotor };
+  schmitzPhi, schmitzChord, schmitzTwist, linearBlade, prandtlF, bemStation, bemRotor, PERF_DEFAULT, powerCurve, tipSpeed };
 // ===== CORE-END
 window.KHAWTAK = KHAWTAK;
 </script>

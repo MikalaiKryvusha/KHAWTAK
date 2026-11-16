@@ -2,7 +2,7 @@
 
 > **Создан:** 2026-11-16 (main agent, the autonomous stretch the owner ordered at 21:40) · **Родитель:**
 > `plans/01_EPIC_mvp_blade.md` → phase table, row «1 · ядро расчёта» · **Статус:** 🔧 S1–S2 done 2026-11-16 (criteria 1 and 7
-> green); S3 nearly done, S4–S5 done (criteria 1, 2, 3, 4, 7 green); next — S6 (performance) · **Вовне:** one question to the
+> green); S3 nearly done, S4–S5 done (criteria 1, 2, 3, 4, 7 green); S6 done; next — S3's span distribution and polar, then S7 (loads; the owner question first) · **Вовне:** one question to the
 > owner at step S7 (load factors: IEC or the hobby margin)
 
 ## Goal vector
@@ -57,7 +57,9 @@ Each step quotes its anchor in the epic: «ядро расчёта … мест�
 - [x] **S5 · BEM.** ✅ 2026-11-16: `prandtlF`, `bemStation` (bisection on (0, π/2]),
   `bemRotor`; criterion 3 green (Cp 0.5172, Ct 0.8777 after bugs/01); 47 of 47, `--control` 15 of 15. The step as planned: Ning's single-unknown φ iteration with Prandtl tip/hub loss and Buhl's high-induction correction,
   verbatim from `researches/01` §1.4–1.5. Criterion 3.
-- [ ] **S6 · performance.** P(V) assuming the owner's smart controller holds λ near optimum up to rated (interview 001 Q5;
+- [x] **S6 · performance.** ✅ 2026-11-16: `powerCurve` (Cp_e 0.25, cut-in 3, rated 10.5 — the recons' model, now in the
+  core), `tipSpeed` (warning above 65 m/s); criterion 7 re-run through the core's curve (71.6 kWh); 51 of 51, `--control`
+  17 of 17. A BEM-derived Cp per rotor replaces the fixed Cp_e when S3's polar lands. The step as planned: P(V) assuming the owner's smart controller holds λ near optimum up to rated (interview 001 Q5;
   the generator itself is out of the MVP); cut-in, rated, yearly energy; v_tip warning above 60–70 m/s (§6.4).
 - [ ] **S7 · loads.** IEC 61400-2 SLM cases that load the blade: A fatigue, D thrust, E max rpm (centrifugal), H parked
   (`researches/01` §6.1). Owner question before closing the step, filed in `interviews/`: strict IEC factors (no PETG root

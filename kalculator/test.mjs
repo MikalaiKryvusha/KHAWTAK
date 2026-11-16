@@ -33,6 +33,8 @@ const MUTANTS = [
   ['const r1 = 0.7 * R, r2 = 0.9 * R', 'const r1 = 0.6 * R, r2 = 0.9 * R'], // breaks Burton's anchor points
   ['if (k <= 2 / 3) a = k / (1 + k);', 'if (k <= 2 / 3) a = k / (1 + 2 * k);'], // breaks the BEM induction (criterion 3)
   ['(R - r) / (r * s)', '(R - r) / (R * s)'],          // breaks the Prandtl tip loss
+  ['CpE: 0.25, vCutIn: 3', 'CpE: 0.30, vCutIn: 3'],     // breaks the power curve (S6)
+  ['Math.min(v, vRated)', 'Math.min(v, 2 * vRated)'],   // breaks the flat top above rated (S6)
 ];
 
 function load(src) {
@@ -179,6 +181,19 @@ function run(K, log = true) {
   check('BEM stays under the Betz limit 16/27 = 0.593', bem.Cp < 16 / 27, bem.Cp.toFixed(4));
   const Fmid = K.prandtlF(0.5, 1, 0.1, 3, 0.2), Ftip = K.prandtlF(0.999, 1, 0.1, 3, 0.2);
   check('Prandtl F: ≈ 1 mid-span, → 0 at the tip', Fmid > 0.99 && Ftip < 0.1, `${Fmid.toFixed(4)}, ${Ftip.toFixed(4)}`);
+
+  if (log) console.log('S6. performance (researches/01 §7, researches/03 Appendix A)');
+  // The core's power curve must equal the model the recons used (the test-local curve of criterion 7) — then the site
+  // energy through the CORE's curve reproduces criterion 7 (72 kWh at 10 m).
+  const pc = K.powerCurve({ D_m: 1.4, rho: rhoS });
+  const same = [2, 3, 5, 10.5, 15].every((v) => near(pc(v), curve(rhoS, 1.4)(v), 1e-9));
+  check('power curve = the recons\' model ½ρA·0.25·min(v, 10.5)³ from cut-in 3 m/s (5 sample speeds)', same);
+  check('power curve: 0 below cut-in, flat above rated', pc(2.99) === 0 && near(pc(12), pc(10.5), 1e-9) && pc(10) < pc(10.5));
+  const e10 = K.yearlyEnergy_kWh(pc, K.shearTwoLayer(S.vRef, S.zRef, 10, S.z0), S.k);
+  check('criterion 7 through the core\'s curve: Brest region, 10 m, D 1.4 → 72 kWh ± 1 %', Math.abs(e10 - 72) <= 0.72 + 0.5, e10.toFixed(1));
+  const ts = K.tipSpeed(6, 10);
+  check('tip speed λ·V: λ 6 at 10 m/s → 60 m/s, under the 65 m/s warning; λ 7 at 10 → 70, warned',
+    near(ts.vTip, 60, 1e-12) && !ts.warn && K.tipSpeed(7, 10).warn);
 
   return { bad, total };
 }
