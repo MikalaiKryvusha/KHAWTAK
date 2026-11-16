@@ -44,7 +44,10 @@
   - Проверка. Ядро: z0 1,0, мачта 10 м → 37 кВт·ч.
 - **D) your own answer** — что вокруг точки в радиусе 90–150 м: дом и высота конька, сараи, сад, опушка, в какую сторону
 
-**Answer:**
+**Answer:** B) <!-- owner-review: by Mikalai Kryvusha · 16 ноября 2026, 22:11 (+03:00) -->
+
+
+**Комментарий владельца (16 ноября 2026, 22:11 (+03:00)):** не понимаю, зачем тебе эта информация <!-- owner-review: by Mikalai Kryvusha · 16 ноября 2026, 22:11 (+03:00) -->
 
 ### Q2. Какой высоты мачта?
 <!-- archaeology: LC_ALL=C.UTF-8 grep -rniE "высот|мачта" interviews/ GOAL.md MASTER_PLAN.md plans/ → 29 hits · read: GOAL.md, MASTER_PLAN.md, plans/01_EPIC_mvp_blade.md, interviews/interview_001_blade_size_cut_generator.md · prior: "высота установки - чуть выше деревенского дома, метра может 4...7" + GOAL.md:39 (20:31), then "могу поставить на мачту, но не знаю, как высоко" (21:16, commit 6afc233) — changed: a mast is possible, the height is open -->
@@ -70,7 +73,10 @@
   - Проверка. Ядро: мачта 15 м, z0 0,1 → 120 кВт·ч.
 - **D) your own answer** —
 
-**Answer:**
+**Answer:** B) <!-- owner-review: by Mikalai Kryvusha · 16 ноября 2026, 22:11 (+03:00) -->
+
+
+**Комментарий владельца (16 ноября 2026, 22:11 (+03:00)):** не понимаю, зачем тебе эта информация <!-- owner-review: by Mikalai Kryvusha · 16 ноября 2026, 22:11 (+03:00) -->
 
 ## Proposed implementation plan (after answers)
 

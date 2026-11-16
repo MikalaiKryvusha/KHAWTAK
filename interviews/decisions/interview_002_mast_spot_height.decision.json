@@ -1,0 +1,22 @@
+{
+  "kind": "interview",
+  "document": "interviews/interview_002_mast_spot_height.md",
+  "by": "Mikalai Kryvusha",
+  "at": "2026-11-16T19:11:14.306Z",
+  "atHuman": "16 ноября 2026, 22:11 (+03:00)",
+  "comment": "",
+  "answers": {
+    "Q1": {
+      "choice": "B",
+      "text": "",
+      "comment": "не понимаю, зачем тебе эта информация"
+    },
+    "Q2": {
+      "choice": "B",
+      "text": "",
+      "comment": "не понимаю, зачем тебе эта информация"
+    }
+  },
+  "rev": "3d4ddf311e0f024a33f7ceab5630e8bdb4a46cc8e62e5e76a2a218b4e7a44a45",
+  "revAfter": "9a2fc6b05d4cbf760e8be485bddba9c2813a0554735a2cc3630f61ce44d34f14"
+}
