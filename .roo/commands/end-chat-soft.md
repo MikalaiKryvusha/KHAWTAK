@@ -102,7 +102,7 @@ is bilingual, keep both languages in sync. Don't invent — reflect only what is
 
 ### Step 3. (Re)build / regenerate artifacts
 
-Run the KHAWTAK checks: `node kalculator/test.mjs` (the core: physics numbers, mesh closure, STL bytes) and `node tools/test-hooks.mjs` (the project hooks); when the page or the design changed, also `node tools/ui-run.mjs` (the functional run in Chrome) and rebuild the KUIPS sheet: `npx kuips shoot`, `npx kuips build`, `npx kuips check`. If a build fails, stop and show the errors — don't commit broken state.
+Run the KHAWTAK checks: `node kalculator/test.mjs` (the core: physics numbers against the recon checkpoints; mesh closure and STL bytes join it in phase 2 of epic 01) plus `node kalculator/test.mjs --control` (every mutant red) and `node tools/test-hooks.mjs` (the project hooks); when the page or the design changed, also `node tools/ui-run.mjs` (the functional run in Chrome) and rebuild the KUIPS sheet: `npx kuips shoot`, `npx kuips build`, `npx kuips check`. If a build fails, stop and show the errors — don't commit broken state.
 
 ### Step 4. Commit and push (judge first)
 
