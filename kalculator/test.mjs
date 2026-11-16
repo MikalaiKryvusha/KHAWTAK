@@ -7,7 +7,8 @@
 //   node kalculator/test.mjs --control    # gate 5: break one constant per case on purpose and expect RED (plan 02 S9)
 //
 // Criteria: plans/02_epic01_phase1_core.md. Covered now: criterion 1 (air density) and the identities S2 rests on (Γ, log
-// and power shear, Weibull/Rayleigh scale, the energy integral). Not covered yet: criteria 2–8 (steps S3–S9).
+// and power shear, Weibull/Rayleigh scale, the energy integral); then S3–S6 and half of S8 — criteria 1–7 are covered.
+// Not covered yet: criterion 8 as a whole (S9), loads (S7), flanges/tube/web in the section (S8).
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 
@@ -33,6 +34,7 @@ const MUTANTS = [
   ['const r1 = 0.7 * R, r2 = 0.9 * R', 'const r1 = 0.6 * R, r2 = 0.9 * R'], // breaks Burton's anchor points
   ['if (k <= 2 / 3) a = k / (1 + k);', 'if (k <= 2 / 3) a = k / (1 + 2 * k);'], // breaks the BEM induction (criterion 3)
   ['(R - r) / (r * s)', '(R - r) / (R * s)'],          // breaks the Prandtl tip loss
+  ['(r - Rhub) / (Rhub * s)', '(r - Rhub) / (R * s)'], // breaks the Prandtl hub loss
   ['CpE: 0.25, vCutIn: 3', 'CpE: 0.30, vCutIn: 3'],     // breaks the power curve (S6)
   ['Math.min(v, vRated)', 'Math.min(v, 2 * vRated)'],   // breaks the flat top above rated (S6)
   ['M5: { d: 5, As: 14.2, p48: 4.40', 'M5: { d: 5, As: 14.2, p48: 3.40'], // breaks the stud table (criterion 6)
@@ -94,7 +96,7 @@ function run(K, log = true) {
     const v = K.shearTwoLayer(S.vRef, S.zRef, z, S.z0);
     const ey = K.yearlyEnergy_kWh(curve(rhoS, 1.4), v, S.k);
     check(`criterion 7: Brest region, mast ${z} m — hub ${vWant} m/s ± 0.01, D 1.4 → ${eWant} kWh ± 1 % (two profiles, z0 0.25, k 1.8)`,
-      near(v, vWant, 0.01) && Math.abs(ey - eWant) <= 0.01 * eWant + 0.5, `${v.toFixed(3)} m/s, ${ey.toFixed(1)} kWh`);
+      near(v, vWant, 0.01) && Math.abs(ey - eWant) <= 0.01 * eWant, `${v.toFixed(3)} m/s, ${ey.toFixed(1)} kWh`);
   }
   check('two profiles: above 10 m a rough site is NOT windier than a smooth one (z0 1.0 < z0 0.1 at 15 m)',
     K.shearTwoLayer(3, 10, 15, 1.0) < K.shearTwoLayer(3, 10, 15, 0.1),
@@ -182,10 +184,18 @@ function run(K, log = true) {
   }
   const ctBuhl = TmBuhl / Math.PI, ctPlain = TmPlain / Math.PI;
   check('criterion 3: Ct 0.878 ± 0.01 by blade-element loads (recon 01 §1.5; corrected checkpoint, bugs/01)', near(bem.Ct, 0.878, 0.01), bem.Ct.toFixed(4));
+  // @guard ct-two-routes
+  // THREAT:         a thrust target taken from a formula outside its range (bugs/01_DONE) or a broken induction branch
+  // PROVED-AGAINST: the induction mutant `k / (1 + 2 * k)` turns this case and criterion 3 red (`--control`)
+  // GAP:            at a converged solution the two routes are one equation — their agreement proves convergence, not
+  //                 the value; no external reference (CCBlade, QBlade) was run
+  // ON-REAL-PATH:   NOT YET (no page)
   check('Ct: momentum with Buhl in the a > 0.4 stations agrees with the blade-element Ct ± 0.002',
     near(ctBuhl, bem.Ct, 0.002), `momentum+Buhl ${ctBuhl.toFixed(4)} · blade-element ${bem.Ct.toFixed(4)} · plain 4aF(1−a) ${ctPlain.toFixed(4)} (invalid for a > 0.4)`);
   check('BEM stays under the Betz limit 16/27 = 0.593', bem.Cp < 16 / 27, bem.Cp.toFixed(4));
   const Fmid = K.prandtlF(0.5, 1, 0.1, 3, 0.2), Ftip = K.prandtlF(0.999, 1, 0.1, 3, 0.2);
+  const Fhub = K.prandtlF(0.1001, 1, 0.1, 3, 0.2);
+  check('Prandtl F: → 0 at the hub too (the hub loss is not 1 — the judge found it unchecked)', Fhub < 0.1, Fhub.toFixed(4));
   check('Prandtl F: ≈ 1 mid-span, → 0 at the tip', Fmid > 0.99 && Ftip < 0.1, `${Fmid.toFixed(4)}, ${Ftip.toFixed(4)}`);
 
   if (log) console.log('S6. performance (researches/01 §7, researches/03 Appendix A)');
@@ -196,7 +206,7 @@ function run(K, log = true) {
   check('power curve = the recons\' model ½ρA·0.25·min(v, 10.5)³ from cut-in 3 m/s (5 sample speeds)', same);
   check('power curve: 0 below cut-in, flat above rated', pc(2.99) === 0 && near(pc(12), pc(10.5), 1e-9) && pc(10) < pc(10.5));
   const e10 = K.yearlyEnergy_kWh(pc, K.shearTwoLayer(S.vRef, S.zRef, 10, S.z0), S.k);
-  check('criterion 7 through the core\'s curve: Brest region, 10 m, D 1.4 → 72 kWh ± 1 %', Math.abs(e10 - 72) <= 0.72 + 0.5, e10.toFixed(1));
+  check('criterion 7 through the core\'s curve: Brest region, 10 m, D 1.4 → 72 kWh ± 1 %', Math.abs(e10 - 72) <= 0.72, e10.toFixed(1));
   const ts = K.tipSpeed(6, 10);
   check('tip speed λ·V: λ 6 at 10 m/s → 60 m/s, under the 65 m/s warning; λ 7 at 10 → 70, warned',
     near(ts.vTip, 60, 1e-12) && !ts.warn && K.tipSpeed(7, 10).warn);

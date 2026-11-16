@@ -270,7 +270,7 @@ function bladeStations({ R, Rhub, B = 3, Cl, lambda, alphaD_rad, n = 20, tcRoot 
 }
 
 // ---- S8 · structure (first part) — the joint preload, the wrench torque, the smallest stud for the user's grade.
-// [NOT-TESTED] — hygiene: criteria 5 and 6 in test.mjs. Section properties (I, A, k of the shell) come next session.
+// [NOT-TESTED] — hygiene: criteria 5 and 6 in test.mjs; the thin-walled shell section is below; flanges, tube and web next.
 
 // Metric coarse studs M3–M14: stress area As (mm²), proof loads of classes 4.8 and 8.8 (kN) — ISO 898-1 via
 // researches/02 §4.2; stainless A2-70: σ0.2 ≥ 450 MPa (researches/02 §4.2 [24]), capacity As·450.
@@ -292,6 +292,7 @@ function studCapacity_kN(size, grade) {
 }
 
 /** The thinnest stud M3–M14 whose capacity is at least margin × the load F_kN; null when even M14 is not enough. */
+// margin 1.5 — [AI] a working default, no source: the owner decides the margin policy at plan 02 S7 (IEC or hobby).
 function smallestStud(F_kN, grade, margin = 1.5) {
   for (const size of Object.keys(STUDS)) if (studCapacity_kN(size, grade) >= margin * F_kN) return size;
   return null;

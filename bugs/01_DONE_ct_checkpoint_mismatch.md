@@ -49,7 +49,9 @@ justification in the commit. Until then the test checks the momentum route again
 - **Fix:** criterion 3's Ct target is 0.878 ± 0.01 (plan 02); recon 01 Appendix A corrected where it stands, with the
   reason; the test also GUARDS the agreement of the two valid routes (± 0.002) and prints the invalid plain route.
 - **Guard** (`kalculator/test.mjs`, the S5 block): THREAT — a thrust checkpoint taken from a formula outside its range ·
-  PROVED-AGAINST — the induction and tip-loss mutants (`--control`, both red) · GAP — no external reference (CCBlade, QBlade)
+  PROVED-AGAINST — the induction mutant (`--control`, red on both Ct cases); the tip-loss mutant reddens Cp and F but NOT
+  the Ct cases (corrected after the core judge, finding F1) · GAP — at a converged solution the two routes are one equation, so their agreement proves convergence, not the value
+  (core judge, J3); no external reference (CCBlade, QBlade)
   was run; the agreement is between two routes of the same documented method · ON-REAL-PATH — NOT YET (no page).
 - Hygiene: `node kalculator/test.mjs` 47 of 47, `--control` 15 of 15. Functional run: NONE (the page does not exist yet).
 - **Decisions made without the owner** (updated): [AI] the target moved 0.84 → 0.878 on the strength of the recon's own

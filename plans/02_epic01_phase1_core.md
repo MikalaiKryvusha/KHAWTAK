@@ -73,7 +73,8 @@ Each step quotes its anchor in the epic: «ядро расчёта … мест�
   distance k, `F₀ ≥ M/k + F_c` (§2.3), torque `T = K·F·d` (§5.1), the smallest stud M3–M14 for the grade 4.8 · 8.8 · A2-70,
   bearing pressure of the tip anchor plate (§5.2). Criteria 5, 6.
 - [ ] **S9 · control cases and markers.** Break each constant once, watch its criterion go red, restore; every core block
-  carries `[NOT-TESTED]` until its criterion is green, then `[TESTED: date · criterion N]`; a run report in
+  carries `[NOT-TESTED]`; it flips to `[TESTED: date · how]` only on a FUNCTIONAL run of the page (TESTING_FRAMEWORK.md,
+  marker rule 2 — corrected 2026-11-16 after the core judge, finding F3), never on a green criterion alone; a run report in
   `testcases/reports/`. Criterion 8.
 
 ## Risks
