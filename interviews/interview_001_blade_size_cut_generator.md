@@ -44,7 +44,7 @@
   - Проверка. Эталон «1000 мм → 6 секций».
 - **D) your own answer** —
 
-**Answer:**
+**Answer:** А как начало
 
 ### Q2. Как резать и собирать секции?
 <!-- archaeology: LC_ALL=C.UTF-8 grep -rniE "резат|собира|секци" interviews/ GOAL.md MASTER_PLAN.md plans/ → 41 hits · read: GOAL.md, MASTER_PLAN.md · prior: "как порезать секции … обсуждаем, думаем, делаем разведку" + GOAL.md:11; "по лажению = проклеивается на стыках" + GOAL.md:26 — open by the owner's own words, glue optional -->
@@ -69,7 +69,7 @@
   - Проверка. Затяжка на эталоне радиусом 1 м.
 - **D) your own answer** —
 
-**Answer:**
+**Answer:** А
 
 ### Q3. Что у вершины, где шпилька не помещается?
 <!-- archaeology: LC_ALL=C.UTF-8 grep -rniE "верши|шпиль|помещает" interviews/ GOAL.md MASTER_PLAN.md plans/ → 40 hits · read: GOAL.md, MASTER_PLAN.md · prior: "внутри их можно "протянуть" металлической шпилькой" + GOAL.md:9 — changed: the recon found the tip thinner than the nut (M6 needs 15 mm of airfoil) -->
@@ -94,7 +94,7 @@
   - Проверка. Мощность против обычной вершины.
 - **D) your own answer** —
 
-**Answer:**
+**Answer:** Тоньше шпильку не получится сделать? Не получится первым напечатать именно вершину - в ней полость именно под вкручивание первичное шпильки, на шпильку насажиавются остальные части - и затяжка гайкой у основания.
 
 ### Q4. Сколько магнитов на каждом диске?
 <!-- archaeology: LC_ALL=C.UTF-8 grep -rniE "сколь|магнит|каждо|диске|генерато" interviews/ GOAL.md MASTER_PLAN.md plans/ → 41 hits · read: GOAL.md, MASTER_PLAN.md · prior: "двухроторный генератор, ориентировочно диаметром 200 мм, 24 магнита 40-20-5 мм, 9 катушек" + GOAL.md:18 — not settled: 24 is the total or per disc? -->
@@ -119,7 +119,7 @@
   - Проверка. Предупреждение «больше стола».
 - **D) your own answer** —
 
-**Answer:**
+**Answer:** A, B. Генератор пока вне области этого MVP инструмента
 
 ### Q5. Что заряжает генератор?
 <!-- archaeology: LC_ALL=C.UTF-8 grep -rniE "заряжа|генерат" interviews/ GOAL.md MASTER_PLAN.md plans/ → 34 hits · read: GOAL.md, MASTER_PLAN.md · prior: unrelated — the hits name the generator, none names the load or the battery voltage -->
@@ -144,7 +144,7 @@
   - Проверка. Кривая MPPT выше прямой зарядки.
 - **D) your own answer** —
 
-**Answer:**
+**Answer:** ЭТО ПОКА ВНЕ MVP инструмента. Генератор работает на интеллектуальный контроллер.
 
 ### Q6. Чем защищаем от разноса в бурю?
 <!-- archaeology: LC_ALL=C.UTF-8 grep -rniE "защища|ветря|разно|бурю" interviews/ GOAL.md MASTER_PLAN.md plans/ → 13 hits · read: GOAL.md, MASTER_PLAN.md · prior: unrelated — the hits match «ветряк» in the size and icon lines; none speaks of storm, overspeed or a tail -->
@@ -169,7 +169,7 @@
   - Проверка. Предупреждение на шаге «итог».
 - **D) your own answer** —
 
-**Answer:**
+**Answer:** Тормоз будет. Проектируем его позже.
 
 ### Q7. Публикуем KHAWTAK, как KATAK?
 <!-- archaeology: LC_ALL=C.UTF-8 grep -rniE "публику|khawt|katak" interviews/ GOAL.md MASTER_PLAN.md plans/ → 26 hits · read: GOAL.md, MASTER_PLAN.md · prior: unrelated — "как и в KATAK, делаем папку, разворачиваем KAIF …" (GOAL.md:5) names the folder, KAIF, hooks, KUIPS and recon, not the repository -->
@@ -189,7 +189,7 @@
   - Проверка. `git remote -v` пуст.
 - **D) your own answer** —
 
-**Answer:**
+**Answer:** A
 
 ## Proposed implementation plan (after answers)
 
