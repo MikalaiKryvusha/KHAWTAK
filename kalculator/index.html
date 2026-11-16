@@ -22,8 +22,8 @@
 // SI units inside; millimetres only at the print/STL boundary.
 
 // ---- S2 · air and wind — researches/01 §5.1 (the same formulas as KATAK, so the two calculators agree)
-// [NOT-TESTED] — hygiene green 2026-11-16: `node kalculator/test.mjs` 51/51 for the whole core so far (criteria 1, 2, 3, 4, 7 +
-// the Γ, shear, Weibull, NACA, section, Schmitz, BEM and power-curve identities), `--control` 17/17 mutants red. The marker flips only on a functional run of the page (TESTING_FRAMEWORK.md).
+// [NOT-TESTED] — hygiene green 2026-11-16: `node kalculator/test.mjs` 56/56 for the whole core so far (criteria 1–7 +
+// the Γ, shear, Weibull, NACA, section, Schmitz, BEM, power-curve and stud identities), `--control` 19/19 mutants red. The marker flips only on a functional run of the page (TESTING_FRAMEWORK.md).
 
 // International Standard Atmosphere: sea-level pressure, lapse rate, sea-level temperature, exponent g·M/(R·L);
 // specific gas constant of dry air. source: researches/01 §5.1 (KATAK researches/01 §3.1).
@@ -254,6 +254,41 @@ function powerCurve({ D_m, rho, CpE = PERF_DEFAULT.CpE, vCutIn = PERF_DEFAULT.vC
 /** Tip speed λ·V (m/s) and whether it passes the noise/erosion warning (researches/01 §6.4: 60–70 m/s). */
 function tipSpeed(lambda, v) { const vt = lambda * v; return { vTip: vt, warn: vt > PERF_DEFAULT.vTipWarn }; }
 
+// ---- S8 · structure (first part) — the joint preload, the wrench torque, the smallest stud for the user's grade.
+// [NOT-TESTED] — hygiene: criteria 5 and 6 in test.mjs. Section properties (I, A, k of the shell) come next session.
+
+// Metric coarse studs M3–M14: stress area As (mm²), proof loads of classes 4.8 and 8.8 (kN) — ISO 898-1 via
+// researches/02 §4.2; stainless A2-70: σ0.2 ≥ 450 MPa (researches/02 §4.2 [24]), capacity As·450.
+const STUDS = {
+  M3: { d: 3, As: 5.03, p48: 1.56, p88: 2.92 }, M4: { d: 4, As: 8.78, p48: 2.77, p88: 5.10 },
+  M5: { d: 5, As: 14.2, p48: 4.40, p88: 8.23 }, M6: { d: 6, As: 20.1, p48: 6.23, p88: 11.6 },
+  M8: { d: 8, As: 36.6, p48: 11.4, p88: 21.2 }, M10: { d: 10, As: 58.0, p48: 18.0, p88: 33.7 },
+  M12: { d: 12, As: 84.3, p48: 26.1, p88: 48.9 }, M14: { d: 14, As: 115, p48: 35.6, p88: 66.7 },
+};
+const A2_70_RP02_MPA = 450;
+
+/** Load capacity of a stud, kN, for grade '4.8' · '8.8' · 'A2-70'. */
+function studCapacity_kN(size, grade) {
+  const s = STUDS[size];
+  if (grade === '4.8') return s.p48;
+  if (grade === '8.8') return s.p88;
+  if (grade === 'A2-70') return s.As * A2_70_RP02_MPA / 1000;
+  throw new Error('unknown stud grade ' + grade);
+}
+
+/** The thinnest stud M3–M14 whose capacity is at least margin × the load F_kN; null when even M14 is not enough. */
+function smallestStud(F_kN, grade, margin = 1.5) {
+  for (const size of Object.keys(STUDS)) if (studCapacity_kN(size, grade) >= margin * F_kN) return size;
+  return null;
+}
+
+/** Preload that keeps a joint closed: F0 = M/k + F_c (M in N·m, kern distance k in mm, F_c in N) → N.
+ *  source: researches/02 §2.3 */
+function jointPreload_N(M_Nm, k_mm, Fc_N) { return M_Nm * 1000 / k_mm + Fc_N; }
+
+/** Wrench torque T = K·F·d (K ≈ 0.2 dry, its scatter ±25–30 %) → N·m. source: researches/02 §5.1 */
+function wrenchTorque_Nm(F_N, d_mm, K = 0.2) { return K * F_N * d_mm / 1000; }
+
 // The owner's site as the default: a village in Brest region (owner 2026-11-16 21:16), 160 m above sea level; the
 // reference wind 3.0 m/s at 10 m over open ground, Weibull k 1.8 (Baranovichi WMO 26941, 1991–2020), mean air 7.4 °C.
 // source: researches/03 §0, §2.4, Appendix A.
@@ -261,7 +296,8 @@ const SITE_DEFAULT = { name: 'Brest region', altitude_m: 160, t_C: 7.4, vRef: 3.
 
 const KHAWTAK = { airDensity, shearLog, shearTwoLayer, shearPower, gamma, weibullScale, weibullPdf, yearlyEnergy_kWh, SITE_DEFAULT,
   nacaHalfThickness, nacaCamber, minChordForStud_mm, printableTrailingEdgeX, airfoilSection, polygonArea, pointInPolygon,
-  schmitzPhi, schmitzChord, schmitzTwist, linearBlade, prandtlF, bemStation, bemRotor, PERF_DEFAULT, powerCurve, tipSpeed };
+  schmitzPhi, schmitzChord, schmitzTwist, linearBlade, prandtlF, bemStation, bemRotor, PERF_DEFAULT, powerCurve, tipSpeed,
+  STUDS, studCapacity_kN, smallestStud, jointPreload_N, wrenchTorque_Nm };
 // ===== CORE-END
 window.KHAWTAK = KHAWTAK;
 </script>

@@ -35,6 +35,8 @@ const MUTANTS = [
   ['(R - r) / (r * s)', '(R - r) / (R * s)'],          // breaks the Prandtl tip loss
   ['CpE: 0.25, vCutIn: 3', 'CpE: 0.30, vCutIn: 3'],     // breaks the power curve (S6)
   ['Math.min(v, vRated)', 'Math.min(v, 2 * vRated)'],   // breaks the flat top above rated (S6)
+  ['M5: { d: 5, As: 14.2, p48: 4.40', 'M5: { d: 5, As: 14.2, p48: 3.40'], // breaks the stud table (criterion 6)
+  ['return M_Nm * 1000 / k_mm + Fc_N', 'return M_Nm * 1000 / k_mm'],     // breaks the preload (criterion 5)
 ];
 
 function load(src) {
@@ -194,6 +196,16 @@ function run(K, log = true) {
   const ts = K.tipSpeed(6, 10);
   check('tip speed λ·V: λ 6 at 10 m/s → 60 m/s, under the 65 m/s warning; λ 7 at 10 → 70, warned',
     near(ts.vTip, 60, 1e-12) && !ts.warn && K.tipSpeed(7, 10).warn);
+
+  if (log) console.log('S8. structure, first part (researches/02 §2.3, §4.2, §5.1)');
+  const F0 = K.jointPreload_N(30, 8.04, 1220);
+  check('criterion 5: section A2, M 30 N·m, k 8.04 mm, F_c 1.22 kN → F0 4.95 kN ± 0.05 (researches/02 §2.4)', near(F0 / 1000, 4.95, 0.05), (F0 / 1000).toFixed(3));
+  const Tw = K.wrenchTorque_Nm(F0, 8);
+  check('criterion 5: wrench torque M8, K 0.2 → 7.9 N·m ± 0.1', near(Tw, 7.9, 0.1), Tw.toFixed(2));
+  const pick = ['4.8', '8.8', 'A2-70'].map((g) => K.smallestStud(2.6, g));
+  check('criterion 6: 2.6 kN at margin ≥ 1.5 → 4.8 M5 · 8.8 M4 · A2-70 M4', pick.join(' ') === 'M5 M4 M4', pick.join(' '));
+  check('stud capacity: As·proof — M8 8.8 = 21.2 kN, A2-70 M4 = 3.95 kN', near(K.studCapacity_kN('M8', '8.8'), 21.2, 1e-9) && near(K.studCapacity_kN('M4', 'A2-70'), 3.951, 1e-3));
+  check('no stud is enough above M14 capacity → null (the page must say so)', K.smallestStud(60, '4.8') === null);
 
   return { bad, total };
 }

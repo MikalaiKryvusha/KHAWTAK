@@ -2,7 +2,7 @@
 
 > **Создан:** 2026-11-16 (main agent, the autonomous stretch the owner ordered at 21:40) · **Родитель:**
 > `plans/01_EPIC_mvp_blade.md` → phase table, row «1 · ядро расчёта» · **Статус:** 🔧 S1–S2 done 2026-11-16 (criteria 1 and 7
-> green); S3 nearly done, S4–S5 done (criteria 1, 2, 3, 4, 7 green); S6 done; next — S3's span distribution and polar, then S7 (loads; the owner question first) · **Вовне:** one question to the
+> green); S3 nearly done, S4–S5 done (criteria 1, 2, 3, 4, 7 green); S6 done, S8 half done (criteria 1–7 green); next — section properties (S8), S3's span distribution and polar, S7 · **Вовне:** one question to the
 > owner at step S7 (load factors: IEC or the hobby margin)
 
 ## Goal vector
@@ -64,7 +64,9 @@ Each step quotes its anchor in the epic: «ядро расчёта … мест�
 - [ ] **S7 · loads.** IEC 61400-2 SLM cases that load the blade: A fatigue, D thrust, E max rpm (centrifugal), H parked
   (`researches/01` §6.1). Owner question before closing the step, filed in `interviews/`: strict IEC factors (no PETG root
   passes, §6.2) or a stated hobby margin.
-- [ ] **S8 · structure.** Thin-walled section properties (shell T(3), flanges, stud tube, web — `researches/02` §0), kern
+- [ ] 🔧 **S8 · structure.** First part done 2026-11-16: the stud table M3–M14 (researches/02 §4.2), `studCapacity_kN`,
+  `smallestStud`, `jointPreload_N`, `wrenchTorque_Nm`; criteria 5 and 6 green; 56 of 56, `--control` 19 of 19. Left: the
+  thin-walled section properties (I, A, kern k) of the shell with flanges, tube and web; the tip-anchor bearing. Planned: Thin-walled section properties (shell T(3), flanges, stud tube, web — `researches/02` §0), kern
   distance k, `F₀ ≥ M/k + F_c` (§2.3), torque `T = K·F·d` (§5.1), the smallest stud M3–M14 for the grade 4.8 · 8.8 · A2-70,
   bearing pressure of the tip anchor plate (§5.2). Criteria 5, 6.
 - [ ] **S9 · control cases and markers.** Break each constant once, watch its criterion go red, restore; every core block
