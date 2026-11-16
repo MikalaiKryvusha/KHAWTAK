@@ -14,7 +14,9 @@ KHAWTAK/
 ├── AUTHOR_STYLOMETRY.md    # the owner's voice portrait, PUBLIC snapshot — git-ignored, never committed
 ├── researches/             # recon notes, in Russian (HOUSE_RULES R4)
 │   ├── 01_hawt_aero_generator_loads/   # BEM, airfoils, generator matching, site energy, IEC 61400-2 loads
-│   └── 02_segmented_printed_blade/     # sections, joints, studs, preload, PETG, walls/infill, hub, size classes
+│   ├── 02_segmented_printed_blade/     # sections, joints, studs, preload, PETG, walls/infill, hub, size classes
+│   ├── 03_site_wind/           # the owner's site: 3.0 m/s at 10 m (Baranovichi), two-profile shear, yield per mast, mast rule
+│   └── 04_web_stl_blade_mesh/          # the page and STL from KATAK; NACA by formula, printable trailing edge, cavities
 ├── kalculator/             # the product: one offline HTML page
 │   ├── index.html          # the core between CORE-BEGIN / CORE-END (plan 02: S2 air and wind so far); the UI comes after KUIPS
 │   └── test.mjs            # extracts the core and tests it in Node; `--control` = gate-5 mutants

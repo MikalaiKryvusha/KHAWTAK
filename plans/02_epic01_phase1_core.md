@@ -1,8 +1,8 @@
 # Plan 02 — epic 01, phase 1: the calculation core (site, blade aerodynamics, loads, stud and preload)
 
 > **Создан:** 2026-11-16 (main agent, the autonomous stretch the owner ordered at 21:40) · **Родитель:**
-> `plans/01_EPIC_mvp_blade.md` → phase table, row «1 · ядро расчёта» · **Статус:** 🔲 drafted before phase 0 closed — the
-> site step waits for `researches/03` (Brest region wind); everything else is executable now · **Вовне:** one question to the
+> `plans/01_EPIC_mvp_blade.md` → phase table, row «1 · ядро расчёта» · **Статус:** 🔧 S1–S2 done 2026-11-16 (criteria 1 and 7
+> green); next — S3 (airfoil) · **Вовне:** one question to the
 > owner at step S7 (load factors: IEC or the hobby margin)
 
 ## Goal vector
@@ -21,8 +21,8 @@ that cannot fail.
 5. Preload example A2: F₀ = 4.95 kN ± 0.05, wrench torque M8 = 7.9 N·m ± 0.1 — `researches/02` §2.4.
 6. Stud choice for 2.6 kN at margin ≥ 1.5: grade 4.8 → M5, grade 8.8 → M4, A2-70 → M4 — main agent's check over
    `researches/02` §10 with ISO 898-1 / ISO 3506 (STATUS, 2026-11-16).
-7. Mean wind and yearly energy at the Brest region site for a 1.4 m rotor at 7 / 10 / 12 m equal `researches/03` §4 ± 1 % —
-   added when recon 03 lands.
+7. Brest region site, 1.4 m rotor, two log profiles (z0 0.25, k 1.8, ρ 1.2345): hub 2.39 / 2.64 / 2.77 m/s ± 0.01 and
+   50 / 72 / 85 kWh ± 1 % at masts 7 / 10 / 12 m — `researches/03` §3.2, §4.2, re-computed by the core 2026-11-16.
 8. Control case (gate 5): each of 1–7 is seen RED once on a deliberately broken constant before it is trusted.
 
 ## Steps
@@ -33,7 +33,10 @@ Each step quotes its anchor in the epic: «ядро расчёта … мест�
 - [x] **S1 · skeleton.** ✅ `node kalculator/test.mjs` runs (2026-11-16). `kalculator/index.html` with the empty core markers and `kalculator/test.mjs` that cuts the core out
   and runs it in Node — the KATAK pattern (`researches/04` §1). Check: `node kalculator/test.mjs` exits 0 with «0 of 0».
 - [x] **S2 · air and wind.** ✅ criterion 1 green, 14 of 14 with the Γ / shear / Weibull identities; `--control` 4 of 4
-  mutants red (2026-11-16); criterion 7 still waits for recon 03. ρ from altitude and temperature, log and power shear, Weibull/Rayleigh, the energy integral
+  mutants red (2026-11-16). Recon 03 landed: criterion 7 green, 20 of 20, `--control` 6 of 6.
+  `FORK: options <one log profile from the station's 10 m (recon 01) | two profiles joined at a 60 m blending height> ·
+  price of error <the wrong mast spot: with one profile, trees come out windier than fields above 10 m> · consulted
+  <researches/03 §3.2 (h_b 40–100 m moves the speed ±3 %)>` → two profiles, `shearTwoLayer`. ρ from altitude and temperature, log and power shear, Weibull/Rayleigh, the energy integral
   (`researches/01` §5.1). Criterion 1; criterion 7 when recon 03 lands.
 - [ ] **S3 · airfoil.** NACA 4-digit camber + thickness by formula (`researches/04` §2.1), t/c(r) linear root → tip, cosine
   spacing, printable trailing edge ≥ 2 lines, the stud axis at 0.40c. Criterion 4.

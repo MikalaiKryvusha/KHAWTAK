@@ -22,8 +22,8 @@
 // SI units inside; millimetres only at the print/STL boundary.
 
 // ---- S2 · air and wind — researches/01 §5.1 (the same formulas as KATAK, so the two calculators agree)
-// [NOT-TESTED] — hygiene green 2026-11-16: `node kalculator/test.mjs` 14/14 (criterion 1 + the Γ, shear and Weibull
-// identities), `--control` 4/4 mutants red. The marker flips only on a functional run of the page (TESTING_FRAMEWORK.md).
+// [NOT-TESTED] — hygiene green 2026-11-16: `node kalculator/test.mjs` 20/20 (criteria 1 and 7 + the Γ, shear and Weibull
+// identities), `--control` 6/6 mutants red. The marker flips only on a functional run of the page (TESTING_FRAMEWORK.md).
 
 // International Standard Atmosphere: sea-level pressure, lapse rate, sea-level temperature, exponent g·M/(R·L);
 // specific gas constant of dry air. source: researches/01 §5.1 (KATAK researches/01 §3.1).
@@ -37,6 +37,15 @@ function airDensity(h_m, t_C) {
 
 /** Wind at height z from V_ref at z_ref — the log law with roughness length z0 (all in m). source: researches/01 §5.1 */
 function shearLog(vRef, zRef, z, z0) { return vRef * Math.log(z / z0) / Math.log(zRef / z0); }
+
+/** Wind at height z over the SITE's roughness z0, from a station's V_ref at z_ref over ITS roughness z0Ref — two log profiles
+ *  joined at the blending height hBlend: up from the station to hBlend, down over the site. One profile would give every
+ *  roughness the same 10 m wind, so above 10 m trees would come out windier than fields — wrong for choosing a mast spot.
+ *  Default hBlend 60 m, z0Ref 0.03 (an open station). source: researches/03 §3.2 (hBlend 40–100 m moves the speed ±3 %). */
+function shearTwoLayer(vRef, zRef, z, z0, { z0Ref = 0.03, hBlend = 60 } = {}) {
+  const vBlend = shearLog(vRef, zRef, hBlend, z0Ref);
+  return vBlend * Math.log(z / z0) / Math.log(hBlend / z0);
+}
 
 /** Wind at height z from V_ref at z_ref — the power law with exponent alpha. source: researches/01 §5.1 */
 function shearPower(vRef, zRef, z, alpha) { return vRef * Math.pow(z / zRef, alpha); }
@@ -70,7 +79,12 @@ function yearlyEnergy_kWh(power_W, vMean, k, { vMax = 30, dv = 0.05 } = {}) {
   return 8760 * s / 1000;
 }
 
-const KHAWTAK = { airDensity, shearLog, shearPower, gamma, weibullScale, weibullPdf, yearlyEnergy_kWh };
+// The owner's site as the default: a village in Brest region (owner 2026-11-16 21:16), 160 m above sea level; the
+// reference wind 3.0 m/s at 10 m over open ground, Weibull k 1.8 (Baranovichi WMO 26941, 1991–2020), mean air 7.4 °C.
+// source: researches/03 §0, §2.4, Appendix A.
+const SITE_DEFAULT = { name: 'Brest region', altitude_m: 160, t_C: 7.4, vRef: 3.0, zRef: 10, k: 1.8, z0: 0.25 };
+
+const KHAWTAK = { airDensity, shearLog, shearTwoLayer, shearPower, gamma, weibullScale, weibullPdf, yearlyEnergy_kWh, SITE_DEFAULT };
 // ===== CORE-END
 window.KHAWTAK = KHAWTAK;
 </script>
