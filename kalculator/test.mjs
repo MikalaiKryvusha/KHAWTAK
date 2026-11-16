@@ -31,6 +31,8 @@ const MUTANTS = [
   ['Math.atan(R / (r * lambda)) / 3', 'Math.atan(R / (r * lambda)) / 2'], // breaks the Schmitz chord (criterion 2)
   ['(2 / 3) * Math.atan', '(3 / 4) * Math.atan'],       // breaks the Schmitz inflow angle and twist (criterion 2)
   ['const r1 = 0.7 * R, r2 = 0.9 * R', 'const r1 = 0.6 * R, r2 = 0.9 * R'], // breaks Burton's anchor points
+  ['if (k <= 2 / 3) a = k / (1 + k);', 'if (k <= 2 / 3) a = k / (1 + 2 * k);'], // breaks the BEM induction (criterion 3)
+  ['(R - r) / (r * s)', '(R - r) / (R * s)'],          // breaks the Prandtl tip loss
 ];
 
 function load(src) {
@@ -148,6 +150,29 @@ function run(K, log = true) {
     near(lb.chord(0.49), K.schmitzChord(0.49, 0.7, 3, 1.2, 6), 1e-12) && near(lb.twist(0.63), K.schmitzTwist(0.63, 0.7, 6, 6 * deg), 1e-12));
   check('linear blade is a straight line (midpoint = mean of the ends)',
     near(lb.chord(0.56), (lb.chord(0.49) + lb.chord(0.63)) / 2, 1e-12) && near(lb.twist(0.56), (lb.twist(0.49) + lb.twist(0.63)) / 2, 1e-12));
+
+  if (log) console.log('S5. BEM (researches/01 §1.4–1.5)');
+  // Criterion 3: the Schmitz blade at λ 6, C_l 1 at every station, no drag, hub 0.1R (researches/01 Appendix A).
+  const Rb = 1, lam = 6;
+  const schmitz = { chord: (r) => K.schmitzChord(r, Rb, 3, 1, lam), twist: (r) => K.schmitzPhi(r, Rb, lam) };
+  const flat = () => ({ Cl: 1, Cd: 0 });
+  const bem = K.bemRotor({ R: Rb, Rhub: 0.1 * Rb, lambda: lam, blade: schmitz, polar: flat });
+  check('criterion 3: BEM, Schmitz blade, λ 6, C_l 1, L/D ∞, hub 0.1R → Cp 0.518 ± 0.005 (researches/01 Appendix A)', near(bem.Cp, 0.518, 0.005), bem.Cp.toFixed(4));
+  // Ct — OPEN (bugs/01_ct_checkpoint_mismatch.md): recon 01's checkpoint 0.84 is reproduced by the MOMENTUM route
+  // 4aF(1−a) (0.835), while recon 01 §1.5 itself defines thrust by blade-element loads T = B∫N′dr (0.878 here). The
+  // momentum route is checked against 0.84; the blade-element Ct is printed, not judged, until an independent reference.
+  let Tm = 0;
+  for (let i = 0; i < 200; i++) {
+    const r = 0.1 + (i + 0.5) * 0.9 / 200;
+    const s = K.bemStation({ r, R: 1, Rhub: 0.1, B: 3, chord: schmitz.chord(r), twist: schmitz.twist(r), lambdaR: 6 * r, polar: flat });
+    Tm += 4 * Math.PI * r * s.a * (1 - s.a) * K.prandtlF(r, 1, 0.1, 3, s.phi) * 0.9 / 200;
+  }
+  const ctMom = Tm / (0.5 * Math.PI);
+  check('criterion 3 (Ct, momentum route 4aF(1−a)) → 0.84 ± 0.01 (recon 01 Appendix A); blade-element Ct printed — OPEN, bugs/01',
+    near(ctMom, 0.84, 0.01), `momentum ${ctMom.toFixed(4)} · blade-element ${bem.Ct.toFixed(4)}`);
+  check('BEM stays under the Betz limit 16/27 = 0.593', bem.Cp < 16 / 27, bem.Cp.toFixed(4));
+  const Fmid = K.prandtlF(0.5, 1, 0.1, 3, 0.2), Ftip = K.prandtlF(0.999, 1, 0.1, 3, 0.2);
+  check('Prandtl F: ≈ 1 mid-span, → 0 at the tip', Fmid > 0.99 && Ftip < 0.1, `${Fmid.toFixed(4)}, ${Ftip.toFixed(4)}`);
 
   return { bad, total };
 }

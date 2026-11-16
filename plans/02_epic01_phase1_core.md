@@ -2,7 +2,7 @@
 
 > **Создан:** 2026-11-16 (main agent, the autonomous stretch the owner ordered at 21:40) · **Родитель:**
 > `plans/01_EPIC_mvp_blade.md` → phase table, row «1 · ядро расчёта» · **Статус:** 🔧 S1–S2 done 2026-11-16 (criteria 1 and 7
-> green); S3 nearly done, S4 done (criteria 2 and 4 green); next — S5 (BEM) · **Вовне:** one question to the
+> green); S3 nearly done, S4 done, S5 done but the Ct reference (bugs/01); next — bugs/01, then S6 · **Вовне:** one question to the
 > owner at step S7 (load factors: IEC or the hobby margin)
 
 ## Goal vector
@@ -17,6 +17,8 @@ that cannot fail.
 1. ρ(220 m, 7 °C) = 1.2275 kg/m³ ± 0.0005 — `researches/01` Appendix A.
 2. Schmitz chord at R 0.45 m, λ 4, B 3, C_l 1.26, r 0.045 m = 89.4 mm ± 0.2, θ = 39.47° ± 0.05 — `researches/01` Appendix A.
 3. BEM on the Schmitz blade, λ 6, C_l 1, L/D ∞, hub 0.1 R: Cp = 0.518 ± 0.005, Ct = 0.84 ± 0.01 — `researches/01` Appendix A.
+   Ct is OPEN (`bugs/01_ct_checkpoint_mismatch.md`): 0.84 is the momentum-route value; the blade-element thrust that
+   recon 01 §1.5 defines gives 0.878; the target is reset only from an independent reference, with a justification.
 4. Minimum chord housing an M8 with two 2 mm walls at t/c 12 % = 100 mm ± 1 — `researches/01` §2.3.
 5. Preload example A2: F₀ = 4.95 kN ± 0.05, wrench torque M8 = 7.9 N·m ± 0.1 — `researches/02` §2.4.
 6. Stud choice for 2.6 kN at margin ≥ 1.5: grade 4.8 → M5, grade 8.8 → M4, A2-70 → M4 — main agent's check over
@@ -52,7 +54,8 @@ Each step quotes its anchor in the epic: «ядро расчёта … мест�
 - [x] **S4 · blade design.** ✅ 2026-11-16: `schmitzChord` / `schmitzPhi` / `schmitzTwist`, `linearBlade` (Burton, 0.7R and
   0.9R); criterion 2 green (89.36 mm, 39.466°); the Betz-limit case first used λμ 4 and went red — a wrong premise (Betz
   needs λμ ≫ 1: 4.2 % apart at 4, 0.7 % at 10), rewritten at λ 10; 42 of 42, `--control` 13 of 13. Schmitz chord and twist (`researches/01` §1.3) and their linearisation (§3.3). Criterion 2.
-- [ ] **S5 · BEM.** Ning's single-unknown φ iteration with Prandtl tip/hub loss and Buhl's high-induction correction,
+- [ ] 🔧 **S5 · BEM.** Done 2026-11-16 except the Ct reference: `prandtlF`, `bemStation` (bisection on (0, π/2]),
+  `bemRotor`; Cp 0.5172 green; Ct see criterion 3 / bugs/01; 46 of 46, `--control` 15 of 15. The step as planned: Ning's single-unknown φ iteration with Prandtl tip/hub loss and Buhl's high-induction correction,
   verbatim from `researches/01` §1.4–1.5. Criterion 3.
 - [ ] **S6 · performance.** P(V) assuming the owner's smart controller holds λ near optimum up to rated (interview 001 Q5;
   the generator itself is out of the MVP); cut-in, rated, yearly energy; v_tip warning above 60–70 m/s (§6.4).

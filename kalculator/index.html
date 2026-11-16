@@ -22,8 +22,8 @@
 // SI units inside; millimetres only at the print/STL boundary.
 
 // ---- S2 · air and wind — researches/01 §5.1 (the same formulas as KATAK, so the two calculators agree)
-// [NOT-TESTED] — hygiene green 2026-11-16: `node kalculator/test.mjs` 42/42 for the whole core so far (criteria 1, 2, 4, 7 +
-// the Γ, shear, Weibull, NACA, section and Schmitz identities), `--control` 13/13 mutants red. The marker flips only on a functional run of the page (TESTING_FRAMEWORK.md).
+// [NOT-TESTED] — hygiene green 2026-11-16: `node kalculator/test.mjs` 46/46 for the whole core so far (criteria 1, 2, 4, 7, 3-Cp +
+// the Γ, shear, Weibull, NACA, section, Schmitz and BEM identities), `--control` 15/15 mutants red; Ct open — bugs/01. The marker flips only on a functional run of the page (TESTING_FRAMEWORK.md).
 
 // International Standard Atmosphere: sea-level pressure, lapse rate, sea-level temperature, exponent g·M/(R·L);
 // specific gas constant of dry air. source: researches/01 §5.1 (KATAK researches/01 §3.1).
@@ -182,6 +182,63 @@ function linearBlade({ R, B = 3, Cl, lambda, alphaD_rad }) {
   return { chord: lerp(c1, c2), twist: lerp(t1, t2) };
 }
 
+// ---- S5 · BEM — Ning's single-unknown method with Prandtl tip/hub loss and Buhl's high-induction branch, verbatim from
+// researches/01 §1.4–1.5 (NREL CCBlade bem.f90, Apache 2.0). [NOT-TESTED] — hygiene: criterion 3 in kalculator/test.mjs.
+
+/** Prandtl loss F = F_tip · F_hub at radius r for inflow angle phi. source: researches/01 §1.4 */
+function prandtlF(r, R, Rhub, B, phi) {
+  const s = Math.abs(Math.sin(phi));
+  const fTip = (2 / Math.PI) * Math.acos(Math.exp(-(B / 2) * (R - r) / (r * s)));
+  const fHub = (2 / Math.PI) * Math.acos(Math.exp(-(B / 2) * (r - Rhub) / (Rhub * s)));
+  return fTip * fHub;
+}
+
+/** Inductions a, a′ and the residual R(φ) at one station. source: researches/01 §1.5 */
+function bemResidual(phi, { r, R, Rhub, B, chord, twist, lambdaR, polar }) {
+  const sp = Math.sin(phi), cp = Math.cos(phi);
+  const { Cl, Cd } = polar(phi - twist);
+  const cn = Cl * cp + Cd * sp, ct = Cl * sp - Cd * cp;
+  const F = prandtlF(r, R, Rhub, B, phi);
+  const sigma = B * chord / (2 * Math.PI * r);
+  const k = sigma * cn / (4 * F * sp * sp), kp = sigma * ct / (4 * F * sp * cp);
+  let a;
+  if (k <= 2 / 3) a = k / (1 + k);
+  else {                                                        // Buhl's high-induction correction
+    const g1 = 2 * F * k - (10 / 9 - F), g2 = 2 * F * k - F * (4 / 3 - F), g3 = 2 * F * k - (25 / 9 - 2 * F);
+    a = Math.abs(g3) < 1e-6 ? 1 - 1 / (2 * Math.sqrt(g2)) : (g1 - Math.sqrt(g2)) / g3;
+  }
+  const ap = kp / (1 - kp);
+  return { res: sp / (1 - a) - cp * (1 - kp) / lambdaR, a, ap, cn, ct };
+}
+
+/** Solve one station: bisection for the root of R(φ) on (0, π/2]. */
+function bemStation(st) {
+  let lo = 1e-6, hi = Math.PI / 2;
+  let flo = bemResidual(lo, st).res;
+  for (let i = 0; i < 100; i++) {
+    const mid = (lo + hi) / 2, fm = bemResidual(mid, st).res;
+    if ((fm < 0) === (flo < 0)) { lo = mid; flo = fm; } else hi = mid;
+  }
+  const phi = (lo + hi) / 2;
+  return { phi, ...bemResidual(phi, st) };
+}
+
+/** Rotor Cp and Ct at tip-speed ratio lambda: blade = { chord(r), twist(r) } in m and rad, polar(alpha) → { Cl, Cd };
+ *  n annuli from Rhub to R (midpoint rule). source: researches/01 §1.5 (loads per unit length and the rotor integrals) */
+function bemRotor({ R, Rhub, B = 3, lambda, blade, polar, n = 200 }) {
+  const V = 1, rho = 1, omega = lambda * V / R, dr = (R - Rhub) / n;
+  let T = 0, Q = 0;
+  for (let i = 0; i < n; i++) {
+    const r = Rhub + (i + 0.5) * dr, chord = blade.chord(r);
+    const s = bemStation({ r, R, Rhub, B, chord, twist: blade.twist(r), lambdaR: lambda * r / R, polar });
+    const W2 = V * V * (1 - s.a) ** 2 + (omega * r) ** 2 * (1 + s.ap) ** 2;
+    T += B * s.cn * 0.5 * rho * W2 * chord * dr;
+    Q += B * s.ct * 0.5 * rho * W2 * chord * r * dr;
+  }
+  const A = Math.PI * R * R;
+  return { Cp: omega * Q / (0.5 * rho * A * V ** 3), Ct: T / (0.5 * rho * A * V * V) };
+}
+
 // The owner's site as the default: a village in Brest region (owner 2026-11-16 21:16), 160 m above sea level; the
 // reference wind 3.0 m/s at 10 m over open ground, Weibull k 1.8 (Baranovichi WMO 26941, 1991–2020), mean air 7.4 °C.
 // source: researches/03 §0, §2.4, Appendix A.
@@ -189,7 +246,7 @@ const SITE_DEFAULT = { name: 'Brest region', altitude_m: 160, t_C: 7.4, vRef: 3.
 
 const KHAWTAK = { airDensity, shearLog, shearTwoLayer, shearPower, gamma, weibullScale, weibullPdf, yearlyEnergy_kWh, SITE_DEFAULT,
   nacaHalfThickness, nacaCamber, minChordForStud_mm, printableTrailingEdgeX, airfoilSection, polygonArea, pointInPolygon,
-  schmitzPhi, schmitzChord, schmitzTwist, linearBlade };
+  schmitzPhi, schmitzChord, schmitzTwist, linearBlade, prandtlF, bemStation, bemRotor };
 // ===== CORE-END
 window.KHAWTAK = KHAWTAK;
 </script>
