@@ -93,6 +93,9 @@ inside a table cell, with no date next to it.
 **Trigger:** writing «✅ HH:MM» or «done at HH:MM» → the event already happened and the probe printed that minute.
 **Not for:** planned times the owner named («until 23:00»).
 Second strike, minutes later: «идёт с 21:21» written by `sed` while the probe of the same command printed 21:20.
+Third strike, 21:43: a dated stamp one minute ahead was typed into a script (claim-ok: the next line quotes the refused stamp)
+«✅ 2026-11-16 21:44» — the `stamp-gate` hook REFUSED it: the guard holds dated stamps; the cure applied: `NOW="$(date …)"` claim-ok: quote of the refused stamp
+passed to the script through the environment.
 mechanized: .kaif/hooks/clock-now.mjs — write a moment only through Write/Edit with the NOW placeholder (the word NOW in white
 square brackets), which the hook fills from the machine's clock; never type a minute into a `sed` or `echo` line.
 
