@@ -37,6 +37,7 @@ const MUTANTS = [
   ['Math.min(v, vRated)', 'Math.min(v, 2 * vRated)'],   // breaks the flat top above rated (S6)
   ['M5: { d: 5, As: 14.2, p48: 4.40', 'M5: { d: 5, As: 14.2, p48: 3.40'], // breaks the stud table (criterion 6)
   ['return M_Nm * 1000 / k_mm + Fc_N', 'return M_Nm * 1000 / k_mm'],     // breaks the preload (criterion 5)
+  ['tc: tcRoot + (tcTip - tcRoot) * f', 'tc: tcRoot + (tcTip - tcRoot) * f * f'], // breaks the linear t/c along the span
 ];
 
 function load(src) {
@@ -196,6 +197,14 @@ function run(K, log = true) {
   const ts = K.tipSpeed(6, 10);
   check('tip speed λ·V: λ 6 at 10 m/s → 60 m/s, under the 65 m/s warning; λ 7 at 10 → 70, warned',
     near(ts.vTip, 60, 1e-12) && !ts.warn && K.tipSpeed(7, 10).warn);
+
+  if (log) console.log('S3 (span). blade stations (researches/01 §2.2, §1.3)');
+  const st = K.bladeStations({ R: 0.7, Rhub: 0.07, Cl: 1.2, lambda: 6, alphaD_rad: 6 * Math.PI / 180, n: 20 });
+  const lin = K.linearBlade({ R: 0.7, Cl: 1.2, lambda: 6, alphaD_rad: 6 * Math.PI / 180 });
+  check('stations: n + 1 from the hub to the tip', st.length === 21 && near(st[0].r, 0.07, 1e-12) && near(st[20].r, 0.7, 1e-12));
+  check('stations: t/c 21 % at the root, 12 % at the tip, 16.5 % mid-span (linear)', near(st[0].tc, 0.21, 1e-12) && near(st[20].tc, 0.12, 1e-12) && near(st[10].tc, 0.165, 1e-12));
+  check('stations: chord and twist are the straight-line blade\'s', st.every((s) => near(s.chord, lin.chord(s.r), 1e-12) && near(s.twist, lin.twist(s.r), 1e-12)));
+  check('stations: the chord narrows and the twist falls toward the tip', st[20].chord < st[0].chord && st[20].twist < st[0].twist);
 
   if (log) console.log('S8. structure, first part (researches/02 §2.3, §4.2, §5.1)');
   const F0 = K.jointPreload_N(30, 8.04, 1220);

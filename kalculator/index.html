@@ -22,8 +22,8 @@
 // SI units inside; millimetres only at the print/STL boundary.
 
 // ---- S2 · air and wind — researches/01 §5.1 (the same formulas as KATAK, so the two calculators agree)
-// [NOT-TESTED] — hygiene green 2026-11-16: `node kalculator/test.mjs` 56/56 for the whole core so far (criteria 1–7 +
-// the Γ, shear, Weibull, NACA, section, Schmitz, BEM, power-curve and stud identities), `--control` 19/19 mutants red. The marker flips only on a functional run of the page (TESTING_FRAMEWORK.md).
+// [NOT-TESTED] — hygiene green 2026-11-16: `node kalculator/test.mjs` 60/60 for the whole core so far (criteria 1–7 +
+// the Γ, shear, Weibull, NACA, section, station, Schmitz, BEM, power-curve and stud identities), `--control` 20/20 red. The marker flips only on a functional run of the page (TESTING_FRAMEWORK.md).
 
 // International Standard Atmosphere: sea-level pressure, lapse rate, sea-level temperature, exponent g·M/(R·L);
 // specific gas constant of dry air. source: researches/01 §5.1 (KATAK researches/01 §3.1).
@@ -254,6 +254,21 @@ function powerCurve({ D_m, rho, CpE = PERF_DEFAULT.CpE, vCutIn = PERF_DEFAULT.vC
 /** Tip speed λ·V (m/s) and whether it passes the noise/erosion warning (researches/01 §6.4: 60–70 m/s). */
 function tipSpeed(lambda, v) { const vt = lambda * v; return { vTip: vt, warn: vt > PERF_DEFAULT.vTipWarn }; }
 
+// ---- S3 (span) · the blade's stations: chord and twist from the straight-line blade, the thickness ratio linear from the
+// root to the tip — 21 % → 12 % by default (researches/01 §2.2: «21 % у корня → 12 % у конца»). [NOT-TESTED] — hygiene.
+const TC_DEFAULT = { root: 0.21, tip: 0.12 };
+
+/** n + 1 stations from Rhub to R: { r, chord, twist, tc } (m, rad). */
+function bladeStations({ R, Rhub, B = 3, Cl, lambda, alphaD_rad, n = 20, tcRoot = TC_DEFAULT.root, tcTip = TC_DEFAULT.tip }) {
+  const blade = linearBlade({ R, B, Cl, lambda, alphaD_rad });
+  const out = [];
+  for (let i = 0; i <= n; i++) {
+    const f = i / n, r = Rhub + (R - Rhub) * f;
+    out.push({ r, chord: blade.chord(r), twist: blade.twist(r), tc: tcRoot + (tcTip - tcRoot) * f });
+  }
+  return out;
+}
+
 // ---- S8 · structure (first part) — the joint preload, the wrench torque, the smallest stud for the user's grade.
 // [NOT-TESTED] — hygiene: criteria 5 and 6 in test.mjs. Section properties (I, A, k of the shell) come next session.
 
@@ -297,7 +312,7 @@ const SITE_DEFAULT = { name: 'Brest region', altitude_m: 160, t_C: 7.4, vRef: 3.
 const KHAWTAK = { airDensity, shearLog, shearTwoLayer, shearPower, gamma, weibullScale, weibullPdf, yearlyEnergy_kWh, SITE_DEFAULT,
   nacaHalfThickness, nacaCamber, minChordForStud_mm, printableTrailingEdgeX, airfoilSection, polygonArea, pointInPolygon,
   schmitzPhi, schmitzChord, schmitzTwist, linearBlade, prandtlF, bemStation, bemRotor, PERF_DEFAULT, powerCurve, tipSpeed,
-  STUDS, studCapacity_kN, smallestStud, jointPreload_N, wrenchTorque_Nm };
+  STUDS, studCapacity_kN, smallestStud, jointPreload_N, wrenchTorque_Nm, TC_DEFAULT, bladeStations };
 // ===== CORE-END
 window.KHAWTAK = KHAWTAK;
 </script>
