@@ -22,8 +22,8 @@
 // SI units inside; millimetres only at the print/STL boundary.
 
 // ---- S2 · air and wind — researches/01 §5.1 (the same formulas as KATAK, so the two calculators agree)
-// [NOT-TESTED] — hygiene green 2026-11-16: `node kalculator/test.mjs` 60/60 for the whole core so far (criteria 1–7 +
-// the Γ, shear, Weibull, NACA, section, station, Schmitz, BEM, power-curve and stud identities), `--control` 20/20 red. The marker flips only on a functional run of the page (TESTING_FRAMEWORK.md).
+// [NOT-TESTED] — hygiene green 2026-11-16: `node kalculator/test.mjs` 62/62 for the whole core so far (criteria 1–7 + the Γ, shear,
+// Weibull, NACA, section, station, Schmitz, BEM, power-curve, stud and shell identities), `--control` 21/21 red. The marker flips only on a functional run of the page (TESTING_FRAMEWORK.md).
 
 // International Standard Atmosphere: sea-level pressure, lapse rate, sea-level temperature, exponent g·M/(R·L);
 // specific gas constant of dry air. source: researches/01 §5.1 (KATAK researches/01 §3.1).
@@ -304,6 +304,24 @@ function jointPreload_N(M_Nm, k_mm, Fc_N) { return M_Nm * 1000 / k_mm + Fc_N; }
 /** Wrench torque T = K·F·d (K ≈ 0.2 dry, its scatter ±25–30 %) → N·m. source: researches/02 §5.1 */
 function wrenchTorque_Nm(F_N, d_mm, K = 0.2) { return K * F_N * d_mm / 1000; }
 
+/** Thin-walled shell along a closed polygon (the wall's midline), wall w_mm: area A, centroid height yc, second moment I
+ *  about the centroidal axis parallel to x (the chord — the flapwise bending axis), the extreme fibre yMax and the kern
+ *  distance k = I / (A·yMax). Each straight segment contributes w·ds and w·∫(y − yc)² ds exactly (linear y along it).
+ *  source: researches/02 §0 (thin-walled sum), §2.3 (k). Flanges, the stud tube and the web are added next session. */
+function shellSection(poly, w_mm) {
+  let A = 0, Sy = 0;
+  const seg = poly.map((p, i) => { const q = poly[(i + 1) % poly.length]; return { y1: p[1], y2: q[1], ds: Math.hypot(q[0] - p[0], q[1] - p[1]) }; });
+  for (const s of seg) { A += w_mm * s.ds; Sy += w_mm * s.ds * (s.y1 + s.y2) / 2; }
+  const yc = Sy / A;
+  let I = 0, yMax = 0;
+  for (const s of seg) {
+    const a = s.y1 - yc, b = s.y2 - yc;
+    I += w_mm * s.ds * (a * a + a * b + b * b) / 3;
+    yMax = Math.max(yMax, Math.abs(a), Math.abs(b));
+  }
+  return { A, yc, I, yMax, k: I / (A * yMax) };
+}
+
 // The owner's site as the default: a village in Brest region (owner 2026-11-16 21:16), 160 m above sea level; the
 // reference wind 3.0 m/s at 10 m over open ground, Weibull k 1.8 (Baranovichi WMO 26941, 1991–2020), mean air 7.4 °C.
 // source: researches/03 §0, §2.4, Appendix A.
@@ -312,7 +330,7 @@ const SITE_DEFAULT = { name: 'Brest region', altitude_m: 160, t_C: 7.4, vRef: 3.
 const KHAWTAK = { airDensity, shearLog, shearTwoLayer, shearPower, gamma, weibullScale, weibullPdf, yearlyEnergy_kWh, SITE_DEFAULT,
   nacaHalfThickness, nacaCamber, minChordForStud_mm, printableTrailingEdgeX, airfoilSection, polygonArea, pointInPolygon,
   schmitzPhi, schmitzChord, schmitzTwist, linearBlade, prandtlF, bemStation, bemRotor, PERF_DEFAULT, powerCurve, tipSpeed,
-  STUDS, studCapacity_kN, smallestStud, jointPreload_N, wrenchTorque_Nm, TC_DEFAULT, bladeStations };
+  STUDS, studCapacity_kN, smallestStud, jointPreload_N, wrenchTorque_Nm, TC_DEFAULT, bladeStations, shellSection };
 // ===== CORE-END
 window.KHAWTAK = KHAWTAK;
 </script>

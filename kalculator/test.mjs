@@ -38,6 +38,7 @@ const MUTANTS = [
   ['M5: { d: 5, As: 14.2, p48: 4.40', 'M5: { d: 5, As: 14.2, p48: 3.40'], // breaks the stud table (criterion 6)
   ['return M_Nm * 1000 / k_mm + Fc_N', 'return M_Nm * 1000 / k_mm'],     // breaks the preload (criterion 5)
   ['tc: tcRoot + (tcTip - tcRoot) * f', 'tc: tcRoot + (tcTip - tcRoot) * f * f'], // breaks the linear t/c along the span
+  ['(a * a + a * b + b * b) / 3', '(a * a + b * b) / 2'], // breaks the exact segment integral of the shell's I
 ];
 
 function load(src) {
@@ -215,6 +216,13 @@ function run(K, log = true) {
   check('criterion 6: 2.6 kN at margin ≥ 1.5 → 4.8 M5 · 8.8 M4 · A2-70 M4', pick.join(' ') === 'M5 M4 M4', pick.join(' '));
   check('stud capacity: As·proof — M8 8.8 = 21.2 kN, A2-70 M4 = 3.95 kN', near(K.studCapacity_kN('M8', '8.8'), 21.2, 1e-9) && near(K.studCapacity_kN('M4', 'A2-70'), 3.951, 1e-3));
   check('no stud is enough above M14 capacity → null (the page must say so)', K.smallestStud(60, '4.8') === null);
+  // Thin-walled box 100 × 20 mm, wall 1 mm (by hand): A = 240 mm², I = 2·100·10² + 2·20³/12 = 21 333.3 mm⁴, k = I/(A·10) = 8.889 mm
+  const box = K.shellSection([[0, -10], [100, -10], [100, 10], [0, 10]], 1);
+  check('shell section, thin box 100 × 20, wall 1: A 240, I 21 333.3, centroid 0, k 8.889 (hand values)',
+    near(box.A, 240, 1e-9) && near(box.I, 21333.333, 1e-3) && near(box.yc, 0, 1e-12) && near(box.k, 8.8889, 1e-4),
+    `A ${box.A}, I ${box.I.toFixed(1)}, k ${box.k.toFixed(4)}`);
+  const shifted = K.shellSection([[0, 5], [100, 5], [100, 25], [0, 25]], 1);
+  check('shell section: moving the box does not change I and k (centroidal axis)', near(shifted.I, box.I, 1e-6) && near(shifted.k, box.k, 1e-9) && near(shifted.yc, 15, 1e-12));
 
   return { bad, total };
 }
