@@ -40,7 +40,7 @@ KHAWTAK/
 |------|-----------|-------------------------|
 | `GOAL.md` | the owner's words — never edited except a verbatim append of his later words | — |
 | `researches/NN_*/README.md` | the external truth the core is coded from | sources on the web; KATAK `researches/01,02,05,07` |
-| `kalculator/index.html` *(planned)* | the whole product, one file, no network | numbers sourced from `researches/` (`// source:` comments) |
+| `kalculator/index.html` | the whole product, one file, no network — today the core only (plan 02), the UI comes after KUIPS | numbers sourced from `researches/` (`// source:` comments); tested by `kalculator/test.mjs` |
 | `tools/hooks/` | project hooks wired in `.claude/settings.json` | `.claude/settings.json`, `tools/test-hooks.mjs` |
 | `node_modules/kuips` | KUIPS — the mock-up sheet tool (`npx kuips …`) | `package.json` |
 
