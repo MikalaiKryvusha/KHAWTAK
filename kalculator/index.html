@@ -22,8 +22,8 @@
 // SI units inside; millimetres only at the print/STL boundary.
 
 // ---- S2 · air and wind — researches/01 §5.1 (the same formulas as KATAK, so the two calculators agree)
-// [NOT-TESTED] — hygiene green 2026-11-16: `node kalculator/test.mjs` 31/31 for the whole core so far (criteria 1, 4, 7 +
-// the Γ, shear, Weibull and NACA identities), `--control` 8/8 mutants red. The marker flips only on a functional run of the page (TESTING_FRAMEWORK.md).
+// [NOT-TESTED] — hygiene green 2026-11-16: `node kalculator/test.mjs` 37/37 for the whole core so far (criteria 1, 4, 7 +
+// the Γ, shear, Weibull, NACA and section identities), `--control` 10/10 mutants red. The marker flips only on a functional run of the page (TESTING_FRAMEWORK.md).
 
 // International Standard Atmosphere: sea-level pressure, lapse rate, sea-level temperature, exponent g·M/(R·L);
 // specific gas constant of dry air. source: researches/01 §5.1 (KATAK researches/01 §3.1).
@@ -115,13 +115,55 @@ function printableTrailingEdgeX(t, chord_mm, minTE_mm) {
   return lo;
 }
 
+/** One blade section as a closed counter-clockwise polygon [[x, y], …] in mm. The origin is the stud axis — the point of the
+ *  mean line at xStud (0.40c, researches/02 §4.5) — and the section is turned by twist_rad about it (researches/04 §2.2:
+ *  the twist axis IS the stud axis). Cosine spacing over [0, xCut] (dense at the nose and the edge); thickness laid off
+ *  normal to the mean line; the trailing edge cut flat at xCut where it would be thinner than minTE_mm (researches/04 §2.1).
+ *  Order: upper surface edge → nose, then lower surface nose → edge (counter-clockwise for x toward the edge, y up). */
+function airfoilSection({ chord_mm, t, m = 0.04, p = 0.4, n = 60, twist_rad = 0, xStud = 0.40, minTE_mm = 0 }) {
+  const xCut = minTE_mm > 0 ? printableTrailingEdgeX(t, chord_mm, minTE_mm) : 1;
+  const ox = xStud, oy = nacaCamber(xStud, m, p).yc;            // the stud axis on the mean line
+  const cs = Math.cos(twist_rad), sn = Math.sin(twist_rad);
+  const place = (x, y) => {                                     // to mm, origin at the stud axis, then the twist
+    const X = (x - ox) * chord_mm, Y = (y - oy) * chord_mm;
+    return [X * cs - Y * sn, X * sn + Y * cs];
+  };
+  const upper = [], lower = [];
+  for (let i = 0; i <= n; i++) {
+    const x = (1 - Math.cos(Math.PI * i / n)) / 2 * xCut;      // 0 … xCut
+    const yt = nacaHalfThickness(x, t);
+    const { yc, dyc } = nacaCamber(x, m, p);
+    const th = Math.atan(dyc);
+    upper.push(place(x - yt * Math.sin(th), yc + yt * Math.cos(th)));
+    lower.push(place(x + yt * Math.sin(th), yc - yt * Math.cos(th)));
+  }
+  return upper.reverse().concat(lower.slice(1));                 // the nose point once
+}
+
+/** Signed area of a polygon (shoelace), mm²: positive = counter-clockwise. */
+function polygonArea(poly) {
+  let s = 0;
+  for (let i = 0; i < poly.length; i++) { const [x1, y1] = poly[i], [x2, y2] = poly[(i + 1) % poly.length]; s += x1 * y2 - x2 * y1; }
+  return s / 2;
+}
+
+/** Is point [x, y] inside the polygon (even-odd ray cast)? */
+function pointInPolygon([x, y], poly) {
+  let inside = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const [xi, yi] = poly[i], [xj, yj] = poly[j];
+    if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
+}
+
 // The owner's site as the default: a village in Brest region (owner 2026-11-16 21:16), 160 m above sea level; the
 // reference wind 3.0 m/s at 10 m over open ground, Weibull k 1.8 (Baranovichi WMO 26941, 1991–2020), mean air 7.4 °C.
 // source: researches/03 §0, §2.4, Appendix A.
 const SITE_DEFAULT = { name: 'Brest region', altitude_m: 160, t_C: 7.4, vRef: 3.0, zRef: 10, k: 1.8, z0: 0.25 };
 
 const KHAWTAK = { airDensity, shearLog, shearTwoLayer, shearPower, gamma, weibullScale, weibullPdf, yearlyEnergy_kWh, SITE_DEFAULT,
-  nacaHalfThickness, nacaCamber, minChordForStud_mm, printableTrailingEdgeX };
+  nacaHalfThickness, nacaCamber, minChordForStud_mm, printableTrailingEdgeX, airfoilSection, polygonArea, pointInPolygon };
 // ===== CORE-END
 window.KHAWTAK = KHAWTAK;
 </script>

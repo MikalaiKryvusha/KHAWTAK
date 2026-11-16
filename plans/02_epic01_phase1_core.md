@@ -2,7 +2,7 @@
 
 > **Создан:** 2026-11-16 (main agent, the autonomous stretch the owner ordered at 21:40) · **Родитель:**
 > `plans/01_EPIC_mvp_blade.md` → phase table, row «1 · ядро расчёта» · **Статус:** 🔧 S1–S2 done 2026-11-16 (criteria 1 and 7
-> green); S3 in progress (criterion 4 green); next — the section polygon of S3 · **Вовне:** one question to the
+> green); S3 nearly done (criterion 4 green, the section polygon in); next — S4 (Schmitz blade) · **Вовне:** one question to the
 > owner at step S7 (load factors: IEC or the hobby margin)
 
 ## Goal vector
@@ -40,9 +40,10 @@ Each step quotes its anchor in the epic: «ядро расчёта … мест�
   (`researches/01` §5.1). Criterion 1; criterion 7 when recon 03 lands.
 - [ ] 🔧 **S3 · airfoil.** Done 2026-11-16: NACA half-thickness and the 44xx mean line, the smallest chord for a stud
   (criterion 4 green: 100 mm at max thickness, 103.4 mm at 0.40c), the printable trailing-edge cut; 31 of 31, `--control`
-  8 of 8 (the mean-line mutant first SURVIVED — the forward branch had no interior case; one was added). Left: the
-  section polygon (cosine spacing, thickness normal to the mean line, the flat cut edge), t/c(r) along the span, the
-  rotation about the stud axis. The step as planned: NACA 4-digit camber + thickness by formula (`researches/04` §2.1), t/c(r) linear root → tip, cosine
+  8 of 8 (the mean-line mutant first SURVIVED — the forward branch had no interior case; one was added). Then the
+  section polygon `airfoilSection` (cosine spacing, thickness normal to the mean line, the flat cut edge, origin at the
+  stud axis, the twist about it): 37 of 37, `--control` 10 of 10. Left: t/c(r) and chord/twist along the span (they
+  come with S4). The step as planned: NACA 4-digit camber + thickness by formula (`researches/04` §2.1), t/c(r) linear root → tip, cosine
   spacing, printable trailing edge ≥ 2 lines, the stud axis at 0.40c. Criterion 4.
   `FORK: options <analytic polar: linear C_l(α) to stall + constant C_d from the design L/D | embedded polar tables per Re> ·
   price of error <Cp off by a few % at Re < 100 k> · consulted <researches/01 §1.6–1.7, §3.3 (linearised blades measured

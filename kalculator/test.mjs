@@ -26,6 +26,8 @@ const MUTANTS = [
   ['k: 1.8', 'k: 2.0'],                                 // breaks criterion 7 (the site's Weibull shape)
   ['0.2969, -0.1260', '0.2969, -0.1360'],               // breaks the NACA thickness and criterion 4
   ['m / (p * p) * (2 * p * x - x * x)', 'm / p * (2 * p * x - x * x)'], // breaks the NACA mean line
+  ['yc + yt * Math.cos(th)', 'yc - yt * Math.cos(th)'], // breaks the section: the upper surface laid off downward
+  ['const ox = xStud, oy', 'const ox = 0.9, oy'],      // breaks the section: the twist axis away from the stud
 ];
 
 function load(src) {
@@ -109,6 +111,23 @@ function run(K, log = true) {
   check('printable edge: t 12 %, c 100, two lines 0.857 mm → cut where the edge is 0.857 mm ± 0.001', near(teMm, 0.857, 1e-3) && xTE > 0.95 && xTE < 1,
     `x ${xTE.toFixed(4)}, ${teMm.toFixed(4)} mm`);
   check('printable edge: a thick enough edge is not cut (minTE 0.2 mm → x 1)', K.printableTrailingEdgeX(0.12, 100, 0.2) === 1);
+
+  // The section polygon. Exact area of a symmetric NACA: ∫2y_t dx = 10t·(0.2969·2/3 − 0.1260/2 − 0.3516/3 + 0.2843/4 − 0.1015/5)
+  // = 0.68508·t·c² (main agent's integration; researches/02 §7.2 quotes «≈ 0.68·t·c»).
+  const sym = K.airfoilSection({ chord_mm: 100, t: 0.12, m: 0, n: 80 });
+  const aSym = K.polygonArea(sym), aExact = 0.68508 * 0.12 * 100 * 100;
+  check('section: symmetric NACA 0012, c 100 — area 0.68508·t·c² = 822.1 mm² ± 0.5 %', Math.abs(aSym - aExact) <= 0.005 * aExact, aSym.toFixed(1));
+  const sec = K.airfoilSection({ chord_mm: 150, t: 0.18, n: 60 });
+  check('section: counter-clockwise (positive signed area)', K.polygonArea(sec) > 0, K.polygonArea(sec).toFixed(1));
+  check('section: 2n + 1 points, the nose once (n 60 → 121)', sec.length === 121, sec.length);
+  check('section: the stud axis (origin) lies inside the section', K.pointInPolygon([0, 0], sec));
+  const tw = K.airfoilSection({ chord_mm: 150, t: 0.18, n: 60, twist_rad: 0.5 });
+  check('section: the twist turns it about the stud axis — area kept, origin still inside',
+    near(K.polygonArea(tw), K.polygonArea(sec), 1e-6) && K.pointInPolygon([0, 0], tw));
+  const cut = K.airfoilSection({ chord_mm: 100, t: 0.12, m: 0, n: 80, minTE_mm: 0.857 });
+  const [ex, ey] = cut[0], [lx, ly] = cut[cut.length - 1];
+  check('section: the cut trailing edge is 0.857 mm thick (two extrusion lines)', near(Math.hypot(ex - lx, ey - ly), 0.857, 1e-3),
+    Math.hypot(ex - lx, ey - ly).toFixed(4));
 
   return { bad, total };
 }
