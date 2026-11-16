@@ -528,7 +528,7 @@ closure, STL bytes. Hooks of the project: `node tools/test-hooks.mjs` (exists). 
 ## Test harness (how the agent observes & drives the software)
 
 **PLANNED:** `node tools/ui-run.mjs` will drive `kalculator/index.html` in this machine's Chrome through Playwright (the
-owner allowed it without asking — `HOUSE_RULES.md` R3): switch the language, fill the inputs, read the results, download
+owner allowed it without asking — `HOUSE_RULES.md` R3, his words «тестируй прямо на этом ПК в дебаг хроме, РАЗРЕШАЮ»): switch the language, fill the inputs, read the results, download
 the STL of every blade section and save screenshots for the run report in `testcases/reports/`. A generated STL is also
 checked by PrusaSlicer from the CLI (`prusa-slicer-console.exe --info`, manifold) to prove it prints. Grow this tooling
 over time; each command, stand and device gets its row in the house-rules file — `HOUSE_RULES.md` →

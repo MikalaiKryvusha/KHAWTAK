@@ -2,7 +2,7 @@
 
 **Status:** ✅ DONE 2026-11-16 — the checkpoint corrected to 0.878 where it stood (see the closing section)
 **Severity:** S2 (a run lost: criterion 3 of plan 02 went red on Ct) · **Version/build:** kalculator core at plan 02 S5 ·
-**When/context:** 2026-11-16, the autonomous stretch the owner ordered at 21:40, implementing S5 (BEM)
+**When/context:** 2026-11-16, the autonomous stretch the owner ordered at 21:40 («работай автономно 30 минут»), implementing S5 (BEM)
 **Fixing:** next session, before S6 — or when an independent reference arrives
 
 ## Symptom
