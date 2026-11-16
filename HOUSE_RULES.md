@@ -131,6 +131,7 @@
 | Python-пакеты | numpy 2.5.4 · matplotlib 3.11.2 (нет scipy, trimesh, gmsh); в пользовательских пакетах (`%APPDATA%\Python\Python314`) — PyMuPDF (`fitz`) и pypdf: ими читаются PDF (текст и страницы в PNG; `pdftoppm` на машине нет) | `python -E -P -c "import fitz"` — ключ `-I` прячет пользовательские пакеты (2026-11-16) |
 | `TEMP` / `TMP` | `F:\Temp` | `echo $TEMP` |
 | Ловушки, оплаченные инцидентами | heredoc с обратным слэшем в Git Bash портит пути (опыт KUMM: EXP-0029, EXP-0120) — хук `no-backslash-heredoc` | — |
+| Голос KAIF | движок речи не настроен: `voice-soft.mjs` пишет фразу в `voice/`, но не произносит — `KAIF_VOICE_RENDER` и `KAIF_VOICE_BASE_TOOL` не заданы (снято 2026-11-16 22:08; у KAIF голос переехал в `F:\krinik_tts`) | `node .kaif/tools/contour/voice-soft.mjs --file <txt> --play` |
 
 ## 5. Маршруты, рецепты и соглашения
 
