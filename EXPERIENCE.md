@@ -82,6 +82,18 @@
 
 ## Entries
 
+### EXP-0003 · 2026-11-16 · ❌→✅ · #stamp #status #clock
+class: claim-before-evidence
+**Context:** STATUS was edited BEFORE the deploy commit and stamped the phase «✅ 21:22» and a refusal «21:20» ahead of the event.
+**Tried / did:** wrote the minute by feel; the clock probe at the commit said 21:19, the refusal had come before it.
+**Result:** ❌→✅ — both stamps replaced by measured ones; the `stamp-gate` hook did not fire: the stamp was a bare `HH:MM`
+inside a table cell, with no date next to it.
+**Lesson:** stamp an event AFTER it happened, from the probe of the same command (KATAK's EXP-0004 is the same class).   → link: STATUS.md
+**Repro:** `NOW="$(date '+%H:%M')"` in the command that performs the event, then write `$NOW` into the document.
+**Trigger:** writing «✅ HH:MM» or «done at HH:MM» → the event already happened and the probe printed that minute.
+**Not for:** planned times the owner named («until 23:00»).
+none-cheap: first strike in this project; teaching `stamp-gate` bare `HH:MM` stamps costs false hits on every time span.
+
 ### EXP-0002 · 2026-11-16 · ❌→✅ · #subagent #tmp #cleanup
 class: shared-temp-collision
 **Context:** two recon subagents ran at once with the same temp folder `.work/tmp` (the main agent's files lived there too).
