@@ -1,0 +1,64 @@
+{
+  "framework": "KAIF",
+  "version": "2.9",
+  "released": "2026-10-16",
+  "origin": "https://github.com/MikalaiKryvusha/KAIF",
+  "tracking": "origin",
+  "sphere": "programming",
+  "agents": [
+    "claude-code",
+    "codex",
+    "grok-build",
+    "cline",
+    "zoo-code"
+  ],
+  "language": "ru",
+  "canonArtifacts": [],
+  "build": "3aa4b346ba3b",
+  "prerelease": "2.10",
+  "projectName": "KHAWTAK",
+  "testHook": {
+    "kinds": {
+      "page": {
+        "files": [
+          "^kalculator/index\\.html$"
+        ],
+        "runs": [
+          "tools/ui-run\\.mjs"
+        ]
+      },
+      "core-test": {
+        "files": [
+          "^kalculator/test\\.mjs$"
+        ],
+        "runs": [
+          "kalculator/test\\.mjs"
+        ]
+      },
+      "tool": {
+        "files": [
+          "^tools/[^/]+\\.mjs$",
+          "^tools/hooks/[^/]+\\.mjs$"
+        ],
+        "runs": [
+          "tools/(?:hooks/)?[\\w.-]+\\.mjs"
+        ]
+      },
+      "design": {
+        "files": [
+          "^design/.+\\.(?:html|svg)$"
+        ],
+        "runs": [
+          "tools/shot\\.mjs",
+          "kuips (?:shoot|build|library)"
+        ]
+      }
+    },
+    "hygiene": [
+      "node --check",
+      "--selftest",
+      "--help",
+      "--version"
+    ]
+  }
+}

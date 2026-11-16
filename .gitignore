@@ -1,0 +1,37 @@
+node_modules/
+.DS_Store
+*.log
+.kaif/install/
+/KAIF.md
+/KAIF-LOADER.mjs
+/KAIF_ADAPTATION_TASK.md
+/KAIF_UPDATE_TASK.md
+/KAIF_UPDATE_TASK.superseded.md
+/KAIF_ADAPTATION_TASK.superseded.md
+.kaif/backup-*/
+.kaif/update-journal.json
+.kaif/heartbeat.log
+.kaif/guarded-loop.json
+.kaif/refresh-marker.json
+.kaif/voice-marker.json
+.kaif/subagent-preamble.jsonl
+/FAREWELL_MESSAGE_FROM_THE_PREVIOUS_CHAT.md
+.kaif/farewell-capture.json
+.kaif/knowledge-moment.json
+.kaif/owner-presence.json
+.kaif/context-window.json
+.kaif/test-debt.json
+.kaif/contour-window/
+.kaif/.contour-tmp/
+interviews/decisions/*.lock
+.kaif/update-rehearsal.json
+
+# agent temp files (owner 2026-11-16: temp lives in the project folder)
+/.work/
+
+# The owner's voice portrait - the PUBLIC snapshot (copy of D:/work/ai_sandbox/KAIF/AUTHOR_STYLOMETRY.md); the repo may become public
+# and a portrait may quote the owner's private writing, so it lives on disk and never ships (owner 2026-11-16, as in KATAK).
+AUTHOR_STYLOMETRY.md
+
+# third-party documents the owner downloads for reference (copyrighted) — read, never committed
+/*.pdf

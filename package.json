@@ -1,0 +1,20 @@
+{
+  "name": "khawtak",
+  "version": "0.0.1",
+  "description": "KHAWTAK — KRINIK Horizontal-Axis (three-blade) Wind Turbine Automated Kalculator: a browser tool that sizes a small three-blade wind turbine for your site and generator and generates its blades as 3D-printable sections clamped on steel studs",
+  "type": "module",
+  "private": true,
+  "author": "Mikalai Kryvusha (KOT KRINIK)",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test:hooks": "node tools/test-hooks.mjs",
+    "kaif:version": "node .kaif/kaif-core.mjs version",
+    "kaif:check": "node .kaif/kaif-core.mjs check",
+    "kaif:update": "node .kaif/kaif-core.mjs update"
+  },
+  "devDependencies": {
+    "kuips": "github:MikalaiKryvusha/KUIPS#v1.3.1"
+  }
+}
