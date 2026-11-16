@@ -28,6 +28,9 @@ const MUTANTS = [
   ['m / (p * p) * (2 * p * x - x * x)', 'm / p * (2 * p * x - x * x)'], // breaks the NACA mean line
   ['yc + yt * Math.cos(th)', 'yc - yt * Math.cos(th)'], // breaks the section: the upper surface laid off downward
   ['const ox = xStud, oy', 'const ox = 0.9, oy'],      // breaks the section: the twist axis away from the stud
+  ['Math.atan(R / (r * lambda)) / 3', 'Math.atan(R / (r * lambda)) / 2'], // breaks the Schmitz chord (criterion 2)
+  ['(2 / 3) * Math.atan', '(3 / 4) * Math.atan'],       // breaks the Schmitz inflow angle and twist (criterion 2)
+  ['const r1 = 0.7 * R, r2 = 0.9 * R', 'const r1 = 0.6 * R, r2 = 0.9 * R'], // breaks Burton's anchor points
 ];
 
 function load(src) {
@@ -128,6 +131,23 @@ function run(K, log = true) {
   const [ex, ey] = cut[0], [lx, ly] = cut[cut.length - 1];
   check('section: the cut trailing edge is 0.857 mm thick (two extrusion lines)', near(Math.hypot(ex - lx, ey - ly), 0.857, 1e-3),
     Math.hypot(ex - lx, ey - ly).toFixed(4));
+
+  if (log) console.log('S4. blade design (researches/01 §1.3)');
+  const deg = Math.PI / 180;
+  const cS = K.schmitzChord(0.045, 0.45, 3, 1.26, 4) * 1000, thS = K.schmitzTwist(0.045, 0.45, 4, 6 * deg) / deg;
+  check('criterion 2: Schmitz chord at R 0.45, λ 4, B 3, C_l 1.26, r 0.045 → 89.4 mm ± 0.2 (researches/01 Appendix A)', near(cS, 89.4, 0.2), cS.toFixed(2));
+  check('criterion 2: twist there at α_D 6° → 39.47° ± 0.05 (source table 39.466°)', near(thS, 39.47, 0.05), thS.toFixed(3));
+  // The Betz limit holds only for λμ ≫ 1: at λμ 4 the two differ by 4.2 % (the first draft of this case used λ 4 and went
+  // red — a wrong premise of the case, not of the code); at λμ 10 they differ by 0.7 % (main agent's hand check).
+  const betz10 = 16 * Math.PI * 0.45 / (9 * 3 * 1.26 * 100 * 1);
+  check('Schmitz far from the root tends to Betz 16πR/(9 B C_l λ² μ) — at r = R, λ 10 within 1 %',
+    Math.abs(K.schmitzChord(0.45, 0.45, 3, 1.26, 10) / betz10 - 1) < 0.01,
+    (K.schmitzChord(0.45, 0.45, 3, 1.26, 10) / betz10).toFixed(4));
+  const lb = K.linearBlade({ R: 0.7, Cl: 1.2, lambda: 6, alphaD_rad: 6 * deg });
+  check('linear blade passes the Schmitz optimum at 0.7R and 0.9R (Burton)',
+    near(lb.chord(0.49), K.schmitzChord(0.49, 0.7, 3, 1.2, 6), 1e-12) && near(lb.twist(0.63), K.schmitzTwist(0.63, 0.7, 6, 6 * deg), 1e-12));
+  check('linear blade is a straight line (midpoint = mean of the ends)',
+    near(lb.chord(0.56), (lb.chord(0.49) + lb.chord(0.63)) / 2, 1e-12) && near(lb.twist(0.56), (lb.twist(0.49) + lb.twist(0.63)) / 2, 1e-12));
 
   return { bad, total };
 }

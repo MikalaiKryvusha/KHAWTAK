@@ -22,8 +22,8 @@
 // SI units inside; millimetres only at the print/STL boundary.
 
 // ---- S2 · air and wind — researches/01 §5.1 (the same formulas as KATAK, so the two calculators agree)
-// [NOT-TESTED] — hygiene green 2026-11-16: `node kalculator/test.mjs` 37/37 for the whole core so far (criteria 1, 4, 7 +
-// the Γ, shear, Weibull, NACA and section identities), `--control` 10/10 mutants red. The marker flips only on a functional run of the page (TESTING_FRAMEWORK.md).
+// [NOT-TESTED] — hygiene green 2026-11-16: `node kalculator/test.mjs` 42/42 for the whole core so far (criteria 1, 2, 4, 7 +
+// the Γ, shear, Weibull, NACA, section and Schmitz identities), `--control` 13/13 mutants red. The marker flips only on a functional run of the page (TESTING_FRAMEWORK.md).
 
 // International Standard Atmosphere: sea-level pressure, lapse rate, sea-level temperature, exponent g·M/(R·L);
 // specific gas constant of dry air. source: researches/01 §5.1 (KATAK researches/01 §3.1).
@@ -157,13 +157,39 @@ function pointInPolygon([x, y], poly) {
   return inside;
 }
 
+// ---- S4 · blade design — Schmitz optimum (wake rotation, no tip loss) and its straight-line simplification.
+// source: researches/01 §1.3 (Schmitz [6] (1)–(2); Burton's trapezium through the optimum at 70 % and 90 % span, §3.3)
+// [NOT-TESTED] — hygiene: criterion 2 in kalculator/test.mjs.
+
+/** Schmitz inflow angle φ(r) = (2/3)·arctan(R / (r·λ)), rad. */
+function schmitzPhi(r, R, lambda) { return (2 / 3) * Math.atan(R / (r * lambda)); }
+
+/** Schmitz chord c(r) = 16πr / (B·C_l) · sin²((1/3)·arctan(R / (r·λ))), in the units of r. */
+function schmitzChord(r, R, B, Cl, lambda) {
+  const s = Math.sin(Math.atan(R / (r * lambda)) / 3);
+  return 16 * Math.PI * r / (B * Cl) * s * s;
+}
+
+/** Twist (setting angle) θ(r) = φ(r) − α_design, rad. */
+function schmitzTwist(r, R, lambda, alphaD_rad) { return schmitzPhi(r, R, lambda) - alphaD_rad; }
+
+/** The printable blade: chord and twist as straight lines through the Schmitz optimum at 0.7R and 0.9R (Burton). */
+function linearBlade({ R, B = 3, Cl, lambda, alphaD_rad }) {
+  const r1 = 0.7 * R, r2 = 0.9 * R;
+  const c1 = schmitzChord(r1, R, B, Cl, lambda), c2 = schmitzChord(r2, R, B, Cl, lambda);
+  const t1 = schmitzTwist(r1, R, lambda, alphaD_rad), t2 = schmitzTwist(r2, R, lambda, alphaD_rad);
+  const lerp = (a, b) => (r) => a + (b - a) * (r - r1) / (r2 - r1);
+  return { chord: lerp(c1, c2), twist: lerp(t1, t2) };
+}
+
 // The owner's site as the default: a village in Brest region (owner 2026-11-16 21:16), 160 m above sea level; the
 // reference wind 3.0 m/s at 10 m over open ground, Weibull k 1.8 (Baranovichi WMO 26941, 1991–2020), mean air 7.4 °C.
 // source: researches/03 §0, §2.4, Appendix A.
 const SITE_DEFAULT = { name: 'Brest region', altitude_m: 160, t_C: 7.4, vRef: 3.0, zRef: 10, k: 1.8, z0: 0.25 };
 
 const KHAWTAK = { airDensity, shearLog, shearTwoLayer, shearPower, gamma, weibullScale, weibullPdf, yearlyEnergy_kWh, SITE_DEFAULT,
-  nacaHalfThickness, nacaCamber, minChordForStud_mm, printableTrailingEdgeX, airfoilSection, polygonArea, pointInPolygon };
+  nacaHalfThickness, nacaCamber, minChordForStud_mm, printableTrailingEdgeX, airfoilSection, polygonArea, pointInPolygon,
+  schmitzPhi, schmitzChord, schmitzTwist, linearBlade };
 // ===== CORE-END
 window.KHAWTAK = KHAWTAK;
 </script>

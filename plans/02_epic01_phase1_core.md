@@ -2,7 +2,7 @@
 
 > **Создан:** 2026-11-16 (main agent, the autonomous stretch the owner ordered at 21:40) · **Родитель:**
 > `plans/01_EPIC_mvp_blade.md` → phase table, row «1 · ядро расчёта» · **Статус:** 🔧 S1–S2 done 2026-11-16 (criteria 1 and 7
-> green); S3 nearly done (criterion 4 green, the section polygon in); next — S4 (Schmitz blade) · **Вовне:** one question to the
+> green); S3 nearly done, S4 done (criteria 2 and 4 green); next — S5 (BEM) · **Вовне:** one question to the
 > owner at step S7 (load factors: IEC or the hobby margin)
 
 ## Goal vector
@@ -49,7 +49,9 @@ Each step quotes its anchor in the epic: «ядро расчёта … мест�
   price of error <Cp off by a few % at Re < 100 k> · consulted <researches/01 §1.6–1.7, §3.3 (linearised blades measured
   better than "exact" ones)>` — start with the analytic polar; tables only if the owner asks for SG604x (licence open,
   `researches/01` §2.2).
-- [ ] **S4 · blade design.** Schmitz chord and twist (`researches/01` §1.3) and their linearisation (§3.3). Criterion 2.
+- [x] **S4 · blade design.** ✅ 2026-11-16: `schmitzChord` / `schmitzPhi` / `schmitzTwist`, `linearBlade` (Burton, 0.7R and
+  0.9R); criterion 2 green (89.36 mm, 39.466°); the Betz-limit case first used λμ 4 and went red — a wrong premise (Betz
+  needs λμ ≫ 1: 4.2 % apart at 4, 0.7 % at 10), rewritten at λ 10; 42 of 42, `--control` 13 of 13. Schmitz chord and twist (`researches/01` §1.3) and their linearisation (§3.3). Criterion 2.
 - [ ] **S5 · BEM.** Ning's single-unknown φ iteration with Prandtl tip/hub loss and Buhl's high-induction correction,
   verbatim from `researches/01` §1.4–1.5. Criterion 3.
 - [ ] **S6 · performance.** P(V) assuming the owner's smart controller holds λ near optimum up to rated (interview 001 Q5;
