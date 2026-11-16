@@ -24,6 +24,8 @@ const MUTANTS = [
   ['Math.log(z / z0) / Math.log(zRef / z0)', 'Math.log(z / z0) / Math.log(zRef)'], // breaks the log law
   ['hBlend = 60', 'hBlend = 20'],                       // breaks criterion 7 (the blending height)
   ['k: 1.8', 'k: 2.0'],                                 // breaks criterion 7 (the site's Weibull shape)
+  ['0.2969, -0.1260', '0.2969, -0.1360'],               // breaks the NACA thickness and criterion 4
+  ['m / (p * p) * (2 * p * x - x * x)', 'm / p * (2 * p * x - x * x)'], // breaks the NACA mean line
 ];
 
 function load(src) {
@@ -82,6 +84,31 @@ function run(K, log = true) {
   check('two profiles: above 10 m a rough site is NOT windier than a smooth one (z0 1.0 < z0 0.1 at 15 m)',
     K.shearTwoLayer(3, 10, 15, 1.0) < K.shearTwoLayer(3, 10, 15, 0.1),
     `${K.shearTwoLayer(3, 10, 15, 1.0).toFixed(2)} < ${K.shearTwoLayer(3, 10, 15, 0.1).toFixed(2)}`);
+
+  if (log) console.log('S3. airfoil (researches/04 §2.1, researches/01 §2.3)');
+  // Landmarks of the NACA 4-digit formula: thickness t at x 0.30 (the maximum), 96.7 % of it at 0.40 (researches/02 §4.5 «97 %»),
+  // a 0.25 mm open edge at t 12 %, c 100 mm (researches/04 §2.1); the 44xx mean line peaks at m = 0.04 at p = 0.4.
+  const th = (x) => 2 * K.nacaHalfThickness(x, 0.12) / 0.12;
+  check('NACA thickness at x 0.30 = t (the maximum) ± 0.1 %', near(th(0.3), 1, 1e-3), th(0.3).toFixed(4));
+  check('NACA thickness at x 0.40 = 0.967 t (researches/02 §4.5: «97 %»)', near(th(0.4), 0.967, 1e-3), th(0.4).toFixed(4));
+  check('NACA open edge: t 12 %, c 100 mm → 0.25 mm (researches/04 §2.1)', near(2 * K.nacaHalfThickness(1, 0.12) * 100, 0.252, 1e-3),
+    (2 * K.nacaHalfThickness(1, 0.12) * 100).toFixed(3));
+  const cmb = K.nacaCamber(0.4, 0.04, 0.4);
+  check('NACA 44xx mean line: y_c(0.4) = 0.04 with zero slope', near(cmb.yc, 0.04, 1e-12) && near(cmb.dyc, 0, 1e-12), `${cmb.yc}, ${cmb.dyc}`);
+  check('NACA mean line ends at zero (x 0 and x 1)', near(K.nacaCamber(0, 0.04, 0.4).yc, 0, 1e-12) && near(K.nacaCamber(1, 0.04, 0.4).yc, 0, 1e-12));
+  // the forward branch (x < p) inside the chord — added after `--control` showed a mean-line mutant surviving (gate 5)
+  check('NACA 44xx mean line, forward branch: y_c(0.2) = 0.04/0.16 · (0.16 − 0.04) = 0.03', near(K.nacaCamber(0.2, 0.04, 0.4).yc, 0.03, 1e-12),
+    K.nacaCamber(0.2, 0.04, 0.4).yc);
+  check('NACA mean line continuous at x = p (both branches meet)', near(K.nacaCamber(0.4 - 1e-9, 0.04, 0.4).yc, K.nacaCamber(0.4, 0.04, 0.4).yc, 1e-8));
+  const c4 = K.minChordForStud_mm(8, 2, 0.12, 0.3);
+  check('criterion 4: M8 + 2 × 2 mm walls at t/c 12 %, at max thickness → 100 mm ± 1 (researches/01 §2.3)', near(c4, 100, 1), c4.toFixed(2));
+  const c4b = K.minChordForStud_mm(8, 2, 0.12, 0.4);
+  check('the same at the stud axis 0.40c → 103.4 mm (100 / 0.967)', near(c4b, 103.4, 0.2), c4b.toFixed(2));
+  const xTE = K.printableTrailingEdgeX(0.12, 100, 0.857);
+  const teMm = 2 * K.nacaHalfThickness(xTE, 0.12) * 100;
+  check('printable edge: t 12 %, c 100, two lines 0.857 mm → cut where the edge is 0.857 mm ± 0.001', near(teMm, 0.857, 1e-3) && xTE > 0.95 && xTE < 1,
+    `x ${xTE.toFixed(4)}, ${teMm.toFixed(4)} mm`);
+  check('printable edge: a thick enough edge is not cut (minTE 0.2 mm → x 1)', K.printableTrailingEdgeX(0.12, 100, 0.2) === 1);
 
   return { bad, total };
 }

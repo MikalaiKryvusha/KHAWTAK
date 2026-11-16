@@ -22,8 +22,8 @@
 // SI units inside; millimetres only at the print/STL boundary.
 
 // ---- S2 · air and wind — researches/01 §5.1 (the same formulas as KATAK, so the two calculators agree)
-// [NOT-TESTED] — hygiene green 2026-11-16: `node kalculator/test.mjs` 20/20 (criteria 1 and 7 + the Γ, shear and Weibull
-// identities), `--control` 6/6 mutants red. The marker flips only on a functional run of the page (TESTING_FRAMEWORK.md).
+// [NOT-TESTED] — hygiene green 2026-11-16: `node kalculator/test.mjs` 31/31 for the whole core so far (criteria 1, 4, 7 +
+// the Γ, shear, Weibull and NACA identities), `--control` 8/8 mutants red. The marker flips only on a functional run of the page (TESTING_FRAMEWORK.md).
 
 // International Standard Atmosphere: sea-level pressure, lapse rate, sea-level temperature, exponent g·M/(R·L);
 // specific gas constant of dry air. source: researches/01 §5.1 (KATAK researches/01 §3.1).
@@ -79,12 +79,49 @@ function yearlyEnergy_kWh(power_W, vMean, k, { vMax = 30, dv = 0.05 } = {}) {
   return 8760 * s / 1000;
 }
 
+// ---- S3 · airfoil — NACA 4-digit by formula (no coordinate file, no licence), researches/04 §2.1, researches/01 §2.2
+// [NOT-TESTED] — hygiene: criterion 4 and the formula's own landmarks in kalculator/test.mjs.
+
+// NACA 4-digit half-thickness coefficients, open trailing edge (−0.1015; −0.1036 closes it).
+// source: researches/04 §2.1 (Wikipedia «NACA airfoil», checked 2026-11-16)
+const NACA_T = [0.2969, -0.1260, -0.3516, 0.2843, -0.1015];
+
+/** Half-thickness y_t at chord fraction x (0…1) for thickness ratio t, as a fraction of chord. */
+function nacaHalfThickness(x, t) {
+  const [a0, a1, a2, a3, a4] = NACA_T;
+  return 5 * t * (a0 * Math.sqrt(x) + a1 * x + a2 * x * x + a3 * x ** 3 + a4 * x ** 4);
+}
+
+/** NACA 4-digit mean line y_c and its slope at x, max camber m at position p (NACA 44xx: m 0.04, p 0.4).
+ *  source: the same NACA 4-digit definition (Wikipedia «NACA airfoil», researches/04 §2.1) */
+function nacaCamber(x, m, p) {
+  if (m === 0) return { yc: 0, dyc: 0 };
+  if (x < p) return { yc: m / (p * p) * (2 * p * x - x * x), dyc: 2 * m / (p * p) * (p - x) };
+  return { yc: m / ((1 - p) ** 2) * ((1 - 2 * p) + 2 * p * x - x * x), dyc: 2 * m / ((1 - p) ** 2) * (p - x) };
+}
+
+/** Smallest chord (mm) whose airfoil is thick enough at chord fraction xStud to house a rod of diameter d_mm with a wall
+ *  of wall_mm on each side: (d + 2·wall) / (2·y_t(xStud)). source: researches/01 §2.3 (at max thickness), researches/02 §4.5 */
+function minChordForStud_mm(d_mm, wall_mm, t, xStud) { return (d_mm + 2 * wall_mm) / (2 * nacaHalfThickness(xStud, t)); }
+
+/** Chord fraction where the trailing edge must be cut flat so it is never thinner than minTE_mm (a printable edge: at
+ *  least two extrusion lines). Bisection on x in [0.5, 1]; returns 1 when the edge is thick enough already.
+ *  source: researches/04 §2.1 (the NACA edge is 0.25 mm at t 12 %, c 100 mm) */
+function printableTrailingEdgeX(t, chord_mm, minTE_mm) {
+  const thick = (x) => 2 * nacaHalfThickness(x, t) * chord_mm;
+  if (thick(1) >= minTE_mm) return 1;
+  let lo = 0.5, hi = 1;
+  for (let i = 0; i < 60; i++) { const mid = (lo + hi) / 2; if (thick(mid) >= minTE_mm) lo = mid; else hi = mid; }
+  return lo;
+}
+
 // The owner's site as the default: a village in Brest region (owner 2026-11-16 21:16), 160 m above sea level; the
 // reference wind 3.0 m/s at 10 m over open ground, Weibull k 1.8 (Baranovichi WMO 26941, 1991–2020), mean air 7.4 °C.
 // source: researches/03 §0, §2.4, Appendix A.
 const SITE_DEFAULT = { name: 'Brest region', altitude_m: 160, t_C: 7.4, vRef: 3.0, zRef: 10, k: 1.8, z0: 0.25 };
 
-const KHAWTAK = { airDensity, shearLog, shearTwoLayer, shearPower, gamma, weibullScale, weibullPdf, yearlyEnergy_kWh, SITE_DEFAULT };
+const KHAWTAK = { airDensity, shearLog, shearTwoLayer, shearPower, gamma, weibullScale, weibullPdf, yearlyEnergy_kWh, SITE_DEFAULT,
+  nacaHalfThickness, nacaCamber, minChordForStud_mm, printableTrailingEdgeX };
 // ===== CORE-END
 window.KHAWTAK = KHAWTAK;
 </script>
