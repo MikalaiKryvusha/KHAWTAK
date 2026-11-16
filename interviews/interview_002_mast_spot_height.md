@@ -3,7 +3,8 @@
 > Topic: место и высота мачты — от них выработка зависит сильнее, чем от размера ротора.
 > Source of the idea: слово владельца 21:16 «могу поставить на мачту, но не знаю, как высоко»; `researches/03_site_wind`
 > Created: 2026-11-16 21:49 +03:00
-> Status: **🟡 awaiting the owner's answers**
+> Status: **✅ answered by the owner 2026-11-16 22:11 +03:00** (commit 543b443): Q1 B, Q2 B, each with «не понимаю, зачем
+> тебе эта информация» — applied as the calculator's default EXAMPLE (`HOUSE_RULES.md` §7); the lesson — `EXPERIENCE.md` EXP-0005
 
 ## Что выяснила разведка 03
 

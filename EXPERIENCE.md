@@ -56,7 +56,7 @@
 > <!-- classes: question-already-answered, guard-not-proven-against-threat, shown-as-link,
 >      claim-before-evidence, owner-decision-not-applied, text-in-agents-world,
 >      etalon-from-dirty-tree, shell-lied, escaping-layer, twins-missed,
->      field-dropped-in-rebuild, subagent-wrong-root, shared-temp-collision, unverified-reference -->
+>      field-dropped-in-rebuild, subagent-wrong-root, shared-temp-collision, unverified-reference, question-without-stake -->
 >
 > | Class slug | The failure it names |
 > |---|---|
@@ -74,6 +74,7 @@
 > | `subagent-wrong-root` | a subagent is pointed at the canon of the chat's project instead of the project its task lives in |
 > | `shared-temp-collision` | two agents share one temp folder and a cleanup of one would delete the other's files |
 > | `unverified-reference` | a number from a recon or a subagent becomes a test target without being re-derived by a second route |
+> | `question-without-stake` | the owner is asked something whose answer changes no work in progress — a user input, not a fork |
 >
 > The `#tags` are **trigger-tags**: before a task, grep by the task's tags and QUOTE the relevant
 > lessons in your report (id + one line) — or state "no relevant lessons". An unquoted recall is
@@ -82,6 +83,19 @@
 > Skill: `/experience` (capture a lesson · recall relevant lessons).
 
 ## Entries
+
+### EXP-0005 · 2026-11-16 · ❌ · #interview #owner #questions
+class: question-without-stake
+**Context:** interview 002 asked the owner where his own mast stands and how tall it is.
+**Tried / did:** two scenario questions with yields per mast spot and height (recon 03 numbers, computed by the core).
+**Result:** ❌ — he answered both (B, B) and wrote on each «не понимаю, зачем тебе эта информация»: the MVP is the BLADE; his
+mast is one user's input on the page, not a fork that blocks work.
+**Lesson:** before filing a question, name the work it unblocks; if every user of the tool would type the answer into a field,
+it is an input with a default, not a question to the owner.   → link: interviews/interview_002_mast_spot_height.md
+**Repro:** the interview's «Answer target» must name a plan step that waits on it — `grep -n "Answer target" interviews/<doc>`.
+**Trigger:** drafting a question → can the plan step proceed with a sensible default and a field on the page? Then do not ask.
+**Not for:** decisions that shape the product for every user (scope, safety, publication).
+none-cheap: first strike; the interview skill already demands an answer target — this one named a default, not a blocked step.
 
 ### EXP-0004 · 2026-11-16 · ❌→✅ · #recon #checkpoint #bem #tests
 class: unverified-reference
