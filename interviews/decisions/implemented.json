@@ -4,5 +4,11 @@
       "at": "2026-11-17T10:48:56+03:00",
       "where": "884be1f kalculator/index.html MARGIN_POLICY seamCheck"
     }
+  },
+  "interviews/interview_004_place_in_public_files.md": {
+    "Q1": {
+      "at": "2026-11-17T11:10:42+03:00",
+      "where": "1e842fe HOUSE_RULES.md R9 + the rewritten history"
+    }
   }
 }
