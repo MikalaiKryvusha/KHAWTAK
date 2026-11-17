@@ -30,8 +30,10 @@ that cannot fail.
 9. The root seam of the R 1.0 m blade — chord 180 mm, t/c 18 %, NACA 44xx, M8 at 0.40c: section A1 (shell T(3) + tube +
    web) A 518 mm² ± 2 %, Ix 63 560 mm⁴ ± 2 %, k 6.75 mm ± 3 %; A2 (+ flanges 3 mm over 0.15–0.50c) A 894 ± 2 %, Ix 126 000
    ± 2 %, k 8.04 ± 3 % — `researches/02` §2.4. Re-derived 2026-11-17 by a second route (EXPERIENCE.md EXP-0004): a raster of
-   the material region at 0.05 mm gives A 511 / 890.5, Ix 63 594 / 127 109, k 6.92 / 8.21; the tolerances are the spread of
-   the three routes (recon script, thin-walled sum, raster), not a fit to the code.
+   the material region at 0.05 mm gives A 511 / 890.5, Ix 63 594 / 127 109, k 6.92 / 8.21. Two methods over one geometry
+   (the thin-walled sum — the recon's script and the core; the raster reuses the core's airfoil): the tolerances are their
+   largest pairwise spread — A 1.55 %, Ix 1.02 %, k 2.4 % — not a fit to the code; terms below ~1 % of Ix are guarded part
+   by part (the judge's findings 1–3, 2026-11-17).
 
 ## Steps
 
@@ -75,9 +77,12 @@ Each step quotes its anchor in the epic: «ядро расчёта … мест�
   0.60c between the inner faces; A, centroid, Ix, Iy, both kern distances, the parts), `jointStress_MPa` (σ_b, σ_p, σ_max,
   σ_min, the open seam, the long-term verdict — one limit `PETG_LONG_TERM_MPA` now serves the seam and the anchor);
   criterion 9 green, the stud-in-the-kern table at 0.40c / 0.30c, F₀ through the core's own k(A2) = 4.91 kN, the recon's
-  stress table; 81 of 81, `--control` 35 of 35. Known gap: the thin-walled sum counts the trailing-edge zone twice where the
-  two shell strips overlap (the raster: A −1 %, Iy −4 %, the offset 3.0 mm, not 3.4) — k comes out 1 % smaller, the
-  conservative side. Not here yet: the flange thickness along the span (recon 02 §0: 3 mm·R/1 m at the root, none by 0.4R),
+  stress table; 81 of 81, `--control` 35 of 35. Judge pass (clean instance) 2026-11-17: VERIFIED WITH CAVEATS — the spread
+  text corrected, `segSq` made one definition for both thin-walled sums, the tube's and the web's Ix guarded by hand, the
+  lower long-term limit given its mutant; 82 of 82, `--control` 38 of 38. Known gap: the thin-walled sum overstates A by
+  1.5 % against the raster — ≈ 5 mm² from the trailing-edge zone counted twice where the two shell strips overlap, ≈ 2.6 mm²
+  from strip lengths taken on the outer line instead of the midline (the judge's measurement); Iy −4 %, the offset 3.0 mm,
+  not 3.4 — k comes out 1 % smaller, the conservative side. Not here yet: the flange thickness along the span (recon 02 §0: 3 mm·R/1 m at the root, none by 0.4R),
   the twisted section (properties are in the chord frame, as in the recon). First part done 2026-11-16: the stud table M3–M14 (researches/02 §4.2), `studCapacity_kN`,
   `smallestStud`, `jointPreload_N`, `wrenchTorque_Nm`; criteria 5 and 6 green; then `shellSection` — the thin-walled shell
   along the section polygon (A, centroid, flapwise I, k), exact per segment, checked on a hand-computed box; 62 of 62,

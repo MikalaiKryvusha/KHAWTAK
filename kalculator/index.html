@@ -22,9 +22,9 @@
 // SI units inside; millimetres only at the print/STL boundary.
 
 // ---- S2 · air and wind — researches/01 §5.1 (the same formulas as KATAK, so the two calculators agree)
-// [NOT-TESTED] — hygiene green 2026-11-17: `node kalculator/test.mjs` 81/81 for the whole core so far (criteria 1–7 and 9 + the Γ,
+// [NOT-TESTED] — hygiene green 2026-11-17: `node kalculator/test.mjs` 82/82 for the whole core so far (criteria 1–7 and 9 + the Γ,
 // shear, Weibull, NACA, section, station, Schmitz, BEM, power-curve, stud, shell, section-A, seam-stress, anchor and cut
-// identities), `--control` 35/35. The marker flips only on a functional run of the page (TESTING_FRAMEWORK.md).
+// identities), `--control` 38/38. The marker flips only on a functional run of the page (TESTING_FRAMEWORK.md).
 
 // International Standard Atmosphere: sea-level pressure, lapse rate, sea-level temperature, exponent g·M/(R·L);
 // specific gas constant of dry air. source: researches/01 §5.1 (KATAK researches/01 §3.1).
@@ -306,6 +306,10 @@ function jointPreload_N(M_Nm, k_mm, Fc_N) { return M_Nm * 1000 / k_mm + Fc_N; }
 /** Wrench torque T = K·F·d (K ≈ 0.2 dry, its scatter ±25–30 %) → N·m. source: researches/02 §5.1 */
 function wrenchTorque_Nm(F_N, d_mm, K = 0.2) { return K * F_N * d_mm / 1000; }
 
+/** Along a straight strip whose offset from the axis runs linearly from a to b, the mean of the squared offset is exactly
+ *  (a² + ab + b²)/3 — so ∫(y − yc)² ds = ds·(a² + ab + b²)/3. One definition for every thin-walled sum in the core. */
+function segSq(a, b) { return (a * a + a * b + b * b) / 3; }
+
 /** Thin-walled shell along a closed polygon (the wall's midline), wall w_mm: area A, centroid height yc, second moment I
  *  about the centroidal axis parallel to x (the chord — the flapwise bending axis), the extreme fibre yMax and the kern
  *  distance k = I / (A·yMax). Each straight segment contributes w·ds and w·∫(y − yc)² ds exactly (linear y along it).
@@ -318,7 +322,7 @@ function shellSection(poly, w_mm) {
   let I = 0, yMax = 0;
   for (const s of seg) {
     const a = s.y1 - yc, b = s.y2 - yc;
-    I += w_mm * s.ds * (a * a + a * b + b * b) / 3;
+    I += w_mm * s.ds * segSq(a, b);
     yMax = Math.max(yMax, Math.abs(a), Math.abs(b));
   }
   return { A, yc, I, yMax, k: I / (A * yMax) };
@@ -386,18 +390,19 @@ function bladeSection({ chord_mm, t, m = 0.04, p = 0.4, xStud = 0.40, n = 60, st
     if (s.kind === 'shell') shellA += a; else flangeA += a;
   }
   const xc = Sx / A, yc = Sy / A;
-  // second moments about the centroid; along a straight strip ∫(y − yc)² ds = ds·(a² + ab + b²)/3 exactly
-  const sq = (a, b) => (a * a + a * b + b * b) / 3;
-  let Ix = tubeI + tubeA * yc * yc + web * webH ** 3 / 12 + webA * (webY - yc) ** 2;
-  let Iy = tubeI + tubeA * xc * xc + webH * web ** 3 / 12 + webA * (Xw - xc) ** 2;
+  // second moments about the centroid, part by part (each part's own I + its Steiner term); strips by segSq exactly
+  const tubeIx = tubeI + tubeA * yc * yc, webIx = web * webH ** 3 / 12 + webA * (webY - yc) ** 2;
+  let shellIx = 0, flangeIx = 0, Iy = tubeI + tubeA * xc * xc + webH * web ** 3 / 12 + webA * (Xw - xc) ** 2;
   for (const s of strips) {
-    Ix += s.w * s.ds * sq(s.y1 - yc, s.y2 - yc);
-    Iy += s.w * s.ds * sq(s.x1 - xc, s.x2 - xc);
+    const ix = s.w * s.ds * segSq(s.y1 - yc, s.y2 - yc);
+    if (s.kind === 'shell') shellIx += ix; else flangeIx += ix;
+    Iy += s.w * s.ds * segSq(s.x1 - xc, s.x2 - xc);
   }
+  const Ix = shellIx + flangeIx + tubeIx + webIx;
   let yMax = 0, xMax = 0;
   for (const [x, y] of outer) { yMax = Math.max(yMax, Math.abs(y - yc)); xMax = Math.max(xMax, Math.abs(x - xc)); }
   return { A, xc, yc, Ix, Iy, yMax, xMax, k: Ix / (A * yMax), ky: Iy / (A * xMax), outer,
-    parts: { shellA, flangeA, tubeA, webA, webH } };
+    parts: { shellA, flangeA, tubeA, webA, webH, webY, shellIx, flangeIx, tubeIx, webIx } };
 }
 
 /** Stresses in a tightened seam, MPa (compression positive): the bending σ_b = M·yMax/I, the sustained σ_p = F0/A, the
@@ -439,7 +444,7 @@ const KHAWTAK = { airDensity, shearLog, shearTwoLayer, shearPower, gamma, weibul
   nacaHalfThickness, nacaCamber, minChordForStud_mm, printableTrailingEdgeX, airfoilSection, polygonArea, pointInPolygon,
   schmitzPhi, schmitzChord, schmitzTwist, linearBlade, prandtlF, bemStation, bemRotor, PERF_DEFAULT, powerCurve, tipSpeed,
   STUDS, studCapacity_kN, smallestStud, jointPreload_N, wrenchTorque_Nm, TC_DEFAULT, bladeStations, shellSection,
-  wallT_mm, SECTION_A, bladeSection, jointStress_MPa, PETG_LONG_TERM_MPA, anchorBearing, sectionCuts };
+  segSq, wallT_mm, SECTION_A, bladeSection, jointStress_MPa, PETG_LONG_TERM_MPA, anchorBearing, sectionCuts };
 // ===== CORE-END
 window.KHAWTAK = KHAWTAK;
 </script>

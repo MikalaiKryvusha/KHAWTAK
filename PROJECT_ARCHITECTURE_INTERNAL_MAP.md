@@ -2,8 +2,8 @@
 
 > **The INTERNAL map: how the system thinks** — the abstractions of the calculator and how they interact. Companion:
 > `PROJECT_STRUCTURE_EXTERNAL_MAP.md` (where things live). **Living reference — never DONE-tagged.**
-> Status 2026-11-17: **partly built** in `kalculator/index.html` (core only, no UI; `node kalculator/test.mjs` 81/81,
-> `--control` 35/35 — hygiene, not a functional run). Where each abstraction lives in the core:
+> Status 2026-11-17: **partly built** in `kalculator/index.html` (core only, no UI; `node kalculator/test.mjs` 82/82,
+> `--control` 38/38 — hygiene, not a functional run). Where each abstraction lives in the core:
 >
 > | Abstraction | Core functions (plan 02 step) | State |
 > |---|---|---|

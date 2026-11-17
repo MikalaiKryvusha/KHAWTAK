@@ -41,8 +41,11 @@ const MUTANTS = [
   ['M5: { d: 5, As: 14.2, p48: 4.40', 'M5: { d: 5, As: 14.2, p48: 3.40'], // breaks the stud table (criterion 6)
   ['return M_Nm * 1000 / k_mm + Fc_N', 'return M_Nm * 1000 / k_mm'],     // breaks the preload (criterion 5)
   ['tc: tcRoot + (tcTip - tcRoot) * f', 'tc: tcRoot + (tcTip - tcRoot) * f * f'], // breaks the linear t/c along the span
-  ['(a * a + a * b + b * b) / 3', '(a * a + b * b) / 2'], // breaks the exact segment integral of the shell's I
-  ['{ ok: 3, limit: 7 }', '{ ok: 3, limit: 9 }'],       // breaks the long-term PETG limit (anchor and seam verdicts)
+  ['(a * a + a * b + b * b) / 3', '(a * a + b * b) / 2'], // breaks the exact strip integral (segSq: shellSection AND bladeSection)
+  ['{ ok: 3, limit: 7 }', '{ ok: 3, limit: 9 }'],       // breaks the long-term PETG upper limit (the anchor's verdicts)
+  ['{ ok: 3, limit: 7 }', '{ ok: 6, limit: 7 }'],       // breaks the long-term PETG lower limit (the anchor's and the seam's verdicts)
+  ['const tubeIx = tubeI + tubeA * yc * yc', 'const tubeIx = tubeI'], // drops the tube's Steiner term
+  ['webIx = web * webH ** 3 / 12 + webA', 'webIx = webA'],          // drops the web's own I
   ['N * 1.125 * nozzle_mm', 'N * 1.0 * nozzle_mm'],     // breaks the wall of N lines (researches/02 §0)
   ['const sh = shell / 2;', 'const sh = 0;'],           // breaks the shell strip's half-wall shift inward
   ['xFlange: [0.15, 0.50]', 'xFlange: [0.15, 0.40]'],   // breaks the flange range (criterion 9, A2)
@@ -50,7 +53,7 @@ const MUTANTS = [
   ['const ri = stud_d_mm / 2 + gap_mm', 'const ri = stud_d_mm + gap_mm'], // breaks the tube radius
   ['const webA = web * webH;', 'const webA = web * webH / 2;'],          // breaks the web
   ['- 2 * shell, webY', '- shell, webY'],              // breaks the web's height between the inner faces
-  ['sq(s.x1 - xc, s.x2 - xc)', 'sq(s.x1, s.x2)'],       // breaks Iy about the centroid (the chordwise kern)
+  ['segSq(s.x1 - xc, s.x2 - xc)', 'segSq(s.x1, s.x2)'], // breaks Iy about the centroid (the chordwise kern)
   ['const sigmaB = M_Nm * 1000 * yMax / I', 'const sigmaB = M_Nm * yMax / I'], // breaks the bending stress units
   ['opens: sigmaP - sigmaB < 0', 'opens: sigmaP + sigmaB < 0'],              // breaks the open-seam flag
   ['Math.ceil(span_mm / maxZ_mm)', 'Math.round(span_mm / maxZ_mm)'], // breaks the section count (a section taller than the bed)
@@ -256,9 +259,11 @@ function run(K, log = true) {
     near(K.wallT_mm(2), 0.857, 1e-3) && near(K.wallT_mm(3), 1.264, 1e-3) && near(K.wallT_mm(4), 1.671, 1e-3),
     [2, 3, 4].map((N) => K.wallT_mm(N).toFixed(4)).join(' · '));
   // Criterion 9 — the root seam of the R 1.0 m blade (researches/02 §2.4): chord 180, t/c 18 %, NACA 44xx, M8 at 0.40c.
-  // Tolerances = the spread of three independent routes (re-derived 2026-11-17 per EXPERIENCE.md EXP-0004): the recon's own
-  // script, this thin-walled sum and a raster of the material region at 0.05 mm (A 511 / 890.5, Ix 63 594 / 127 109,
-  // k 6.92 / 8.21 for A1 / A2) differ by ≤ 1.4 % in A, ≤ 0.9 % in Ix, ≤ 2.5 % in k → ± 2 %, ± 2 %, ± 3 %.
+  // Tolerances = the largest pairwise spread of three computations (re-derived 2026-11-17 per EXPERIENCE.md EXP-0004) — two
+  // methods over one geometry: the thin-walled sum (the recon's own script and this core) and a raster of the material
+  // region at 0.05 mm (A 511.1 / 890.5, Ix 63 594 / 127 109, k 6.92 / 8.21 for A1 / A2). Largest pairs: A 1.55 % (core vs
+  // raster), Ix 1.02 % (core vs recon), k 2.4 % (recon vs raster) → ± 2 %, ± 2 %, ± 3 % (the judge, finding 1, 2026-11-17).
+  // The bands cannot see terms below ~1 % of Ix — those are guarded part by part below.
   const rel = (a, b, r) => Math.abs(a - b) <= r * Math.abs(b);
   const seam = { chord_mm: 180, t: 0.18, stud_d_mm: 8 };
   const A1 = K.bladeSection({ ...seam, flange_mm: 0 }), A2 = K.bladeSection({ ...seam, flange_mm: 3 });
@@ -275,6 +280,13 @@ function run(K, log = true) {
     rel(A1.parts.webA, webHand, 0.01) && near(webHand, 18.95, 0.01), `${A1.parts.webA.toFixed(2)} (hand ${webHand.toFixed(2)})`);
   check('section parts add up to A; the flanges appear only in A2', near(A2.parts.shellA + A2.parts.flangeA + A2.parts.tubeA + A2.parts.webA, A2.A, 1e-6)
     && A1.parts.flangeA === 0 && A2.parts.flangeA > 0, `A2 flanges ${A2.parts.flangeA.toFixed(1)} mm²`);
+  // Terms too small for the ± 2 % band (the judge, finding 3): the tube's and the web's own I and their Steiner terms, by hand
+  const ri8 = 4.2, ro8 = 4.2 + K.wallT_mm(2), P = A1.parts;
+  const tubeIxHand = Math.PI / 4 * (ro8 ** 4 - ri8 ** 4) + tubeHand * A1.yc ** 2;
+  const webIxHand = K.wallT_mm(2) * P.webH ** 3 / 12 + P.webA * (P.webY - A1.yc) ** 2;
+  check('section parts: Ix of the tube = π/4·(ro⁴ − ri⁴) + A·yc², of the web = w·h³/12 + A·(y − yc)² (hand); the parts sum to Ix',
+    near(P.tubeIx, tubeIxHand, 1e-6) && near(P.webIx, webIxHand, 1e-6) && near(P.shellIx + P.flangeIx + P.tubeIx + P.webIx, A1.Ix, 1e-6),
+    `tube ${P.tubeIx.toFixed(1)}, web ${P.webIx.toFixed(1)} of ${A1.Ix.toFixed(0)} mm⁴`);
   // The stud must stand in the chordwise kern, or the preload bends the section by itself (researches/02 §2.3–2.4): at 0.40c
   // the centroid is 3.5 mm off, deep inside ky; at 0.30c it is 21 mm off, outside ky 17.8. (Raster: 3.0 and 20.5 mm.)
   const A2at30 = K.bladeSection({ ...seam, flange_mm: 3, xStud: 0.30 });
