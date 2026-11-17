@@ -1,5 +1,6 @@
-// slicer-check.mjs — plan 03 criterion 4: every section of the default blade, written by the core as a binary STL, is read by
-// this machine's PrusaSlicer (`prusa-slicer-console.exe --info`, HOUSE_RULES.md §3): manifold, one part, the slicer's volume
+// slicer-check.mjs — plan 03 criterion 4: every section of the default blade, written by the core as a binary STL (the
+// printable body since G2b: the skin, the stud's bore, the two cells), is read by
+// this machine's PrusaSlicer (`prusa-slicer-console.exe --info`, HOUSE_RULES.md §3): manifold, a part per closed surface, the slicer's volume
 // equal to the core's divergence-theorem volume, the height within the bed's 240 mm. The STL files land in
 // .work/tmp/slicer-check/ (git-ignored, HOUSE_RULES R1) and stay there for a look (Blender, the slicer's preview).
 //
@@ -30,7 +31,9 @@ const r0 = K.ROOT_DEFAULT.r0_m, cuts = K.sectionCuts((R - r0) * 1000, BED_Z_MM);
 let bad = 0;
 for (let i = 0; i + 1 < cuts.length; i++) {
   const rA = r0 + cuts[i] / 1000, rB = r0 + cuts[i + 1] / 1000, name = `section${i + 1}-r${Math.round(rA * 1000)}-${Math.round(rB * 1000)}`;
-  const m = K.sectionMesh({ blade, rFrom_m: rA, rTo_m: rB }), V = K.meshVolume(m);
+  // the printable body (plan 03 G2b): the skin, the stud's bore (the default seam's 332 mm from r 35 mm), the two cells —
+  // PrusaSlicer counts each closed surface as a part: the skin with the bore, and every cell (m.shells in all)
+  const m = K.sectionMesh({ blade, R, rFrom_m: rA, rTo_m: rB, stud: { d_mm: 5, to_m: 0.035 + 0.332 }, cells: true }), V = K.meshVolume(m);
   const file = new URL(`${name}.stl`, OUT);
   writeFileSync(file, K.meshToSTL(m, name));
   const info = execFileSync(SLICER, ['--info', decodeURIComponent(file.pathname.replace(/^\/([A-Za-z]:)/, '$1'))], { encoding: 'utf8' });
@@ -42,9 +45,9 @@ for (let i = 0; i + 1 < cuts.length; i++) {
   const repairs = [...info.matchAll(/^(degenerate_facets|edges_fixed|facets_removed|facets_added|facets_reversed|backwards_edges) = (\d+)/gm)]
     .filter(([, , n]) => Number(n) > 0).map(([, k, n]) => `${k} ${n}`);
   const fit = K.bedFit([m.v.map(([x, y]) => [x, y])]);          // the core's bedFit over every vertex — not the slicer's
-  const ok = manifold === 'yes' && parts === 1 && facets === m.f.length && !repairs.length && Math.abs(vol / V - 1) < 1e-4 && z <= BED_Z_MM && fit.fits;
+  const ok = manifold === 'yes' && parts === m.shells && facets === m.f.length && !repairs.length && Math.abs(vol / V - 1) < 1e-4 && z <= BED_Z_MM && fit.fits;
   if (!ok) bad++;
-  console.log(`${ok ? 'ok  ' : 'FAIL'} ${name}: manifold ${manifold}, parts ${parts}, facets ${facets} (core ${m.f.length}), repairs ${repairs.join(', ') || 'none'},`
+  console.log(`${ok ? 'ok  ' : 'FAIL'} ${name}: manifold ${manifold}, parts ${parts} (core ${m.shells}), facets ${facets} (core ${m.f.length}), repairs ${repairs.join(', ') || 'none'},`
     + ` volume ${vol.toFixed(1)} mm³ (core ${V.toFixed(1)}), the slicer's box ${get('size_x')} × ${get('size_y')} × ${z} mm;`
     + ` the core's bedFit ${fit.w_mm.toFixed(0)} × ${fit.h_mm.toFixed(0)} at ${fit.angle_deg}°`);
 }

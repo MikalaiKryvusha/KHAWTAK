@@ -19,8 +19,13 @@ than the bed; a cavity the slicer fills with infill; a mass that disagrees with 
    with opposite orientation; the signed volume is positive (normals outward). Scale: edges failing · Meter: the Node check ·
    Target: 0.
 2. The mesh volume of a section without cavities equals ∫A_outer dr of its stations (divergence theorem) within 0.5 %.
-3. With cavities: the material volume equals ∫A_sectionA dr (`bladeSection`'s area) within 2 % (the thin-walled sum vs the true
-   offset — plan 02 criterion 9's spread) — and PETG mass = that volume × 1.25 g/cm³ equals `bladeMass` within 2 %.
+3. With cavities: the material of a station (the outline − the cells − the bore) equals the raster of the same printed section
+   (`tools/section-raster.mjs` — the true offset geometry) within 2 % at r 110 / 200 / 300 / 490 mm; the body's volume equals
+   ∫(outline − cells − bore) dz within 0.5 %; its PETG (volume × 1.25 g/cm³) is within ± 10 % of `bladeMass` (the epic's gate).
+   **Redefined 2026-11-17 16:42 +03:00 after the G2 prototype:** the first wording compared with `bladeSection`'s thin-walled sum within 2 % —
+   but that sum counts the shell twice where its strips overlap (nose, trailing edge): the true section is 0.6–1.7 % off the
+   raster and up to 15 % off the thin-walled sum outboard (6.6 % lighter over the default blade). `bladeMass` stays thin-walled
+   like recon 02 (conservative); the raster is the honest second route for the mesh.
 4. `prusa-slicer-console.exe --info <section.stl>` reports `manifold = yes` for every section (HOUSE_RULES §3); the bounding box
    fits the 220 × 220 × 240 volume (and agrees with `bedFit`).
 5. The slicer probe (recon 04 §2.3): one section sliced at 0 % infill — perimeters around every cavity, no infill inside the
@@ -50,7 +55,19 @@ Each step quotes its anchor in the epic: «сечения профиля по р
   outline, cosine spacing — `airfoilSection`); strips of triangles between neighbouring outlines; the end caps; the binary STL of
   KATAK (80-byte header not starting with `solid`, uint32 count, 50 bytes per triangle — recon 04 §1). The checks of criteria 1, 2,
   6 land in the same step (an edge map, the divergence-theorem volume).
-- [ ] **G2 · the cavities.** The cavity outline per station: the outer outline offset inward by the local wall (shell T(3), plus
+- [x] **G2 · the cavities.** ✅ 2026-11-17 16:42 +03:00 (G2a — the section model, above in this step; G2b — the body): `stationCells` (each cell
+  a CCW polygon of exactly 2·nChain + nWall − 2 = 90 points, from where the inner faces open T(2) apart to the web's face or the
+  ring; the ring's arc where it meets a face), `resample`, `earClip` (Eberly; reflex vertices and flat ones on the diagonal block
+  an ear; a self-check of the covered area), `keyhole` (the bore's hole in an end cap), `CAVITY_DEFAULT`, `BODY_DEFAULT` (3 mm
+  solid end bands — provisional until G3/G4), and `sectionMesh` with `stud` (the bore, open through a cap it passes, closed by a
+  disc where the stud ends) and `cells` (each run of stations lofted, flat caps). The default blade: 223 cells every 5 mm, all
+  simple, inside the profile, the corners on the web or the ring; criterion 3 (redefined above) 529.4 / 529.5, 292.1 / 290.0,
+  139.8 / 138.7, 94.3 / 92.6 mm²; three bodies closed with 3 shells each, the volume against the integral 0.02 / 0.19 / 0.11 %;
+  125.0 g of PETG against `bladeMass` 123.2 g (+1.5 %). `node tools/slicer-check.mjs` on the bodies: manifold, 3 parts each,
+  no repair, the same facets and volume. 10 mutants, each red. Seen by eye: four stations drawn (matplotlib, `.work/tmp/g2/`).
+  Found on the way: `ux` first searched a face from the UPPER surface's axis station — the lower face sits off it by the camber,
+  the bracket missed, and a corner stood at x −0.86 instead of −0.43 (a slanted web every other check passed) — now a straight
+  scan, and a case checks every corner. The cavity outline per station: the outer outline offset inward by the local wall (shell T(3), plus
   the flanges over 0.15–0.50c by `flangeAt_mm`), minus the tube ring around the stud, split by the web at 0.60c — 2D polygon
   operations without libraries (recon 04 §2.3: the main risk of the MVP mesh). FORK before coding: options <a general polygon
   offset + boolean | cavities built from the airfoil's own parametrisation (inner surface = outer point − wall × normal, the

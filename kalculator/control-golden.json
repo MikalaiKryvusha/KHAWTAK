@@ -33,6 +33,7 @@
     "NACA open edge: t 12 %, c 100 mm → 0.25 mm (researches/04 §2.1)",
     "NACA thickness at x 0.30 = t (the maximum) ± 0.1 %",
     "NACA thickness at x 0.40 = 0.967 t (researches/02 §4.5: «97 %»)",
+    "criterion 3: the cells' material = the raster of the printed section within 2 % at r 110 / 200 / 300 / 490 mm",
     "criterion 4: M8 + 2 × 2 mm walls at t/c 12 %, at max thickness → 100 mm ± 1 (researches/01 §2.3)",
     "criterion 5 through the core's own section: F0 = 30 N·m / k(A2) + 1.22 kN → 4.95 kN ± 0.05",
     "criterion 9: section A1 (shell T(3) + tube + web) — A 518 ± 2 %, Ix 63 560 ± 2 %, k 6.75 ± 3 % (researches/02 §2.4)",
@@ -96,6 +97,7 @@
     "printed blade: chord 0.18R = 122.4 mm and t/c 25 % at the root block (r 110 mm); the linear blade there is 63 mm"
   ],
   "Math.ceil(span_mm / dz_mm - 1e-9) → Math.ceil(span_mm / dz_mm / 4 - 1e-9)": [
+    "criterion 1 with cavities: the three bodies are closed — the skin with the bore, two cells each — and V = ∫ (outline − cells − bore) dz within 0.5 %",
     "each section stands 0 … 190 mm (≤ the 240 mm bed), stations ≤ 5 mm apart, the trailing edge ≥ T(2) = 0.857 mm at every station"
   ],
   "Math.ceil(span_mm / maxZ_mm) → Math.round(span_mm / maxZ_mm)": [
@@ -130,6 +132,7 @@
   "N * 1.125 * nozzle_mm → N * 1.0 * nozzle_mm": [
     "blade mass (PETG, the tube along the stud): recon 02 §7.2 R 1.0 m → 455 g ± 2 %; §10 classes 250 / 333 / 500 → 117 / 175 / 343 g ± 4 %",
     "blade mass → F_c: recon 02 §2.4 — the R 1.0 m blade + 0.8 m of M8 at 600 rpm → 1.22 kN ± 3 %",
+    "criterion 3: the cells' material = the raster of the printed section within 2 % at r 110 / 200 / 300 / 490 mm",
     "criterion 5 through the core's own section: F0 = 30 N·m / k(A2) + 1.22 kN → 4.95 kN ± 0.05",
     "criterion 9: section A1 (shell T(3) + tube + web) — A 518 ± 2 %, Ix 63 560 ± 2 %, k 6.75 ± 3 % (researches/02 §2.4)",
     "criterion 9: section A2 (+ flanges 3 mm over 0.15–0.50c) — A 894 ± 2 %, Ix 126 000 ± 2 %, k 8.04 ± 3 %",
@@ -162,16 +165,17 @@
     "default seam, the strict IEC line beside it (every load ×3, untested PETG → 4.3 MPa): F0 8.30 kN, σ_max 29.9 MPa — does not pass"
   ],
   "[U(i + 1), L(i), L(i + 1)] → [U(i + 1), L(i + 1), L(i)]": [
+    "criterion 1 with cavities: the three bodies are closed — the skin with the bore, two cells each — and V = ∫ (outline − cells − bore) dz within 0.5 %",
     "criterion 1: each section of the default blade is closed — every directed edge once and its reverse once, the volume positive",
     "criterion 2: the mesh volume (divergence theorem) = ∫A dz of the same outlines (Simpson, 400 steps) within 0.5 %",
-    "the caps do not fold: every cap triangle of every section end is counter-clockwise like its outline"
-  ],
-  "[at(0, a), at(0, c), at(0, b)] → [at(0, a), at(0, b), at(0, c)]": [
-    "criterion 1: each section of the default blade is closed — every directed edge once and its reverse once, the volume positive"
+    "the caps do not fold: every cap triangle of every section end is counter-clockwise like its outline",
+    "the printable bodies' PETG (mesh volume × 1.25 g/cm³) within ± 10 % of bladeMass — the epic's mass gate"
   ],
   "[at(k, i), at(k + 1, i + 1), at(k + 1, i)] → [at(k, i), at(k + 1, i), at(k + 1, i + 1)]": [
+    "criterion 1 with cavities: the three bodies are closed — the skin with the bore, two cells each — and V = ∫ (outline − cells − bore) dz within 0.5 %",
     "criterion 1: each section of the default blade is closed — every directed edge once and its reverse once, the volume positive",
-    "criterion 2: the mesh volume (divergence theorem) = ∫A dz of the same outlines (Simpson, 400 steps) within 0.5 %"
+    "criterion 2: the mesh volume (divergence theorem) = ∫A dz of the same outlines (Simpson, 400 steps) within 0.5 %",
+    "the printable bodies' PETG (mesh volume × 1.25 g/cm³) within ± 10 % of bladeMass — the epic's mass gate"
   ],
   "cRoot_per_R: 0.18 → cRoot_per_R: 0.12": [
     "default seam, the owner's policy (homebuilder's margin, interview #003 «A»): F0 2.77 kN ± 2 % → M5 4.8, wrench 2.77 N·m, σ_p 5.15 MPa «caution», closed",
@@ -217,12 +221,20 @@
     "seam A2 at 30 N·m, F0 4.95 kN: σ_b 4.2, σ_p 5.5 «caution», σ_max 9.7 MPa, the seam stays closed",
     "seam A2 at the ultimate 60 N·m: the windward side −2.8 ± 0.4 MPa — the seam OPENS (researches/02 §2.4)"
   ],
+  "const hole = circ.slice().reverse(), hid → const hole = circ.slice(), hid": [
+    "criterion 1 with cavities: the three bodies are closed — the skin with the bore, two cells each — and V = ∫ (outline − cells − bore) dz within 0.5 %"
+  ],
   "const inFlange = flange_mm > 0 && Xw >= X0 && Xw <= X1 ? flange_mm : 0; → const inFlange = 0;": [
     "the printed web through the stud: T(2)·(2·y_t(0.40)·c − 2·(T(3) + flange) − 2·r_o) — two pieces around the ring (hand, ± 0.2 %: the 60-point outline)"
+  ],
+  "const o = order.find((i) => !crosses(outer[i])); → const o = order.at(-1);": [
+    "ear clipping by hand: the L (12 mm²), the square with a hole (84 mm²) through the keyhole, a straight run fanned from its opposite vertex — CCW, areas sum"
   ],
   "const ox = xStud, oy → const ox = 0.9, oy": [
     "blade mass (PETG, the tube along the stud): recon 02 §7.2 R 1.0 m → 455 g ± 2 %; §10 classes 250 / 333 / 500 → 117 / 175 / 343 g ± 4 %",
     "blade mass → F_c: recon 02 §2.4 — the R 1.0 m blade + 0.8 m of M8 at 600 rpm → 1.22 kN ± 3 %",
+    "criterion 1 with cavities: the three bodies are closed — the skin with the bore, two cells each — and V = ∫ (outline − cells − bore) dz within 0.5 %",
+    "criterion 3: the cells' material = the raster of the printed section within 2 % at r 110 / 200 / 300 / 490 mm",
     "criterion 5 through the core's own section: F0 = 30 N·m / k(A2) + 1.22 kN → 4.95 kN ± 0.05",
     "criterion 9: section A1 (shell T(3) + tube + web) — A 518 ± 2 %, Ix 63 560 ± 2 %, k 6.75 ± 3 % (researches/02 §2.4)",
     "criterion 9: section A2 (+ flanges 3 mm over 0.15–0.50c) — A 894 ± 2 %, Ix 126 000 ± 2 %, k 8.04 ± 3 %",
@@ -238,6 +250,7 @@
     "section: the twist turns it about the stud axis — area kept, origin still inside",
     "stud OUT of the kern at 0.30c: centroid 21 ± 0.6 mm, ky 17.8 ± 0.6, |xc| > ky — why the stud goes to 0.40c",
     "stud in the kern at 0.40c: centroid 3.5 ± 0.6 mm toward the edge, |xc| < ky (researches/02 §2.4)",
+    "the cells of the default blade (every 5 mm): 90 points each, simple, CCW, inside the profile, apart, the stud axis in neither",
     "the printed web through the stud: T(2)·(2·y_t(0.40)·c − 2·(T(3) + flange) − 2·r_o) — two pieces around the ring (hand, ± 0.2 %: the 60-point outline)",
     "the tube only along the stud: no tube without it; the 332 mm stud adds ρ·A_tube·(r_end − r_root) of PETG (hand, ± 1 %)"
   ],
@@ -245,6 +258,7 @@
     "bed fit: the footprint is the UNION of the outlines — two strips that fit alone, 205 mm apart (215 mm together), do not fit"
   ],
   "const r1 = 0.7 * R, r2 = 0.9 * R → const r1 = 0.6 * R, r2 = 0.9 * R": [
+    "criterion 3: the cells' material = the raster of the printed section within 2 % at r 110 / 200 / 300 / 490 mm",
     "linear blade passes the Schmitz optimum at 0.7R and 0.9R (Burton)",
     "printed blade: chord 0.18R = 122.4 mm and t/c 25 % at the root block (r 110 mm); the linear blade there is 63 mm"
   ],
@@ -280,6 +294,14 @@
   "const tubeIx = tubeI + tubeA * yc * yc → const tubeIx = tubeI": [
     "section parts: Ix of the tube = π/4·(ro⁴ − ri⁴) + A·yc², of the web = w·h³/12 + A·(y − yc)² (hand); the parts sum to Ix"
   ],
+  "const u = i + (X - a) / (b - a); → const u = i;": [
+    "criterion 1 with cavities: the three bodies are closed — the skin with the bore, two cells each — and V = ∫ (outline − cells − bore) dz within 0.5 %",
+    "criterion 3: the cells' material = the raster of the printed section within 2 % at r 110 / 200 / 300 / 490 mm",
+    "the cells of the default blade (every 5 mm): 90 points each, simple, CCW, inside the profile, apart, the stud axis in neither"
+  ],
+  "const wall = shell + (pt[0] >= X0 && pt[0] <= X1 ? flange_mm : 0); → const wall = shell;": [
+    "criterion 3: the cells' material = the raster of the printed section within 2 % at r 110 / 200 / 300 / 490 mm"
+  ],
   "const webA = web * webH, webY → const webA = web * webH / 2, webY": [
     "blade mass (PETG, the tube along the stud): recon 02 §7.2 R 1.0 m → 455 g ± 2 %; §10 classes 250 / 333 / 500 → 117 / 175 / 343 g ± 4 %",
     "blade mass → F_c: recon 02 §2.4 — the R 1.0 m blade + 0.8 m of M8 at 600 rpm → 1.22 kN ± 3 %",
@@ -289,9 +311,11 @@
     "section parts: the web at 0.60c = T(2)·(thickness there − 2·T(3)) = 18.95 mm² ± 1 % (hand, 24.64 mm thick)",
     "the printed web through the stud: T(2)·(2·y_t(0.40)·c − 2·(T(3) + flange) − 2·r_o) — two pieces around the ring (hand, ± 0.2 %: the 60-point outline)"
   ],
-  "const z = (stations_m[k] - rFrom_m) * 1000; → const z = (stations_m[k] - rFrom_m) * 100;": [
-    "criterion 2: the mesh volume (divergence theorem) = ∫A dz of the same outlines (Simpson, 400 steps) within 0.5 %",
-    "each section stands 0 … 190 mm (≤ the 240 mm bed), stations ≤ 5 mm apart, the trailing edge ≥ T(2) = 0.857 mm at every station"
+  "const zs = Array.from({ length: K + 1 }, (_, k) => span_mm * k / K); → const zs = Array.from({ length: K + 1 }, (_, k) => span_mm * k / K / 10);": [
+    "criterion 1 with cavities: the three bodies are closed — the skin with the bore, two cells each — and V = ∫ (outline − cells − bore) dz within 0.5 %",
+    "criterion 6: neighbours meet without a step — the top outline of section i is the bottom outline of i + 1 to 1e-6 mm",
+    "each section stands 0 … 190 mm (≤ the 240 mm bed), stations ≤ 5 mm apart, the trailing edge ≥ T(2) = 0.857 mm at every station",
+    "the printable bodies' PETG (mesh volume × 1.25 g/cm³) within ± 10 % of bladeMass — the epic's mass gate"
   ],
   "ct = Cl * sp - Cd * cp → ct = Cl * sp - 0.5 * Cd * cp": [
     "criterion 10: BEM with drag, L/D 100, λ 4–10 → researches/01 §1.6 ± 2 %",
@@ -302,12 +326,26 @@
   "dv.setUint32(80, N, true); → dv.setUint32(80, N, false);": [
     "binary STL: 84 + 50·N bytes, the header does not start with «solid», N = the triangles, unit normals, the vertices as float32"
   ],
+  "else if (Math.abs(turn[q]) <= EPS) blocked = onSeg(a, c, Q); → else if (Math.abs(turn[q]) <= EPS) blocked = false;": [
+    "criterion 1 with cavities: the three bodies are closed — the skin with the bore, two cells each — and V = ∫ (outline − cells − bore) dz within 0.5 %",
+    "ear clipping by hand: the L (12 mm²), the square with a hole (84 mm²) through the keyhole, a straight run fanned from its opposite vertex — CCW, areas sum"
+  ],
+  "f.push([cid[0][a], cid[0][b], cid[0][c]]); → f.push([cid[0][a], cid[0][c], cid[0][b]]);": [
+    "criterion 1 with cavities: the three bodies are closed — the skin with the bore, two cells each — and V = ∫ (outline − cells − bore) dz within 0.5 %"
+  ],
   "fSlm: { fatigue: 1.0, ultimate: 3.0 } → fSlm: { fatigue: 1.0, ultimate: 2.0 }": [
     "allowable stress f_k/(γf·γm), ultimate, SLM loads: PETG Z 39 MPa untested → 4.3; steel 4.6 → 73, 8.8 → 194 MPa (recon 01 §6.1)",
     "default seam, the strict IEC line beside it (every load ×3, untested PETG → 4.3 MPa): F0 8.30 kN, σ_max 29.9 MPa — does not pass"
   ],
+  "for (const [a, b, c] of tris) f.push(up ? [a, b, c] : [a, c, b]); → for (const [a, b, c] of tris) f.push([a, b, c]);": [
+    "criterion 1 with cavities: the three bodies are closed — the skin with the bore, two cells each — and V = ∫ (outline − cells − bore) dz within 0.5 %",
+    "criterion 1: each section of the default blade is closed — every directed edge once and its reverse once, the volume positive"
+  ],
   "for (let deg = 0; deg < 180; deg += 0.25) → for (let deg = 0; deg < 1; deg += 0.25)": [
     "bed fit by hand: 200 × 10 straight · 280 × 10 only on the diagonal (≈ 45°) · 300 × 10 does not fit the 210 × 210 spot"
+  ],
+  "for (let j = 1; j + 1 < nBore; j++) f.push([ids[0], ids[j + 1], ids[j]]); → ": [
+    "criterion 1 with cavities: the three bodies are closed — the skin with the bore, two cells each — and V = ∫ (outline − cells − bore) dz within 0.5 %"
   ],
   "gammaLoad: 1, studMargin: 1.5 → gammaLoad: 1, studMargin: 2.0": [
     "default seam, the owner's policy (homebuilder's margin, interview #003 «A»): F0 2.77 kN ± 2 % → M5 4.8, wrench 2.77 N·m, σ_p 5.15 MPa «caution», closed"
@@ -325,6 +363,10 @@
     "criterion 7: Brest region, mast 7 m — hub 2.39 m/s ± 0.01, D 1.4 → 50 kWh ± 1 % (two profiles, z0 0.25, k 1.8)",
     "default site: hub at the owner's 7 m mast (interview 002 Q2 «B») → 2.39 m/s ± 0.01"
   ],
+  "if (dir < 0 && aB < 0) aB += 2 * Math.PI; → if (dir < 0 && aB < 0) aB += 0;": [
+    "criterion 3: the cells' material = the raster of the printed section within 2 % at r 110 / 200 / 300 / 490 mm",
+    "the cells of the default blade (every 5 mm): 90 points each, simple, CCW, inside the profile, apart, the stud axis in neither"
+  ],
   "if (k <= 2 / 3) a = k / (1 + k); → if (k <= 2 / 3) a = k / (1 + 2 * k);": [
     "BEM stays under the Betz limit 16/27 = 0.593",
     "Ct: momentum with Buhl in the a > 0.4 stations agrees with the blade-element Ct ± 0.002",
@@ -333,6 +375,10 @@
     "criterion 10: BEM with drag, L/D 60, λ 4–10 → researches/01 §1.6 ± 2 %",
     "criterion 3: BEM, Schmitz blade, λ 6, C_l 1, L/D ∞, hub 0.1R → Cp 0.518 ± 0.005 (researches/01 Appendix A)",
     "drag loss = the optimum blade's (16/27)·λ/(L/D) ± 3 % in all 18 cells (an analytic route, not the recon)"
+  ],
+  "if (turn[q] < -EPS) blocked =  → if (turn[q] < -1e9) blocked = ": [
+    "criterion 1 with cavities: the three bodies are closed — the skin with the bore, two cells each — and V = ∫ (outline − cells − bore) dz within 0.5 %",
+    "ear clipping by hand: the L (12 mm²), the square with a hole (84 mm²) through the keyhole, a straight run fanned from its opposite vertex — CCW, areas sum"
   ],
   "k: 1.8 → k: 2.0": [
     "criterion 7 through the core's curve: Brest region, 10 m, D 1.4 → 72 kWh ± 1 %",
@@ -363,7 +409,8 @@
     "allowable stress f_k/(γf·γm), ultimate, SLM loads: PETG Z 39 MPa untested → 4.3; steel 4.6 → 73, 8.8 → 194 MPa (recon 01 §6.1)",
     "default seam, the strict IEC line beside it (every load ×3, untested PETG → 4.3 MPa): F0 8.30 kN, σ_max 29.9 MPa — does not pass"
   ],
-  "minTE_mm = wallT_mm(MESH_DEFAULT.teLines) }) { → minTE_mm = 0 }) {": [
+  "minTE_mm = wallT_mm(MESH_DEFAULT.teLines), stud = null, cells = false, → minTE_mm = 0, stud = null, cells = false,": [
+    "criterion 1 with cavities: the three bodies are closed — the skin with the bore, two cells each — and V = ∫ (outline − cells − bore) dz within 0.5 %",
     "criterion 2: the mesh volume (divergence theorem) = ∫A dz of the same outlines (Simpson, 400 steps) within 0.5 %",
     "each section stands 0 … 190 mm (≤ the 240 mm bed), stations ≤ 5 mm apart, the trailing edge ≥ T(2) = 0.857 mm at every station",
     "the mesh is the blade at its cuts: both ends' vertices = airfoilSection at the cut radius with its chord, t/c and twist (1e-9 mm)"
@@ -384,9 +431,16 @@
     "default seam, the owner's policy (homebuilder's margin, interview #003 «A»): F0 2.77 kN ± 2 % → M5 4.8, wrench 2.77 N·m, σ_p 5.15 MPa «caution», closed",
     "default seam, the strict IEC line beside it (every load ×3, untested PETG → 4.3 MPa): F0 8.30 kN, σ_max 29.9 MPa — does not pass"
   ],
+  "return [pt[0] - (by - ay) / d * wall, pt[1] + (bx - ax) / d * wall]; → return [pt[0] + (by - ay) / d * wall, pt[1] - (bx - ax) / d * wall];": [
+    "criterion 3: the cells' material = the raster of the printed section within 2 % at r 110 / 200 / 300 / 490 mm",
+    "the cells of the default blade (every 5 mm): 90 points each, simple, CCW, inside the profile, apart, the stud axis in neither",
+    "the printable bodies' PETG (mesh volume × 1.25 g/cm³) within ± 10 % of bladeMass — the epic's mass gate"
+  ],
   "return s / 6; → return s / 3;": [
+    "criterion 1 with cavities: the three bodies are closed — the skin with the bore, two cells each — and V = ∫ (outline − cells − bore) dz within 0.5 %",
     "criterion 2: the mesh volume (divergence theorem) = ∫A dz of the same outlines (Simpson, 400 steps) within 0.5 %",
-    "mesh checks by hand: the tetrahedron is closed with V = 1/6; a face missing → 3 open edges; every face twice → doubled"
+    "mesh checks by hand: the tetrahedron is closed with V = 1/6; a face missing → 3 open edges; every face twice → doubled",
+    "the printable bodies' PETG (mesh volume × 1.25 g/cm³) within ± 10 % of bladeMass — the epic's mass gate"
   ],
   "s + web * q.h ** 3 / 12 + web * q.h * (q.y - yc) ** 2 → s + web * q.h * (q.y - yc) ** 2": [
     "section parts: Ix of the tube = π/4·(ro⁴ − ri⁴) + A·yc², of the web = w·h³/12 + A·(y − yc)² (hand); the parts sum to Ix"
@@ -409,6 +463,7 @@
   "xFlange: [0.15, 0.50] → xFlange: [0.15, 0.40]": [
     "blade mass (PETG, the tube along the stud): recon 02 §7.2 R 1.0 m → 455 g ± 2 %; §10 classes 250 / 333 / 500 → 117 / 175 / 343 g ± 4 %",
     "blade mass → F_c: recon 02 §2.4 — the R 1.0 m blade + 0.8 m of M8 at 600 rpm → 1.22 kN ± 3 %",
+    "criterion 3: the cells' material = the raster of the printed section within 2 % at r 110 / 200 / 300 / 490 mm",
     "criterion 9: section A2 (+ flanges 3 mm over 0.15–0.50c) — A 894 ± 2 %, Ix 126 000 ± 2 %, k 8.04 ± 3 %",
     "default seam, the owner's policy (homebuilder's margin, interview #003 «A»): F0 2.77 kN ± 2 % → M5 4.8, wrench 2.77 N·m, σ_p 5.15 MPa «caution», closed",
     "default seam, the strict IEC line beside it (every load ×3, untested PETG → 4.3 MPa): F0 8.30 kN, σ_max 29.9 MPa — does not pass",
@@ -420,8 +475,10 @@
   "yc + yt * Math.cos(th) → yc - yt * Math.cos(th)": [
     "blade mass (PETG, the tube along the stud): recon 02 §7.2 R 1.0 m → 455 g ± 2 %; §10 classes 250 / 333 / 500 → 117 / 175 / 343 g ± 4 %",
     "blade mass → F_c: recon 02 §2.4 — the R 1.0 m blade + 0.8 m of M8 at 600 rpm → 1.22 kN ± 3 %",
+    "criterion 1 with cavities: the three bodies are closed — the skin with the bore, two cells each — and V = ∫ (outline − cells − bore) dz within 0.5 %",
     "criterion 1: each section of the default blade is closed — every directed edge once and its reverse once, the volume positive",
     "criterion 2: the mesh volume (divergence theorem) = ∫A dz of the same outlines (Simpson, 400 steps) within 0.5 %",
+    "criterion 3: the cells' material = the raster of the printed section within 2 % at r 110 / 200 / 300 / 490 mm",
     "criterion 5 through the core's own section: F0 = 30 N·m / k(A2) + 1.22 kN → 4.95 kN ± 0.05",
     "criterion 9: section A1 (shell T(3) + tube + web) — A 518 ± 2 %, Ix 63 560 ± 2 %, k 6.75 ± 3 % (researches/02 §2.4)",
     "criterion 9: section A2 (+ flanges 3 mm over 0.15–0.50c) — A 894 ± 2 %, Ix 126 000 ± 2 %, k 8.04 ± 3 %",
@@ -440,6 +497,7 @@
     "stud OUT of the kern at 0.30c: centroid 21 ± 0.6 mm, ky 17.8 ± 0.6, |xc| > ky — why the stud goes to 0.40c",
     "stud in the kern at 0.40c: centroid 3.5 ± 0.6 mm toward the edge, |xc| < ky (researches/02 §2.4)",
     "the caps do not fold: every cap triangle of every section end is counter-clockwise like its outline",
+    "the cells of the default blade (every 5 mm): 90 points each, simple, CCW, inside the profile, apart, the stud axis in neither",
     "the printed web through the stud: T(2)·(2·y_t(0.40)·c − 2·(T(3) + flange) − 2·r_o) — two pieces around the ring (hand, ± 0.2 %: the 60-point outline)"
   ],
   "z0: 0.25, hub_m: 7 → z0: 0.25, hub_m: 10": [

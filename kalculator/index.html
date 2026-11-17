@@ -664,28 +664,240 @@ function airfoilCap(n) {
 // ∫A dz: 0.004–0.014 % on the default blade); a section of the default blade is 9 434 triangles, 0.47 MB of STL.
 const MESH_DEFAULT = { n: 60, dz_mm: 5, teLines: 2 };
 
-/** The outer mesh of one blade section printed upright (researches/04 §2.2): stations from rFrom_m (the root-side cut — on
- *  the bed, z = 0) to rTo_m (the top cut), at most dz_mm apart; at each the profile of the blade there — chord, t/c and the
- *  twist about the stud axis (x = y = 0) — with the same point count; neighbouring outlines stitched by strips of triangles,
- *  both ends closed by caps. The cut planes are stations themselves, so the top outline of a section IS the bottom outline of
- *  the next one. Returns { v, f, stations_m, bottom, top } — the mesh and its two end outlines. */
+// ---- plan 03 G2b · the cells inside a section, the stud's bore, and the polygon tools they need. [NOT-TESTED] — hygiene in
+// test.mjs (simple cells of a fixed size, the material against the raster of tools/section-raster.mjs, closure, volume).
+
+// A cell narrower than two extrusion lines cannot be printed as a gap — the slicer fills it: the cells start where the inner
+// faces are T(2) apart (researches/02 §0, T(2) = 0.857 mm). nChain points on each inner face, nWall on the web-and-ring wall
+// (32 keep the ring's facets ≤ 0.03 mm deep). [AI] the counts — a resolution choice, judged by the raster check.
+const CAVITY_DEFAULT = { gMin_mm: wallT_mm(2), nChain: 30, nWall: 32 };
+// The solid end bands under the cells (3 mm until G3/G4 shape the roofs and the joint) and the bore's facets (24: ≤ 0.03 mm
+// deep on Ø 5.4). [AI] provisional.
+const BODY_DEFAULT = { endBand_mm: 3, nBore: 24 };
+
+/** A polyline [[x, y], …] resampled into k points evenly spaced by arc length (k ≥ 2), the ends kept. */
+function resample(pl, k) {
+  const L = [0];
+  for (let i = 1; i < pl.length; i++) L.push(L[i - 1] + Math.hypot(pl[i][0] - pl[i - 1][0], pl[i][1] - pl[i - 1][1]));
+  const out = [], tot = L.at(-1);
+  for (let j = 0, i = 1; j < k; j++) {
+    const s = tot * j / (k - 1);
+    while (i < pl.length - 1 && L[i] < s) i++;
+    const u = L[i] === L[i - 1] ? 0 : (s - L[i - 1]) / (L[i] - L[i - 1]);
+    out.push([pl[i - 1][0] + (pl[i][0] - pl[i - 1][0]) * u, pl[i - 1][1] + (pl[i][1] - pl[i - 1][1]) * u]);
+  }
+  return out;
+}
+
+/** Ear clipping of a simple counter-clockwise polygon (Eberly, «Triangulation by Ear Clipping», 2002; Meisters' two-ears
+ *  theorem): counter-clockwise index triples into poly, every boundary edge in exactly one triangle. The cells' straight web
+ *  faces carry runs of FLAT vertices (never ears themselves): a REFLEX vertex inside an ear blocks it, and so does a flat one
+ *  on its diagonal — a T-junction otherwise, and the vertex opposite a straight run must not go before the run is fanned from
+ *  it (without this rule the clipping once left nine flat points and nothing else); a point equal to a corner of the ear (a
+ *  keyhole bridge's twin) does not block. Throws when no ear is left or the triangles do not cover the area. */
+function earClip(poly) {
+  const left = poly.map((_, i) => i), tris = [], EPS = 1e-9;   // mm²: a vertex within it of its chord is flat
+  const cr = (a, b, c) => (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
+  const same = (p, q) => p[0] === q[0] && p[1] === q[1];
+  const onSeg = (a, c, q) => Math.abs(cr(a, c, q)) <= EPS && (q[0] - a[0]) * (q[0] - c[0]) + (q[1] - a[1]) * (q[1] - c[1]) < 0;
+  while (left.length > 3) {
+    const L = left.length, turn = left.map((_, k) => cr(poly[left[(k - 1 + L) % L]], poly[left[k]], poly[left[(k + 1) % L]]));
+    let cut = -1;
+    for (let k = 0; k < L && cut < 0; k++) {
+      if (turn[k] <= EPS) continue;                              // reflex or flat: not an ear
+      const a = poly[left[(k - 1 + L) % L]], b = poly[left[k]], c = poly[left[(k + 1) % L]];
+      let blocked = false;
+      for (let q = 0; q < L && !blocked; q++) {
+        const Q = poly[left[q]];
+        if (same(Q, a) || same(Q, b) || same(Q, c)) continue;
+        if (turn[q] < -EPS) blocked = cr(a, b, Q) >= 0 && cr(b, c, Q) >= 0 && cr(c, a, Q) >= 0;
+        else if (Math.abs(turn[q]) <= EPS) blocked = onSeg(a, c, Q);
+      }
+      if (!blocked) cut = k;
+    }
+    if (cut < 0) throw new Error('earClip: no ear — the polygon is not simple');
+    tris.push([left[(cut - 1 + left.length) % left.length], left[cut], left[(cut + 1) % left.length]]);
+    left.splice(cut, 1);
+  }
+  tris.push(left);
+  const area = (p, q, r) => cr(poly[p], poly[q], poly[r]) / 2, A = poly.reduce((s, p, i) => s + (p[0] * poly[(i + 1) % poly.length][1] - poly[(i + 1) % poly.length][0] * p[1]) / 2, 0);
+  const sum = tris.reduce((s, [p, q, r]) => s + area(p, q, r), 0);
+  if (Math.abs(sum - A) > 1e-9 * Math.max(1, Math.abs(A))) throw new Error('earClip: the triangles do not cover the polygon');
+  return tris;
+}
+
+/** A ring with one hole as ONE polygon for earClip — the keyhole (Eberly §4): the hole (clockwise) joined to the outer ring
+ *  (counter-clockwise) by a bridge from the hole's rightmost point to the nearest outer point it can see. Returns the order as
+ *  [['o' | 'h', index], …]; the two bridge ends appear twice. */
+function keyhole(outer, hole) {
+  let h = 0; for (let i = 1; i < hole.length; i++) if (hole[i][0] > hole[h][0]) h = i;
+  const H = hole[h], o3 = (a, b, c) => Math.sign((b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]));
+  const crosses = (q) => [outer, hole].some((ring) => ring.some((a, i) => { const b = ring[(i + 1) % ring.length];
+    if (a === q || b === q || a === H || b === H) return false;
+    return o3(H, q, a) * o3(H, q, b) < 0 && o3(a, b, H) * o3(a, b, q) < 0; }));
+  const order = outer.map((_, i) => i).sort((i, j) => Math.hypot(outer[i][0] - H[0], outer[i][1] - H[1]) - Math.hypot(outer[j][0] - H[0], outer[j][1] - H[1]));
+  const o = order.find((i) => !crosses(outer[i]));
+  const seq = [];
+  for (let i = 0; i <= o; i++) seq.push(['o', i]);
+  for (let k = 0; k <= hole.length; k++) seq.push(['h', (h + k) % hole.length]);
+  for (let i = o; i < outer.length; i++) seq.push(['o', i]);
+  return seq;
+}
+
+/** The two cells of one station in the section's own frame (untwisted; the stud axis at the origin, the chord along x) —
+ *  plan 03 G2, FORK 1: the inner faces are the outline offset inward along each point's normal by the shell (+ the flange over
+ *  xFlange) at the outline's own chord stations; FORK 2: the web T(2) wide through the stud axis with the tube's ring (outer
+ *  radius ro_mm, 0 — no stud here) inside it. Each cell is a counter-clockwise polygon of exactly 2·nChain + nWall − 2 points,
+ *  or null where the inner faces never open gMin apart. Returns { front, rear, outline }. */
+function stationCells({ chord_mm, t, m = 0.04, p = 0.4, xStud = 0.40, n = MESH_DEFAULT.n, minTE_mm = wallT_mm(MESH_DEFAULT.teLines),
+  flange_mm = 0, ro_mm = 0, shellLines = SECTION_A.shellLines, webLines = SECTION_A.webLines, xFlange = SECTION_A.xFlange,
+  gMin_mm = CAVITY_DEFAULT.gMin_mm, nChain = CAVITY_DEFAULT.nChain, nWall = CAVITY_DEFAULT.nWall }) {
+  const O = airfoilSection({ chord_mm, t, m, p, n, xStud, minTE_mm });
+  const shell = wallT_mm(shellLines), w2 = wallT_mm(webLines) / 2;
+  const X0 = (xFlange[0] - xStud) * chord_mm, X1 = (xFlange[1] - xStud) * chord_mm, P = O.length;
+  const inner = O.map((pt, j) => {                               // each outline point moved inward along its normal
+    // the trailing-edge corners (j = 0 upper, j = P − 1 lower) take their surface's own direction, not the flat face's
+    const [ax, ay] = O[j === 0 ? 0 : j - 1], [bx, by] = O[j === P - 1 ? P - 1 : j + 1], d = Math.hypot(bx - ax, by - ay);
+    const wall = shell + (pt[0] >= X0 && pt[0] <= X1 ? flange_mm : 0);
+    return [pt[0] - (by - ay) / d * wall, pt[1] + (bx - ax) / d * wall];
+  });
+  const IU = (i) => inner[n - i], IL = (i) => inner[n + i];     // chord station i: 0 at the nose … n at the edge
+  const gap = (i) => IU(i)[1] - IL(i)[1];
+  const at = (f, u) => { const i = Math.min(Math.floor(u), n - 1), s = u - i, a = f(i), b = f(i + 1); return [a[0] + (b[0] - a[0]) * s, a[1] + (b[1] - a[1]) * s]; };
+  let iAxis = 0; for (let i = 0; i <= n; i++) if (Math.abs(O[n - i][0]) < Math.abs(O[n - iAxis][0])) iAxis = i;
+  // the station where a face (a straight polyline between its stations) crosses x = X — of all its crossings, the one nearest the
+  // axis station (the lower face's stations sit off the upper's by the camber, so a bracket from iAxis can miss; and near the
+  // nose the offset face may loop)
+  const ux = (f, X) => {
+    let best = null;
+    for (let i = 0; i < n; i++) {
+      const a = f(i)[0], b = f(i + 1)[0];
+      if ((a - X) * (b - X) <= 0 && a !== b) { const u = i + (X - a) / (b - a); if (best === null || Math.abs(u - iAxis) < Math.abs(best - iAxis)) best = u; }
+    }
+    return best ?? iAxis;
+  };
+  const ringMeet = (f, side, dir) => {                           // where the ring's half (side ±1) meets a face, or null: it fits
+    if (!(ro_mm > w2)) return null;
+    const yc = (x) => side * Math.sqrt(Math.max(0, ro_mm * ro_mm - x * x));
+    const outside = (x) => side * (at(f, ux(f, x))[1] - yc(x)) > 0;
+    if (outside(dir * w2)) return null;
+    let a = dir * w2, b = dir * ro_mm;
+    for (let k = 0; k < 50; k++) { const mid = (a + b) / 2; if (outside(mid)) b = mid; else a = mid; }
+    return (a + b) / 2;
+  };
+  const cell = (dir) => {                                        // dir −1: the front cell (toward the nose), +1: the rear
+    const far = dir < 0 ? 0 : n, step = -dir;
+    let i = far + step; while (i !== iAxis && gap(i) < gMin_mm) i += step;   // the nose point and the edge corner never inside
+    if (i === iAxis) return null;
+    const j = i - step, uFar = j + (gMin_mm - gap(j)) / (gap(i) - gap(j)) * (i - j);
+    const xTop = ringMeet(IU, 1, dir) ?? dir * w2, xBot = ringMeet(IL, -1, dir) ?? dir * w2;
+    const uTop = ux(IU, xTop), uBot = ux(IL, xBot);
+    if ((uFar - uTop) * dir < 1e-6 || (uFar - uBot) * dir < 1e-6) return null;   // the far end reaches past the near end
+    const pTop = at(IU, uTop), pBot = at(IL, uBot);
+    // the wall at the near end, top → bottom: the web face down to the ring, the ring's arc around its far side (through π for
+    // the front cell, 0 for the rear), the web face down to the lower face; where the ring meets a face, the arc starts there
+    const wall = [pTop];
+    if (ro_mm > w2) {
+      const yr = Math.sqrt(ro_mm * ro_mm - w2 * w2), onTop = Math.abs(pTop[0]) <= w2 + 1e-9, onBot = Math.abs(pBot[0]) <= w2 + 1e-9;
+      if (onTop) wall.push([dir * w2, yr]);
+      const aT = onTop ? Math.atan2(yr, dir * w2) : Math.atan2(pTop[1], pTop[0]);
+      let aB = onBot ? Math.atan2(-yr, dir * w2) : Math.atan2(pBot[1], pBot[0]);
+      if (dir < 0 && aB < 0) aB += 2 * Math.PI;                  // the front cell: from ≈ π/2 up through π to ≈ 3π/2
+      for (let k = 1; k < 48; k++) { const a = aT + (aB - aT) * k / 48; wall.push([ro_mm * Math.cos(a), ro_mm * Math.sin(a)]); }
+      if (onBot) wall.push([dir * w2, -yr]);
+    }
+    wall.push(pBot);
+    const chain = (f, uNear) => Array.from({ length: nChain }, (_, k) => at(f, uFar + (uNear - uFar) * k / (nChain - 1)));
+    const up = chain(IU, uTop), lo = chain(IL, uBot), w = resample(wall, nWall).slice(1, -1);
+    // counter-clockwise: the front cell — the top near → far, the far end down, the bottom far → near, up the wall; the rear
+    // cell — the top far → near, down the wall, the bottom near → far
+    return dir < 0 ? up.slice().reverse().concat(lo, w.slice().reverse()) : up.concat(w, lo.slice().reverse());
+  };
+  return { front: cell(-1), rear: cell(1), outline: O };
+}
+
+/** The mesh of one blade section printed upright (researches/04 §2.2): stations from rFrom_m (the root-side cut — on the bed,
+ *  z = 0) to rTo_m (the top cut), at most dz_mm apart; at each the profile of the blade there — chord, t/c and the twist about
+ *  the stud axis (x = y = 0) — with the same point count; neighbouring outlines stitched by strips of triangles, both ends closed
+ *  by caps. The cut planes are stations themselves, so the top outline of a section IS the bottom outline of the next one.
+ *  The outline vertices come first: station k's outline is v[k·P … k·P + P − 1].
+ *  With stud { d_mm, to_m } (plan 03 G2b): the stud's bore (radius d/2 + gap) from the bottom up to the stud's end — through an
+ *  end cap it passes (a keyhole in the cap), closed by a disc where it ends inside. With cells (and R for the flange law): the
+ *  two cells of stationCells lofted from endBand above the bottom to endBand below the top, each run closed by flat caps.
+ *  Returns { v, f, stations_m, bottom, top, shells } — shells: the closed surfaces (1 + the cells' runs). */
 function sectionMesh({ blade, rFrom_m, rTo_m, n = MESH_DEFAULT.n, dz_mm = MESH_DEFAULT.dz_mm,
-  minTE_mm = wallT_mm(MESH_DEFAULT.teLines) }) {
+  minTE_mm = wallT_mm(MESH_DEFAULT.teLines), stud = null, cells = false, R = null,
+  endBand_mm = BODY_DEFAULT.endBand_mm, nBore = BODY_DEFAULT.nBore }) {
   const span_mm = (rTo_m - rFrom_m) * 1000;
   const K = Math.max(1, Math.ceil(span_mm / dz_mm - 1e-9));     // 1e-9: (0.300 − 0.110)·1000 is 190.00000000000003 — 38 steps
-  const stations_m = Array.from({ length: K + 1 }, (_, k) => rFrom_m + (rTo_m - rFrom_m) * k / K);
+  const zStudEnd = stud ? Math.min(span_mm, (stud.to_m - rFrom_m) * 1000) : -1;   // the bore runs from z 0 to here
+  const zs = Array.from({ length: K + 1 }, (_, k) => span_mm * k / K);
+  if (zStudEnd > 0 && zStudEnd < span_mm && !zs.some((z) => Math.abs(z - zStudEnd) < 1e-9)) zs.splice(zs.findIndex((z) => z > zStudEnd), 0, zStudEnd);
+  const stations_m = zs.map((z) => rFrom_m + z / 1000), KS = zs.length - 1;
   const outlines = stations_m.map((r) => airfoilSection({ chord_mm: blade.chord(r) * 1000, t: blade.tc(r), twist_rad: blade.twist(r),
     n, minTE_mm }));
   const P = outlines[0].length, v = [], f = [];
-  outlines.forEach((ol, k) => { const z = (stations_m[k] - rFrom_m) * 1000; for (const [x, y] of ol) v.push([x, y, z]); });
-  const at = (k, i) => k * P + (i % P);
-  for (let k = 0; k < K; k++) for (let i = 0; i < P; i++) {    // the sides: outward for a counter-clockwise outline
+  outlines.forEach((ol, k) => { for (const [x, y] of ol) v.push([x, y, zs[k]]); });
+  const at = (k, i) => k * P + (i % P), add = (p) => (v.push(p), v.length - 1);
+  for (let k = 0; k < KS; k++) for (let i = 0; i < P; i++) {   // the sides: outward for a counter-clockwise outline
     f.push([at(k, i), at(k, i + 1), at(k + 1, i + 1)], [at(k, i), at(k + 1, i + 1), at(k + 1, i)]);
   }
-  for (const [a, b, c] of airfoilCap(n)) {                      // the top cap faces +z, the bottom cap −z
-    f.push([at(K, a), at(K, b), at(K, c)], [at(0, a), at(0, c), at(0, b)]);
+  // the bore: a circle (untwisted — a circle is a circle), its faces looking into the hole
+  const ri = stud ? stud.d_mm / 2 + SECTION_A.gap_mm : 0, ro = stud ? ri + wallT_mm(SECTION_A.tubeLines) : 0;
+  const circ = Array.from({ length: nBore }, (_, j) => [ri * Math.cos(2 * Math.PI * j / nBore), ri * Math.sin(2 * Math.PI * j / nBore)]);
+  const boreK = zStudEnd > 0 ? zs.map((z, k) => (z <= zStudEnd + 1e-9 ? k : -1)).filter((k) => k >= 0) : [];
+  const bid = boreK.map((k) => circ.map(([x, y]) => add([x, y, zs[k]])));
+  for (let s = 0; s + 1 < bid.length; s++) for (let j = 0; j < nBore; j++) {
+    const a = bid[s][j], b = bid[s][(j + 1) % nBore], c = bid[s + 1][(j + 1) % nBore], d = bid[s + 1][j];
+    f.push([a, c, b], [a, d, c]);
   }
-  return { v, f, stations_m, bottom: outlines[0], top: outlines[K] };
+  // the end caps: the airfoil ladder, or — where the bore passes — the keyhole cut by ear clipping
+  const cap = (k, up) => {
+    let tris;
+    const bs = boreK.indexOf(k);
+    if (bs < 0) tris = airfoilCap(n).map(([a, b, c]) => [at(k, a), at(k, b), at(k, c)]);
+    else {
+      const hole = circ.slice().reverse(), hid = bid[bs].slice().reverse(), seq = keyhole(outlines[k], hole);
+      const pts = seq.map(([w, i]) => (w === 'o' ? outlines[k][i] : hole[i])), ids = seq.map(([w, i]) => (w === 'o' ? at(k, i) : hid[i]));
+      tris = earClip(pts).map(([a, b, c]) => [ids[a], ids[b], ids[c]]);
+    }
+    for (const [a, b, c] of tris) f.push(up ? [a, b, c] : [a, c, b]);
+  };
+  cap(0, false); cap(KS, true);
+  if (zStudEnd > 0 && zStudEnd < span_mm - 1e-9) {               // the bore ends inside: its end disc looks down into the hole
+    const ids = bid.at(-1);
+    for (let j = 1; j + 1 < nBore; j++) f.push([ids[0], ids[j + 1], ids[j]]);
+  }
+  // the cells, each run of stations where it exists lofted and closed — a cavity: its faces look into it
+  let shells = 1;
+  if (cells) {
+    const czs = [endBand_mm, ...zs.filter((z) => z > endBand_mm + 1e-9 && z < span_mm - endBand_mm - 1e-9), span_mm - endBand_mm];
+    for (const side of ['front', 'rear']) {
+      const polys = czs.map((z) => {
+        const r = rFrom_m + z / 1000, tw = blade.twist(r), cs = Math.cos(tw), sn = Math.sin(tw);
+        const c = stationCells({ chord_mm: blade.chord(r) * 1000, t: blade.tc(r), n, minTE_mm, flange_mm: flangeAt_mm(r, R),
+          ro_mm: z <= zStudEnd + 1e-9 ? ro : 0 })[side];
+        return c && c.map(([x, y]) => [x * cs - y * sn, x * sn + y * cs]);
+      });
+      for (let k = 0; k < czs.length;) {
+        if (!polys[k]) { k++; continue; }
+        let e = k; while (e + 1 < czs.length && polys[e + 1]) e++;
+        if (e > k) {
+          const Q = polys[k].length, cid = [];
+          for (let s = k; s <= e; s++) cid.push(polys[s].map(([x, y]) => add([x, y, czs[s]])));
+          for (let s = 0; s + 1 < cid.length; s++) for (let i = 0; i < Q; i++) {
+            const a = cid[s][i], b = cid[s][(i + 1) % Q], c = cid[s + 1][(i + 1) % Q], d = cid[s + 1][i];
+            f.push([a, c, b], [a, d, c]);
+          }
+          for (const [a, b, c] of earClip(polys[k])) f.push([cid[0][a], cid[0][b], cid[0][c]]);           // the floor looks up
+          for (const [a, b, c] of earClip(polys[e])) f.push([cid.at(-1)[a], cid.at(-1)[c], cid.at(-1)[b]]); // the ceiling down
+          shells++;
+        }
+        k = e + 1;
+      }
+    }
+  }
+  return { v, f, stations_m, bottom: outlines[0], top: outlines[KS], shells };
 }
 
 /** A mesh as a binary STL (researches/04 §1, KATAK's toSTL): an 80-byte ASCII header that does not start with «solid», the
@@ -722,7 +934,8 @@ const KHAWTAK = { airDensity, shearLog, shearTwoLayer, shearPower, gamma, weibul
   STUDS, studCapacity_kN, smallestStud, jointPreload_N, wrenchTorque_Nm, TC_DEFAULT, bladeStations, shellSection,
   ROOT_DEFAULT, printedBlade, FLANGE, PETG_DENSITY_KG_M3, flangeAt_mm, bladeMass, IEC_SWT_CLASS, SLM, IEC_GAMMA, bladePlanArea, slmMaxThrust, slmParked, slmCentrifugal, iecAllowable_MPa,
   MARGIN_POLICY, PETG_Z_MPA, seamCheck, segSq, wallT_mm, SECTION_A, RECON_WEB_X, bladeSection, jointStress_MPa, PETG_LONG_TERM_MPA, anchorBearing, BED_DEFAULT, bedFit, sectionCuts,
-  meshClosed, meshVolume, meshBounds, airfoilCap, MESH_DEFAULT, sectionMesh, meshToSTL };
+  meshClosed, meshVolume, meshBounds, airfoilCap, MESH_DEFAULT, sectionMesh, meshToSTL,
+  CAVITY_DEFAULT, BODY_DEFAULT, resample, earClip, keyhole, stationCells };
 // ===== CORE-END
 window.KHAWTAK = KHAWTAK;
 </script>

@@ -10,6 +10,7 @@
 // and power shear, Weibull/Rayleigh scale, the energy integral); then S3–S6 and S8 — criteria 1–7 and 9 are covered.
 // Covered since 2026-11-17: criteria 10 (BEM with drag) and 11 (SLM loads D, H, E), μ and Re. Not covered yet: criterion 8 as a whole (S9), load case A.
 import { readFileSync, writeFileSync } from 'node:fs';
+import { raster } from '../tools/section-raster.mjs';   // the second route for the cells' material (plan 03 G2b) — the unmutated core
 import vm from 'node:vm';
 
 const html = readFileSync(new URL('./index.html', import.meta.url), 'utf8');
@@ -87,14 +88,25 @@ const MUTANTS = [
   ['closed: open === 0 && doubled === 0', 'closed: open === 0'],    // forgets the doubled edges
   ['return s / 6;', 'return s / 3;'],                               // the divergence theorem's sixth
   ['[at(k, i), at(k + 1, i + 1), at(k + 1, i)]', '[at(k, i), at(k + 1, i), at(k + 1, i + 1)]'], // a side triangle turned inside out
-  ['[at(0, a), at(0, c), at(0, b)]', '[at(0, a), at(0, b), at(0, c)]'], // the bottom cap facing up
+  ['for (const [a, b, c] of tris) f.push(up ? [a, b, c] : [a, c, b]);', 'for (const [a, b, c] of tris) f.push([a, b, c]);'], // the bottom cap facing up (re-aimed, G2b)
   ['[U(i + 1), L(i), L(i + 1)]', '[U(i + 1), L(i + 1), L(i)]'],     // a folded cap triangle
   ['Math.ceil(span_mm / dz_mm - 1e-9)', 'Math.ceil(span_mm / dz_mm / 4 - 1e-9)'], // stations 20 mm apart
-  ['minTE_mm = wallT_mm(MESH_DEFAULT.teLines) }) {', 'minTE_mm = 0 }) {'], // the knife-thin trailing edge
-  ['const z = (stations_m[k] - rFrom_m) * 1000;', 'const z = (stations_m[k] - rFrom_m) * 100;'], // metres to mm wrong
+  ['minTE_mm = wallT_mm(MESH_DEFAULT.teLines), stud = null, cells = false,', 'minTE_mm = 0, stud = null, cells = false,'], // the knife-thin trailing edge (re-aimed, G2b)
+  ['const zs = Array.from({ length: K + 1 }, (_, k) => span_mm * k / K);', 'const zs = Array.from({ length: K + 1 }, (_, k) => span_mm * k / K / 10);'], // the heights wrong by ten (re-aimed, G2b)
   ["('KHAWTAK binary STL - ' + name)", "('solid KHAWTAK - ' + name)"],  // a binary file that claims to be ASCII
   ['dv.setUint32(80, N, true);', 'dv.setUint32(80, N, false);'],    // the count big-endian
   ['nx /= l; ny /= l; nz /= l;', 'nx /= 1; ny /= l; nz /= l;'],      // a normal that is not a unit vector
+  // plan 03 G2b — the cells, the bore, the polygon tools
+  ['if (dir < 0 && aB < 0) aB += 2 * Math.PI;', 'if (dir < 0 && aB < 0) aB += 0;'],          // the front arc the short way: across the bore
+  ['const wall = shell + (pt[0] >= X0 && pt[0] <= X1 ? flange_mm : 0);', 'const wall = shell;'],  // the cells forget the flanges
+  ['return [pt[0] - (by - ay) / d * wall, pt[1] + (bx - ax) / d * wall];', 'return [pt[0] + (by - ay) / d * wall, pt[1] - (bx - ax) / d * wall];'], // offset outward
+  ['const hole = circ.slice().reverse(), hid', 'const hole = circ.slice(), hid'],                 // the keyhole's hole the wrong way round
+  ['f.push([cid[0][a], cid[0][b], cid[0][c]]);', 'f.push([cid[0][a], cid[0][c], cid[0][b]]);'],   // a cell's floor facing into the material
+  ['for (let j = 1; j + 1 < nBore; j++) f.push([ids[0], ids[j + 1], ids[j]]);', ''],              // the bore left open where it ends
+  ['else if (Math.abs(turn[q]) <= EPS) blocked = onSeg(a, c, Q);', 'else if (Math.abs(turn[q]) <= EPS) blocked = false;'], // a flat vertex on the diagonal does not block
+  ['if (turn[q] < -EPS) blocked = ', 'if (turn[q] < -1e9) blocked = '],                          // reflex vertices block nothing
+  ['const u = i + (X - a) / (b - a);', 'const u = i;'],                                            // a face's crossing not interpolated: the corner off the web
+  ['const o = order.find((i) => !crosses(outer[i]));', 'const o = order.at(-1);'],               // the bridge to the farthest point
   // plan 03 G2a — the printed web through the stud axis
   ['const ringHalf = withTube && Math.abs(Xw) < ro ? Math.sqrt(ro * ro - Xw * Xw) : 0;', 'const ringHalf = 0;'],   // the ring does not cut the web
   ['const inFlange = flange_mm > 0 && Xw >= X0 && Xw <= X1 ? flange_mm : 0;', 'const inFlange = 0;'],              // the web ignores the flanges
@@ -598,6 +610,80 @@ function run(K, log = true) {
     stl.length === 84 + 50 * meshes[0].f.length && nT === meshes[0].f.length && head !== 'solid' && unit && r0v.every((x, i) => x === Math.fround(v0[i])),
     `${stl.length} bytes, ${nT} triangles`);
 
+  if (log) console.log('G2b. The cells, the bore and the printable body (plan 03: criterion 1 with cavities, criterion 3 against the raster)');
+  // By hand: an L of 12 mm² and the keyhole of a 10 × 10 square around a 4 × 4 hole (84 mm²) — the ears sum to the area, each CCW.
+  const triArea = (P, [a, b, c]) => ((P[b][0] - P[a][0]) * (P[c][1] - P[a][1]) - (P[b][1] - P[a][1]) * (P[c][0] - P[a][0])) / 2;
+  // A third shape carries a straight run of flat points opposite one vertex: a triangle (0,0)–(9,0)–(0,9) with 8 more points on
+  // its long side — the run must be fanned from (0,0), 9 triangles, never cut along the run. A throw is a red case, not a crash.
+  const Lsh = [[0, 0], [4, 0], [4, 2], [2, 2], [2, 4], [0, 4]];
+  const sqO = [[0, 0], [10, 0], [10, 10], [0, 10]], sqH = [[3, 3], [3, 7], [7, 7], [7, 3]];
+  const fanT = [[0, 0], ...Array.from({ length: 10 }, (_, k) => [9 - k, k])];
+  let earsOk = false, earsNote = '';
+  try {
+    const tL = K.earClip(Lsh), kh = K.keyhole(sqO, sqH), khPts = kh.map(([w, i]) => (w === 'o' ? sqO[i] : sqH[i])), tK = K.earClip(khPts), tF = K.earClip(fanT);
+    earsOk = tL.length === 4 && near(tL.reduce((s, t) => s + triArea(Lsh, t), 0), 12, 1e-12) && tL.every((t) => triArea(Lsh, t) > 0)
+      && near(tK.reduce((s, t) => s + triArea(khPts, t), 0), 84, 1e-12) && tK.every((t) => triArea(khPts, t) > 0)
+      && tF.length === 9 && tF.every((t) => t.includes(0) && triArea(fanT, t) > 0);
+    earsNote = `${tL.length}, ${tK.length} and ${tF.length} triangles`;
+  } catch (e) { earsNote = `threw: ${e.message}`; }
+  check('ear clipping by hand: the L (12 mm²), the square with a hole (84 mm²) through the keyhole, a straight run fanned from its opposite vertex — CCW, areas sum',
+    earsOk, earsNote);
+  // The cells of the default blade at every 5 mm of the printed span (the stud of 332 mm from r 35 mm — the default seam's).
+  const stud136 = { d_mm: 5, to_m: 0.035 + 0.332 }, ri5 = 2.5 + K.SECTION_A.gap_mm, ro5 = ri5 + K.wallT_mm(K.SECTION_A.tubeLines);
+  const cellsAt = (r) => K.stationCells({ chord_mm: pb136.chord(r) * 1000, t: pb136.tc(r), flange_mm: K.flangeAt_mm(r, R136), ro_mm: r <= stud136.to_m ? ro5 : 0 });
+  const simplePoly = (P) => { const o = (a, b, c) => Math.sign((b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]));
+    for (let i = 0; i < P.length; i++) for (let j = i + 2; j < P.length; j++) { if (i === 0 && j === P.length - 1) continue;
+      const a = P[i], b = P[(i + 1) % P.length], c = P[j], d = P[(j + 1) % P.length];
+      if (o(a, b, c) * o(a, b, d) < 0 && o(c, d, a) * o(c, d, b) < 0) return false; } return true; };
+  let cellBad = 0, cellCount = 0;
+  const QN = 2 * K.CAVITY_DEFAULT.nChain + K.CAVITY_DEFAULT.nWall - 2;
+  for (let r = 0.11; r <= R136 + 1e-9; r += 0.005) {
+    const c = cellsAt(r);
+    for (const q of [c.front, c.rear]) if (q) { cellCount++;
+      if (q.length !== QN || !simplePoly(q) || K.polygonArea(q) <= 0 || !q.every((p) => K.pointInPolygon(p, c.outline)) || K.pointInPolygon([0, 0], q)) cellBad++; }
+    if (c.front && c.rear && Math.max(...c.front.map((p) => p[0])) > Math.min(...c.rear.map((p) => p[0])) + 1e-9) cellBad++;
+    // the near corners (where a face meets the wall) stand on the web's face, x = ±T(2)/2, or on the ring — never off both: the
+    // first G2b draft set the lower corner at x −0.86 instead of −0.43 and every other check stayed green
+    const w2 = K.wallT_mm(K.SECTION_A.webLines) / 2, nC = K.CAVITY_DEFAULT.nChain, nW = K.CAVITY_DEFAULT.nWall;
+    const onWall = ([x, y]) => Math.abs(Math.abs(x) - w2) < 1e-6 || (r <= stud136.to_m && Math.abs(Math.hypot(x, y) - ro5) < 1e-6);
+    if (c.front && !(onWall(c.front[0]) && onWall(c.front[2 * nC - 1]))) cellBad++;
+    if (c.rear && !(onWall(c.rear[nC - 1]) && onWall(c.rear[nC + nW - 2]))) cellBad++;
+  }
+  check(`the cells of the default blade (every 5 mm): ${QN} points each, simple, CCW, inside the profile, apart, the stud axis in neither`,
+    cellBad === 0 && cellCount > 150, `${cellCount} cells, ${cellBad} bad`);
+  // Criterion 3 (plan 03, redefined after the G2 prototype): the material of a station — the outline minus the cells minus the
+  // bore — against the raster of the same printed section (tools/section-raster.mjs, h 0.1 mm), within 2 %, where cells are.
+  const matAt = (r) => { const c = cellsAt(r), s = r <= stud136.to_m;
+    return K.polygonArea(c.outline) - (c.front ? K.polygonArea(c.front) : 0) - (c.rear ? K.polygonArea(c.rear) : 0) - (s ? Math.PI * ri5 * ri5 : 0); };
+  const rasterRows = [0.11, 0.2, 0.3, 0.49].map((r) => [r, matAt(r), raster({ chord_mm: pb136.chord(r) * 1000, t: pb136.tc(r), stud_d_mm: 5,
+    flange_mm: K.flangeAt_mm(r, R136), xWeb: 0.40, withTube: r <= stud136.to_m, minTE_mm: K.wallT_mm(2), n: 60, h: 0.1 }).A]);
+  check('criterion 3: the cells\' material = the raster of the printed section within 2 % at r 110 / 200 / 300 / 490 mm',
+    rasterRows.every(([, a, b]) => rel(a, b, 0.02)), rasterRows.map(([r, a, b]) => `${(r * 1000).toFixed(0)}: ${a.toFixed(1)} vs ${b.toFixed(1)}`).join(' · '));
+  // The three printable bodies: closed with their cavities, the shells counted, the volume = ∫ (outline − cells − bore) dz.
+  let bodies = null, bodyErr = '';
+  try { bodies = span136.slice(0, -1).map((z, i) => K.sectionMesh({ blade: pb136, R: R136, rFrom_m: r0m + z / 1000, rTo_m: r0m + span136[i + 1] / 1000, stud: stud136, cells: true })); }
+  catch (e) { bodyErr = e.message; }
+  const boreA = K.BODY_DEFAULT.nBore / 2 * ri5 * ri5 * Math.sin(2 * Math.PI / K.BODY_DEFAULT.nBore);   // the bore's polygon
+  const matZ = (rA, z, band, H) => { const r = rA + z / 1000, c = cellsAt(r), inBand = z > band - 1e-9 && z < H - band + 1e-9;
+    return K.polygonArea(c.outline) - (inBand ? (c.front ? K.polygonArea(c.front) : 0) + (c.rear ? K.polygonArea(c.rear) : 0) : 0) - (r <= stud136.to_m + 1e-12 ? boreA : 0); };
+  const bodyVols = bodies ? bodies.map((m) => { const rA = m.stations_m[0], H = (m.stations_m.at(-1) - rA) * 1000, band = K.BODY_DEFAULT.endBand_mm;
+    const cutsZ = [0, band, H - band, H, (stud136.to_m - rA) * 1000].filter((z) => z >= 0 && z <= H).sort((a, b) => a - b);
+    let I = 0; for (let k = 0; k + 1 < cutsZ.length; k++) { const a = cutsZ[k] + 1e-7, b = cutsZ[k + 1] - 1e-7; if (b <= a) continue;
+      const N = 40, h = (b - a) / N; let s = matZ(rA, a, band, H) + matZ(rA, b, band, H); for (let j = 1; j < N; j++) s += (j % 2 ? 4 : 2) * matZ(rA, a + j * h, band, H); I += s * h / 3; }
+    return [K.meshVolume(m), I]; }) : [];
+  check('criterion 1 with cavities: the three bodies are closed — the skin with the bore, two cells each — and V = ∫ (outline − cells − bore) dz within 0.5 %',
+    !!bodies && bodies.every((m) => K.meshClosed(m).closed && m.shells === 3) && bodyVols.every(([V, I]) => rel(V, I, 0.005)),
+    bodies ? bodyVols.map(([V, I], i) => `${(V / 1000).toFixed(1)} cm³ (${((V / I - 1) * 100).toFixed(2)} %, ${bodies[i].shells} shells)`).join(' · ') : `threw: ${bodyErr}`);
+  if (bodies) {
+    const petgBodies = bodyVols.reduce((s, [V]) => s + V, 0) * K.PETG_DENSITY_KG_M3 * 1e-6;   // g
+    // The epic's gate is ± 10 % between the printed mass and bladeMass (plan 01, phase 2; plan 03 criterion 5 — for the slicer).
+    // Here the core's own mesh: the thin-walled sum counts the shell's overlaps twice (≈ −6.6 % in the band, G2 prototype), the
+    // bodies add the solid 3 mm end bands (≈ +10 g at the root) — a first draft of this case predicted «lighter» and went red
+    // on its own premise (+1.5 %).
+    check('the printable bodies\' PETG (mesh volume × 1.25 g/cm³) within ± 10 % of bladeMass — the epic\'s mass gate',
+      rel(petgBodies, mass136.petg_kg * 1000, 0.10), `${petgBodies.toFixed(1)} g vs bladeMass ${(mass136.petg_kg * 1000).toFixed(1)} g (${((petgBodies / (mass136.petg_kg * 1000) - 1) * 100).toFixed(1)} %)`);
+  }
+
   return { bad, total, failed };
 }
 
@@ -631,7 +717,8 @@ if (!CONTROL) {
   for (const [from, to] of MUTANTS) {
     const key = `${from} → ${to}`;
     if (!core.includes(from)) { console.log(`MUTANT NOT APPLIED — "${from}" is not in the core`); missed++; continue; }
-    const { bad, failed } = run(load(core.replace(from, to)), false);
+    let bad, failed;   // a mutant that makes the suite THROW is red too — one crash must not end the whole control run
+    try { ({ bad, failed } = run(load(core.replace(from, to)), false)); } catch (e) { bad = 1; failed = [`(the suite threw: ${String(e.message).slice(0, 60)})`]; }
     out[key] = [...failed].sort();
     const lost = (golden[key] || []).filter((name) => !failed.includes(name));
     console.log(`${bad > 0 ? 'red ' : 'GREEN?!'} mutant "${from}" → "${to}": ${bad} case(s) failed${lost.length ? ` · ADDRESSEE DRIFT, no longer red: ${lost.join(' | ')}` : ''}`);

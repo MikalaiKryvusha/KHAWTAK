@@ -48,7 +48,11 @@ const expr = `JSON.stringify((() => { const K = window.KHAWTAK; if (!K) return {
     mesh: (() => { const pb = K.printedBlade({ R: 0.68, Cl: 1.2, lambda: 6, alphaD_rad: 6 * Math.PI / 180 });   // plan 03 G1: section 1
       const m = K.sectionMesh({ blade: pb, rFrom_m: 0.11, rTo_m: 0.3 }), stl = K.meshToSTL(m, 'section1');
       let h = 0; for (const b of stl) h = (h * 31 + b) >>> 0;                    // a byte hash: Chrome's STL = Node's, byte for byte
-      return { triangles: m.f.length, closed: K.meshClosed(m).closed, V: K.meshVolume(m), stlBytes: stl.length, stlHash: h }; })() }; })())`;
+      // plan 03 G2b: the printable body of the same section — the stud's bore and the two cells
+      const b = K.sectionMesh({ blade: pb, R: 0.68, rFrom_m: 0.11, rTo_m: 0.3, stud: { d_mm: 5, to_m: 0.367 }, cells: true }), bs = K.meshToSTL(b, 'body1');
+      let hb = 0; for (const x of bs) hb = (hb * 31 + x) >>> 0;
+      return { triangles: m.f.length, closed: K.meshClosed(m).closed, V: K.meshVolume(m), stlBytes: stl.length, stlHash: h,
+        body: { triangles: b.f.length, shells: b.shells, closed: K.meshClosed(b).closed, V: K.meshVolume(b), stlHash: hb } }; })() }; })())`;
 const res = await send('Runtime.evaluate', { expression: expr, returnByValue: true });
 console.log('chrome computed:', res.result.result.value);
 console.log('console errors:', errors.length ? errors : 'none');

@@ -23,6 +23,7 @@ the page opened from disk as `file://`. No production exists — no `REAL WORLD:
 | 1 | 2026-11-17 10:25 +03:00 | `node kalculator/test.mjs` | exit 0 · 90 of 90 as expected |
 | 2 | 2026-11-17 10:25 +03:00 | `node .work/tmp/chrome-smoke/smoke.mjs` (now `node tools/chrome-core-smoke.mjs`) | exit 0 · the core evaluated in Chrome, no errors |
 | 3 | 2026-11-17 10:20 +03:00 | `node kalculator/test.mjs --control` | exit 0 · 42 of 42 mutants seen red (≈ 41 s) |
+| 7 | ≈ 2026-11-17 16:43 +03:00 (recorded 2026-11-17 16:44 +03:00) | `node tools/chrome-core-smoke.mjs` (+ the printable body of section 1, plan 03 G2b) | exit 0 · no errors, no requests; `node kalculator/test.mjs` 122/122, `--control` 89/89 |
 | 6 | 2026-11-17 16:08 +03:00 (recorded 2026-11-17 16:08 +03:00) | `node tools/chrome-core-smoke.mjs` (after plan 03 G2a: the web through the stud axis) | exit 0 · no errors, no requests; the seam F0 2767.040020442789 N = Node's 2767.0; the mesh unchanged; `node kalculator/test.mjs` 117/117, `--control` 79/79 |
 | 5 | ≈ 2026-11-17 15:27 +03:00 (recorded 2026-11-17 15:29 +03:00) | `node tools/chrome-core-smoke.mjs` (+ the mesh of section 1) | exit 0 · no errors, no requests; `node kalculator/test.mjs` 115/115, `--control` 75/75 |
 | 4 | ≈ 2026-11-17 14:53 +03:00 (recorded 14:54) | `node tools/chrome-core-smoke.mjs` (after the third judge's fixes: the tube only along the stud) | exit 0 · no errors, no requests; the default seam case below; `node kalculator/test.mjs` 106/106, `--control` 62/62 |
@@ -42,6 +43,7 @@ the page opened from disk as `file://`. No production exists — no `REAL WORLD:
 | Chrome = Node: F0 through k(A2), 30 N·m, F_c 1.22 kN | pass | Chrome 4908.086131993044 N, Node 4908.0861319930455 N |
 | the owner's default mast in the browser (interview 002 Q2 «B») | pass | hub 7 m → 2.3865734483410836 m/s (criterion 7: 2.39 ± 0.01) |
 | Sutherland at 15 °C, Re of D 1.4 at 0.75R | pass | 1.7893e-5 Pa·s (standard 1.7894e-5); Re 62 010 (recon 01 §7: 62 thousand) |
+| run 7 · Chrome = Node: section 1's outer mesh and its printable body (plan 03 G2b — the bore, the cells, ear clipping, the keyhole) | pass | outer: 9434 triangles, hash 3284624141 in both (it differs from run 5's 2768478605 by the ORDER of the cap triangles only — sectionMesh now writes the bottom cap, then the top; the volume is the same to 1e-11); body: 25342 triangles, 3 shells, closed, V 62657.132934382294 (Chrome) / …265 (Node) mm³, hash 1230553088 in both |
 | run 5 · Chrome = Node: section 1's mesh and STL (plan 03 G1) | pass | Chrome: 9434 triangles, closed, V 210748.00258818534 mm³, 471784 bytes, byte hash 2768478605; Node: the same count, V 210748.00258818528, the same bytes and hash |
 | run 4 · Chrome = Node: the default seam (rotor 1.36 m, printed root, the blade's own mass, the tube along the stud) | pass | Chrome F0 2791.822146684068 N, M5, «caution», strict IEC fails; Node 2791.8221466840682 N — equal to the 15th digit |
 
