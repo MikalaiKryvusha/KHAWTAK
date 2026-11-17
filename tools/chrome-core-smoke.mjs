@@ -37,7 +37,13 @@ const expr = `JSON.stringify((() => { const K = window.KHAWTAK; if (!K) return {
   return { ok: true, title: document.title, n: Object.keys(K).length, hub: S.hub_m,
     vHub: K.shearTwoLayer(S.vRef, S.zRef, S.hub_m, S.z0), A: A2.A, Ix: A2.Ix, k: A2.k,
     F0: K.jointPreload_N(30, A2.k, 1220), mu15: K.airViscosity(15),
-    Re14: K.designReynolds({ rho: 1.2275, V: 5, lambda: 6, rOverR: 0.75, chord_m: K.schmitzChord(0.525, 0.7, 3, 1.2, 6), mu: K.airViscosity(7) }).Re }; })())`;
+    Re14: K.designReynolds({ rho: 1.2275, V: 5, lambda: 6, rOverR: 0.75, chord_m: K.schmitzChord(0.525, 0.7, 3, 1.2, 6), mu: K.airViscosity(7) }).Re,
+    seam: (() => { const R = 0.68, pb = K.printedBlade({ R, Cl: 1.2, lambda: 6, alphaD_rad: 6 * Math.PI / 180 });
+      const sec = K.bladeSection({ chord_mm: pb.chord(0.11) * 1000, t: pb.tc(0.11), stud_d_mm: 5, flange_mm: 3 });
+      const s = K.seamCheck({ section: sec, grade: '4.8', Fc_D_N: 781,
+        MyB_H_Nm: K.slmParked({ R, rho: 1.225, vRef: 30, Aproj: K.bladePlanArea(pb.chord, 0.1 * R, R) }).MyB_Nm,
+        MyB_D_Nm: K.slmMaxThrust({ R, rho: 1.225, vAve: 6 }).MyB_Nm });
+      return { rootChord_mm: pb.chord(0.11) * 1000, F0: s.F0_N, stud: s.stud, verdict: s.verdict, iecPasses: s.iec.passes }; })() }; })())`;
 const res = await send('Runtime.evaluate', { expression: expr, returnByValue: true });
 console.log('chrome computed:', res.result.result.value);
 console.log('console errors:', errors.length ? errors : 'none');
