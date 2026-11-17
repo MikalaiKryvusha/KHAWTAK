@@ -35,3 +35,7 @@ AUTHOR_STYLOMETRY.md
 
 # third-party documents the owner downloads for reference (copyrighted) — read, never committed
 /*.pdf
+
+# The owner's private place data (interview 004, Q1 «A», 2026-11-17): his original goal, the full site recon with the place's
+# identifiers and the bundle of the history before the redaction live on disk, outside git
+/private/
