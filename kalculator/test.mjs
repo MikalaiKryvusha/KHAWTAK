@@ -25,6 +25,7 @@ const MUTANTS = [
   ['Math.log(z / z0) / Math.log(zRef / z0)', 'Math.log(z / z0) / Math.log(zRef)'], // breaks the log law
   ['hBlend = 60', 'hBlend = 20'],                       // breaks criterion 7 (the blending height)
   ['k: 1.8', 'k: 2.0'],                                 // breaks criterion 7 (the site's Weibull shape)
+  ['z0: 0.25, hub_m: 7', 'z0: 0.25, hub_m: 10'],        // breaks the owner's default mast (interview 002 Q2 «B»)
   ['0.2969, -0.1260', '0.2969, -0.1360'],               // breaks the NACA thickness and criterion 4
   ['m / (p * p) * (2 * p * x - x * x)', 'm / p * (2 * p * x - x * x)'], // breaks the NACA mean line
   ['yc + yt * Math.cos(th)', 'yc - yt * Math.cos(th)'], // breaks the section: the upper surface laid off downward
@@ -98,6 +99,10 @@ function run(K, log = true) {
     check(`criterion 7: Brest region, mast ${z} m — hub ${vWant} m/s ± 0.01, D 1.4 → ${eWant} kWh ± 1 % (two profiles, z0 0.25, k 1.8)`,
       near(v, vWant, 0.01) && Math.abs(ey - eWant) <= 0.01 * eWant, `${v.toFixed(3)} m/s, ${ey.toFixed(1)} kWh`);
   }
+  // The owner's default mast (interview 002, Q2 «B»: 7 m): the page opens on it, so the default hub wind is the 7 m row above.
+  const vHub = K.shearTwoLayer(S.vRef, S.zRef, S.hub_m, S.z0);
+  check('default site: hub at the owner\'s 7 m mast (interview 002 Q2 «B») → 2.39 m/s ± 0.01', S.hub_m === 7 && near(vHub, 2.39, 0.01),
+    `hub ${S.hub_m} m, ${vHub.toFixed(3)} m/s`);
   check('two profiles: above 10 m a rough site is NOT windier than a smooth one (z0 1.0 < z0 0.1 at 15 m)',
     K.shearTwoLayer(3, 10, 15, 1.0) < K.shearTwoLayer(3, 10, 15, 0.1),
     `${K.shearTwoLayer(3, 10, 15, 1.0).toFixed(2)} < ${K.shearTwoLayer(3, 10, 15, 0.1).toFixed(2)}`);
