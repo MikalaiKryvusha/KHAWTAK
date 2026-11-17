@@ -24,6 +24,7 @@
     "criterion 3: BEM, Schmitz blade, λ 6, C_l 1, L/D ∞, hub 0.1R → Cp 0.518 ± 0.005 (researches/01 Appendix A)"
   ],
   "- 2 * shell, webY → - shell, webY": [
+    "a profile thinner than two shells: the web is 0, not negative, and A stays finite and equal to its parts",
     "section parts: the web at 0.60c = T(2)·(thickness there − 2·T(3)) = 18.95 mm² ± 1 % (hand, 24.64 mm thick)"
   ],
   "0.2969, -0.1260 → 0.2969, -0.1360": [
@@ -156,7 +157,7 @@
   ],
   "const BED_DEFAULT = { w_mm: 220, d_mm: 220, margin_mm: 5 } → const BED_DEFAULT = { w_mm: 220, d_mm: 220, margin_mm: 0 }": [
     "bed fit by hand: 200 × 10 straight · 280 × 10 only on the diagonal (≈ 45°) · 300 × 10 does not fit the 210 × 210 spot",
-    "bed fit: the footprint is the UNION of the outlines — two strips that fit alone, 215 mm apart together, do not fit"
+    "bed fit: the footprint is the UNION of the outlines — two strips that fit alone, 205 mm apart (215 mm together), do not fit"
   ],
   "const FLANGE = { mmPerMetreR: 3 → const FLANGE = { mmPerMetreR: 2": [
     "blade mass (PETG, the tube along the stud): recon 02 §7.2 R 1.0 m → 455 g ± 2 %; §10 classes 250 / 333 / 500 → 117 / 175 / 343 g ± 4 %",
@@ -191,6 +192,7 @@
     "seam A2 at the ultimate 60 N·m: the windward side −2.8 ± 0.4 MPa — the seam OPENS (researches/02 §2.4)"
   ],
   "const ox = xStud, oy → const ox = 0.9, oy": [
+    "a profile thinner than two shells: the web is 0, not negative, and A stays finite and equal to its parts",
     "blade mass (PETG, the tube along the stud): recon 02 §7.2 R 1.0 m → 455 g ± 2 %; §10 classes 250 / 333 / 500 → 117 / 175 / 343 g ± 4 %",
     "blade mass → F_c: recon 02 §2.4 — the R 1.0 m blade + 0.8 m of M8 at 600 rpm → 1.22 kN ± 3 %",
     "criterion 5 through the core's own section: F0 = 30 N·m / k(A2) + 1.22 kN → 4.95 kN ± 0.05",
@@ -208,10 +210,11 @@
     "section: the twist turns it about the stud axis — area kept, origin still inside",
     "stud OUT of the kern at 0.30c: centroid 21 ± 0.6 mm, ky 17.8 ± 0.6, |xc| > ky — why the stud goes to 0.40c",
     "stud in the kern at 0.40c: centroid 3.5 ± 0.6 mm toward the edge, |xc| < ky (researches/02 §2.4)",
-    "the strict IEC line can say «passes»: 0.1 N·m, no centrifugal pull, on the same seam → σ_max under 4.3 MPa"
+    "the strict IEC line can say «passes»: 0.1 N·m, no centrifugal pull, on the same seam → σ_max under 4.3 MPa",
+    "the tube only along the stud: no tube without it; the 332 mm stud adds ρ·A_tube·(r_end − r_root) of PETG (hand, ± 1 %)"
   ],
   "const pts = polys.flat() → const pts = polys[0]": [
-    "bed fit: the footprint is the UNION of the outlines — two strips that fit alone, 215 mm apart together, do not fit"
+    "bed fit: the footprint is the UNION of the outlines — two strips that fit alone, 205 mm apart (215 mm together), do not fit"
   ],
   "const r1 = 0.7 * R, r2 = 0.9 * R → const r1 = 0.6 * R, r2 = 0.9 * R": [
     "linear blade passes the Schmitz optimum at 0.7R and 0.9R (Burton)",
@@ -251,6 +254,9 @@
     "criterion 5 through the core's own section: F0 = 30 N·m / k(A2) + 1.22 kN → 4.95 kN ± 0.05",
     "seam A1 at 30 N·m, F0 5.7 kN: σ_b 8.6, σ_p 10.9 «too high», σ_max 19.5 MPa — the thin shell alone does not do",
     "section parts: the web at 0.60c = T(2)·(thickness there − 2·T(3)) = 18.95 mm² ± 1 % (hand, 24.64 mm thick)"
+  ],
+  "const webH = ys.length < 2 ? NaN : Math.max(0, webH0); → const webH = ys.length < 2 ? NaN : webH0;": [
+    "a profile thinner than two shells: the web is 0, not negative, and A stays finite and equal to its parts"
   ],
   "ct = Cl * sp - Cd * cp → ct = Cl * sp - 0.5 * Cd * cp": [
     "criterion 10: BEM with drag, L/D 100, λ 4–10 → researches/01 §1.6 ± 2 %",
@@ -340,6 +346,11 @@
   ],
   "webIx = web * webH ** 3 / 12 + webA → webIx = webA": [
     "section parts: Ix of the tube = π/4·(ro⁴ − ri⁴) + A·yc², of the web = w·h³/12 + A·(y − yc)² (hand); the parts sum to Ix"
+  ],
+  "withTube: r < studTo }); → withTube: true });": [
+    "default seam, the owner's policy (homebuilder's margin, interview #003 «A»): F0 2.79 kN ± 2 % → M5 4.8, wrench 2.79 N·m, σ_p 5.15 MPa «caution», closed",
+    "default seam, the strict IEC line beside it (every load ×3, untested PETG → 4.3 MPa): F0 8.38 kN, σ_max 30.0 MPa — does not pass",
+    "the tube only along the stud: no tube without it; the 332 mm stud adds ρ·A_tube·(r_end − r_root) of PETG (hand, ± 1 %)"
   ],
   "xFlange: [0.15, 0.50] → xFlange: [0.15, 0.40]": [
     "blade mass (PETG, the tube along the stud): recon 02 §7.2 R 1.0 m → 455 g ± 2 %; §10 classes 250 / 333 / 500 → 117 / 175 / 343 g ± 4 %",

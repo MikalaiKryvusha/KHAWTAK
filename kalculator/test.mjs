@@ -81,6 +81,8 @@ const MUTANTS = [
   ['const BED_DEFAULT = { w_mm: 220, d_mm: 220, margin_mm: 5 }', 'const BED_DEFAULT = { w_mm: 220, d_mm: 220, margin_mm: 0 }'], // forgets the 5 mm margin
   ['for (let deg = 0; deg < 180; deg += 0.25)', 'for (let deg = 0; deg < 1; deg += 0.25)'], // forgets that the part may be turned
   ['const pts = polys.flat()', 'const pts = polys[0]'],     // forgets the union of the outlines (the third judge, F1)
+  ['withTube: r < studTo });', 'withTube: true });'],         // the tube to the tip again (the fourth judge, finding 4)
+  ['const webH = ys.length < 2 ? NaN : Math.max(0, webH0);', 'const webH = ys.length < 2 ? NaN : webH0;'], // a negative web (finding 3)
 ];
 
 function load(src) {
@@ -362,18 +364,33 @@ function run(K, log = true) {
   // by r/R; flanges by flangeAt_mm; the tube along the recon's own stud; the root block excluded; PETG only): §7.2's R 1.0 m
   // with 0.8 m of M8 — 455 g; §10's classes 250 / 333 / 500 — 117 / 175 / 343 g. Observed: −1.6 %, −0.8 %, −1.1 %, −3.2 %; the
   // bands (± 2 %, ± 4 %) are that observed spread rounded up — NOT an independent tolerance (the recon's script is deleted;
-  // the gap trends with R, a method difference — the third judge, F6). §2.4's F_c of that blade at 600 rpm — 1.22 kN ± 3 %:
-  // the recon does not say where its stud starts; its own inputs (455 g at 0.424 m + 0.8 m of M8) give 1.20–1.22 kN by hand
-  // for a start at 35–55 mm — that unstated input, not the code, sets the band.
+  // the gap trends with R, a method difference — the third judge, F6; the classes from 1000 mm are printed, not checked: outside
+  // the MVP). §2.4's F_c of that blade at 600 rpm — 1.22 kN ± 3 %: recon 02 §0 puts the stud's root nut at r 35 mm, and the
+  // recon's own inputs (455 g at CoG 0.424 m + 0.8 m of M8 from r 35 mm) give 1.20 kN by hand — its 1220 N stands ≈ 1.7 % above
+  // them, and the recon does not say why (its script is deleted); with the core's −1.65 % mass the gap is −2.31 %, and ± 3 % is
+  // that observed gap rounded up. (Corrected after the fourth judge: the earlier reason «the recon does not say where its stud
+  // starts» was false — §0 says it.)
   const reconBlade = (R) => ({ chord: (r) => { const x = r / R; return R * (x <= 0.15 ? 0.18 : x <= 0.7 ? 0.18 - 0.08 * (x - 0.15) / 0.55 : 0.10 - 0.05 * (x - 0.7) / 0.3); },
     tc: (r) => 0.18 - 0.06 * r / R });
   check('flanges along the span: 3 mm·R at the root block (2.04 mm at R 0.68, 3.0 at R 1.0), half by mid-taper, none from 0.4R',
     near(K.flangeAt_mm(0.11, 0.68), 2.04, 1e-9) && near(K.flangeAt_mm(0.11, 1.0), 3, 1e-9) && near(K.flangeAt_mm(0.255, 1.0), 1.5, 1e-9)
     && K.flangeAt_mm(0.4, 1.0) === 0 && K.flangeAt_mm(0.05, 1.0) === 3);
   const mR1 = K.bladeMass({ blade: reconBlade(1.0), R: 1.0, stud: 'M8', studLen_m: 0.8 });   // the recon's own stud: 0.8 m of M8 (§2.4)
-  const mCls = [[0.58, 'M4', 0.25, 117], [0.68, 'M5', 0.333, 175], [0.89, 'M6', 0.5, 343]].map(([R, s, L, w]) => [K.bladeMass({ blade: reconBlade(R), R, stud: s, studLen_m: L }).petg_kg * 1000, w]);
+  const mAll = [[0.58, 'M4', 0.25, 117], [0.68, 'M5', 0.333, 175], [0.89, 'M6', 0.5, 343], [1.42, 'M8', 1.0, 1066], [1.94, 'M10', 1.5, 2327],
+    [2.43, 'M12', 2.0, 4098]].map(([R, s, L, w]) => [K.bladeMass({ blade: reconBlade(R), R, stud: s, studLen_m: L }).petg_kg * 1000, w]);
+  const mCls = mAll.slice(0, 3);                                // the MVP's classes (interview 001); 1000+ are printed only
   check('blade mass (PETG, the tube along the stud): recon 02 §7.2 R 1.0 m → 455 g ± 2 %; §10 classes 250 / 333 / 500 → 117 / 175 / 343 g ± 4 %',
-    rel(mR1.petg_kg * 1000, 455, 0.02) && mCls.every(([g, w]) => rel(g, w, 0.04)), `${(mR1.petg_kg * 1000).toFixed(1)} · ${mCls.map(([g]) => g.toFixed(1)).join(' · ')} g`);
+    rel(mR1.petg_kg * 1000, 455, 0.02) && mCls.every(([g, w]) => rel(g, w, 0.04)), `${(mR1.petg_kg * 1000).toFixed(1)} · ${mCls.map(([g]) => g.toFixed(1)).join(' · ')} g`
+    + ` · outside the MVP, not checked: ${mAll.slice(3).map(([g, w]) => `${g.toFixed(0)} vs ${w} (${((g / w - 1) * 100).toFixed(1)} %)`).join(' · ')}`);
+  // The tube stops where the stud does (the third judge, F7; the fourth judge: the fix had no case of its own). A section without
+  // the tube has none; the default blade's PETG with its 332 mm stud exceeds the one with no stud by exactly the tube's volume
+  // from the root block to the stud's end: ρ·A_tube·(0.035 + 0.332 − 0.110) — hand, ± 1 % (the 2 mm stations).
+  const noTube = K.bladeSection({ chord_mm: 180, t: 0.18, stud_d_mm: 8, flange_mm: 3, withTube: false });
+  const tubeM5 = K.bladeSection({ chord_mm: 180, t: 0.18, stud_d_mm: 5 }).parts.tubeA;
+  const dPetg = (K.bladeMass({ blade: pb136, R: R136, stud: 'M5', studLen_m: 0.332 }).petg_kg - K.bladeMass({ blade: pb136, R: R136, stud: 'M5', studLen_m: 0 }).petg_kg) * 1000;
+  const dHand = K.PETG_DENSITY_KG_M3 * tubeM5 * 1e-6 * (0.035 + 0.332 - 0.110) * 1000;
+  check('the tube only along the stud: no tube without it; the 332 mm stud adds ρ·A_tube·(r_end − r_root) of PETG (hand, ± 1 %)',
+    noTube.parts.tubeA === 0 && rel(dPetg, dHand, 0.01), `+${dPetg.toFixed(2)} g (hand ${dHand.toFixed(2)} g, A_tube ${tubeM5.toFixed(2)} mm²)`);
   const m8 = K.bladeMass({ blade: reconBlade(1.0), R: 1.0, stud: 'M8', studLen_m: 0.8 });
   const fc8 = K.slmCentrifugal({ mB_kg: m8.m_kg, Rcog_m: m8.cog_m, omega: 600 * Math.PI / 30 });
   check('blade mass → F_c: recon 02 §2.4 — the R 1.0 m blade + 0.8 m of M8 at 600 rpm → 1.22 kN ± 3 %', rel(fc8, 1220, 0.03), `${fc8.toFixed(0)} N`);
@@ -439,6 +456,12 @@ function run(K, log = true) {
     rel(A1.parts.webA, webHand, 0.01) && near(webHand, 18.95, 0.01), `${A1.parts.webA.toFixed(2)} (hand ${webHand.toFixed(2)})`);
   check('section parts add up to A; the flanges appear only in A2', near(A2.parts.shellA + A2.parts.flangeA + A2.parts.tubeA + A2.parts.webA, A2.A, 1e-6)
     && A1.parts.flangeA === 0 && A2.parts.flangeA > 0, `A2 flanges ${A2.parts.flangeA.toFixed(1)} mm²`);
+  // A profile thinner than two shells has no room for a web (the clamp at 0 — the fourth judge: nothing reached it): chord 15 mm,
+  // t/c 12 % (≈ 1.7 mm thick at 0.60c against 2 × 1.26 mm of shell), no stud there.
+  const thin = K.bladeSection({ chord_mm: 15, t: 0.12, stud_d_mm: 5, withTube: false });
+  check('a profile thinner than two shells: the web is 0, not negative, and A stays finite and equal to its parts',
+    thin.parts.webA === 0 && Number.isFinite(thin.A) && thin.A > 0 && near(thin.parts.shellA + thin.parts.flangeA + thin.parts.webA, thin.A, 1e-9),
+    `A ${thin.A.toFixed(1)} mm², web ${thin.parts.webA}`);
   // Terms too small for the ± 2 % band (the judge, finding 3): the tube's and the web's own I and their Steiner terms, by hand
   const ri8 = 4.2, ro8 = 4.2 + K.wallT_mm(2), P = A1.parts;
   const tubeIxHand = Math.PI / 4 * (ro8 ** 4 - ri8 ** 4) + tubeHand * A1.yc ** 2;
@@ -488,7 +511,7 @@ function run(K, log = true) {
     f200.fits && f280.fits && Math.abs(f280.angle_deg % 90 - 45) < 3 && !f300.fits, `280: ${f280.angle_deg}°, ${f280.w_mm.toFixed(1)} × ${f280.h_mm.toFixed(1)}`);
   // The union decides (the third judge, F1): two 200 × 10 strips 205 mm apart — each alone fits, together 200 × 215 do not.
   const pair = [strip(200, 10)[0], strip(200, 10)[0].map(([x, y]) => [x, y + 205])];
-  check('bed fit: the footprint is the UNION of the outlines — two strips that fit alone, 215 mm apart together, do not fit',
+  check('bed fit: the footprint is the UNION of the outlines — two strips that fit alone, 205 mm apart (215 mm together), do not fit',
     K.bedFit([pair[0]]).fits && K.bedFit([pair[1]]).fits && !K.bedFit(pair).fits);
   // The default blade's first section (rotor 1.36 m): the printed span 110 … 680 mm in three sections of 190 mm; its outlines
   // at the bottom, the middle and the top, each at its own chord, t/c and twist, together — the footprint fits the bed.
@@ -507,7 +530,10 @@ function run(K, log = true) {
 // some other case still catches the mutant. `--control --write-golden` re-captures (only with a reason in the commit).
 // @guard control-addressees
 // THREAT:         a test edit leaves a mutant red only through an unrelated case — the criterion it guards quietly blind
-// PROVED-AGAINST: the golden's addressee of the root-chord mutant renamed by hand → the run prints ADDRESSEE DRIFT, exit 1
+// PROVED-AGAINST: the golden's addressee of the root-chord mutant renamed by hand → the run prints ADDRESSEE DRIFT, exit 1;
+//                 the fourth judge (2026-11-17), on copies: an edited mutant, an extra golden key, a deleted mutant → exit 1;
+//                 the mass case renamed with ± 50 % bands (106/106 stays green) → drift 8, exit 1, and `--write-golden` prints
+//                 7 NET LOSS lines; the old golden re-captured → exactly one NET LOSS (the tube-radius mutant)
 // GAP:            a mutant that gains NEW red cases is not flagged (only lost ones are); the golden is the judges' state;
 //                 a mutant edited or added, or a golden key without its mutant, fails the run until `--write-golden`;
 //                 `--write-golden` prints every lost / gained addressee and counts the NET LOSSES — it never refuses one
