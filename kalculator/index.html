@@ -22,9 +22,9 @@
 // SI units inside; millimetres only at the print/STL boundary.
 
 // ---- S2 · air and wind — researches/01 §5.1 (the same formulas as KATAK, so the two calculators agree)
-// [NOT-TESTED] — hygiene green 2026-11-17: `node kalculator/test.mjs` 99/99 for the whole core so far (criteria 1–7, 9–11 + the Γ,
+// [NOT-TESTED] — hygiene green 2026-11-17: `node kalculator/test.mjs` 103/103 for the whole core so far (criteria 1–7, 9–11 + the Γ,
 // shear, Weibull, NACA, section, station, Schmitz, BEM, power-curve, stud, shell, section-A, seam-stress, anchor and cut
-// identities, μ, Re and the SLM loads, the seam policy, the printed root), `--control` 55/55. The marker flips only on a functional run of the page (TESTING_FRAMEWORK.md).
+// identities, μ, Re and the SLM loads, the seam policy, the printed root, the blade mass), `--control` 59/59. The marker flips only on a functional run of the page (TESTING_FRAMEWORK.md).
 
 // International Standard Atmosphere: sea-level pressure, lapse rate, sea-level temperature, exponent g·M/(R·L);
 // specific gas constant of dry air. source: researches/01 §5.1 (KATAK researches/01 §3.1).
@@ -346,10 +346,11 @@ function iecAllowable_MPa(fk_MPa, gammaF, gammaM) { return fk_MPa / (gammaF * ga
 // 1.36 m rotor — no margin policy holds it: plan 02, the root finding of 2026-11-17).
 // FORK: options <the linear blade to the hub | the exact Schmitz chord inboard | a root transition: the recon's root chord and
 // thickness at the root block, blended linearly into the linear blade> · price of error <a seam that opens | a root that
-// stalls and weighs> · consulted <researches/02 §0 (root block to r 110 mm, the flanges end by 0.4R), §10 (root 0.18R within
-// the bed; «корневой профиль толще (21–25 %: I ∝ t²)»), researches/01 §3.2 (the tunnel: the linearised printed blade beat
-// the exact Schmitz one, Cp_max 0.42–0.46 against 0.27–0.29)> → the transition: the measured-better linear blade outboard,
-// the structural root inboard. t/c 25 % at the root block is [AI] — the top of the recon's 21–25 % range.
+// stalls and weighs> · consulted <researches/02 §0 (root block to r 110 mm; the chord law c/R 0.18 at the root; the flanges end
+// by 0.4R), §10 (the root chord within the bed; «корневой профиль толще (21–25 %: I ∝ t²)»), researches/01 §3.2 (the tunnel:
+// the linearised printed blade beat the exact Schmitz one, Cp_max 0.42–0.46 against 0.27–0.29)> → the transition: the
+// measured-better linear blade outboard, the structural root inboard. [AI] choices: t/c 25 % at the root block (the top of the
+// recon's 21–25 %) and the blend's end at 0.4R (borrowed from the flange taper; the recon's own chord law is wider there).
 // [NOT-TESTED] — hygiene in test.mjs. GAP: the aerodynamic cost of the wider root waits for the airfoil polar.
 const ROOT_DEFAULT = { r0_m: 0.110, cRoot_per_R: 0.18, tcRoot: 0.25, rBlend_per_R: 0.4 };
 
@@ -362,19 +363,43 @@ function printedBlade({ R, B = 3, Cl, lambda, alphaD_rad, rHub = 0.1 * R, tcRoot
   const r0 = root.r0_m, r1 = Math.max(root.rBlend_per_R * R, r0), cRoot = root.cRoot_per_R * R;
   const w = (r) => (r <= r0 ? 1 : r >= r1 ? 0 : (r1 - r) / (r1 - r0));         // 1 at the root block → 0 at rBlend
   const dc = Math.max(0, cRoot - lin.chord(r0)), dtc = Math.max(0, root.tcRoot - tcLin(r0));
-  return { chord: (r) => lin.chord(r) + w(r) * dc, twist: lin.twist, tc: (r) => tcLin(r) + w(r) * dtc, r0, r1, linear: lin };
+  return { chord: (r) => lin.chord(r) + w(r) * dc, twist: lin.twist, tc: (r) => tcLin(r) + w(r) * dtc, r0, r1, linear: lin, tcLin };
+}
+
+// The flanges along the span: 3 mm·(R / 1 m) at the root block, linearly to none by 0.4R. source: researches/02 §0 (row
+// «Сечение A»: «3 мм·(R/1 м) у корня, сходят на нет к 0,4R»). PETG 1.25 g/cm³ (researches/02 §0, Bambu PETG Basic TDS).
+// [NOT-TESTED] — hygiene: recon 02 §7.2 and §10 masses re-derived in test.mjs.
+const FLANGE = { mmPerMetreR: 3, endPerR: 0.4 };
+const PETG_DENSITY_KG_M3 = 1250;
+/** Flange thickness (mm) at radius r of a blade of radius R; full at and inside the root block r0. */
+function flangeAt_mm(r, R, r0 = ROOT_DEFAULT.r0_m) {
+  const r1 = Math.max(FLANGE.endPerR * R, r0 + 1e-9), full = FLANGE.mmPerMetreR * R;
+  return r >= r1 ? 0 : r <= r0 ? full : full * (r1 - r) / (r1 - r0);
+}
+
+/** Mass (kg) and centre of mass (m) of the blade outboard of rFrom: section A at every station (PETG; chord(r) in m, tc(r)) plus
+ *  the stud from its root nut (r 35 mm, researches/02 §0) over its length — the mass integral of researches/02 §7.2, 2 mm step. */
+function bladeMass({ blade, R, stud, studLen_m, rFrom = ROOT_DEFAULT.r0_m, studFrom_m = 0.035, dr = 0.002 }) {
+  const { d, kgm } = STUDS[stud], studTo = studFrom_m + studLen_m;
+  let m = 0, mr = 0;
+  for (let r = rFrom + dr / 2; r < R; r += dr) {
+    const s = bladeSection({ chord_mm: blade.chord(r) * 1000, t: blade.tc(r), stud_d_mm: d, flange_mm: flangeAt_mm(r, R), n: 40 });
+    const dm = PETG_DENSITY_KG_M3 * s.A * 1e-6 * dr + (r < studTo ? kgm * dr : 0);
+    m += dm; mr += dm * r;
+  }
+  return { m_kg: m, cog_m: mr / m };
 }
 
 // ---- S8 · structure (first part) — the joint preload, the wrench torque, the smallest stud for the user's grade.
 // [NOT-TESTED] — hygiene: criteria 5 and 6 in test.mjs; the thin-walled shell is below, the full section A after it.
 
 // Metric coarse studs M3–M14: stress area As (mm²), proof loads of classes 4.8 and 8.8 (kN) — ISO 898-1 via
-// researches/02 §4.2; stainless A2-70: σ0.2 ≥ 450 MPa (researches/02 §4.2 [24]), capacity As·450.
+// researches/02 §4.2; stainless A2-70: σ0.2 ≥ 450 MPa (researches/02 §4.2 [24]), capacity As·450; mass of 1 m, kg (§4.2 [22]).
 const STUDS = {
-  M3: { d: 3, As: 5.03, p48: 1.56, p88: 2.92 }, M4: { d: 4, As: 8.78, p48: 2.77, p88: 5.10 },
-  M5: { d: 5, As: 14.2, p48: 4.40, p88: 8.23 }, M6: { d: 6, As: 20.1, p48: 6.23, p88: 11.6 },
-  M8: { d: 8, As: 36.6, p48: 11.4, p88: 21.2 }, M10: { d: 10, As: 58.0, p48: 18.0, p88: 33.7 },
-  M12: { d: 12, As: 84.3, p48: 26.1, p88: 48.9 }, M14: { d: 14, As: 115, p48: 35.6, p88: 66.7 },
+  M3: { d: 3, As: 5.03, p48: 1.56, p88: 2.92, kgm: 0.044 }, M4: { d: 4, As: 8.78, p48: 2.77, p88: 5.10, kgm: 0.078 },
+  M5: { d: 5, As: 14.2, p48: 4.40, p88: 8.23, kgm: 0.124 }, M6: { d: 6, As: 20.1, p48: 6.23, p88: 11.6, kgm: 0.177 },
+  M8: { d: 8, As: 36.6, p48: 11.4, p88: 21.2, kgm: 0.319 }, M10: { d: 10, As: 58.0, p48: 18.0, p88: 33.7, kgm: 0.500 },
+  M12: { d: 12, As: 84.3, p48: 26.1, p88: 48.9, kgm: 0.725 }, M14: { d: 14, As: 115, p48: 35.6, p88: 66.7, kgm: 0.970 },
 };
 const A2_70_RP02_MPA = 450;
 
@@ -523,7 +548,8 @@ const PETG_Z_MPA = 39;
  *  stresses and the long-term verdict — and the strict IEC line (loads ×γf, allowed f_k/(γf·γm) for untested PETG). */
 function seamCheck({ section, MyB_H_Nm, MyB_D_Nm, Fc_D_N, grade }) {
   const at = (g) => {
-    const F0 = Math.max(jointPreload_N(g * MyB_H_Nm, section.k, 0), jointPreload_N(g * MyB_D_Nm, section.k, Fc_D_N));
+    // every load takes the factor — the moments AND the centrifugal pull (interview #003: «нагрузка ×3»; the judge, F1)
+    const F0 = Math.max(jointPreload_N(g * MyB_H_Nm, section.k, 0), jointPreload_N(g * MyB_D_Nm, section.k, g * Fc_D_N));
     return { F0, st: jointStress_MPa({ M_Nm: g * Math.max(MyB_H_Nm, MyB_D_Nm), F0_N: F0, A: section.A, I: section.Ix, yMax: section.yMax }) };
   };
   const hob = at(MARGIN_POLICY.gammaLoad), strict = at(IEC_GAMMA.fSlm.ultimate);
@@ -563,7 +589,7 @@ const KHAWTAK = { airDensity, shearLog, shearTwoLayer, shearPower, gamma, weibul
   schmitzPhi, schmitzChord, schmitzTwist, linearBlade, prandtlF, bemStation, bemRotor, SUTHERLAND, RE_POLAR_MIN, airViscosity,
   designReynolds, PERF_DEFAULT, powerCurve, tipSpeed,
   STUDS, studCapacity_kN, smallestStud, jointPreload_N, wrenchTorque_Nm, TC_DEFAULT, bladeStations, shellSection,
-  ROOT_DEFAULT, printedBlade, IEC_SWT_CLASS, SLM, IEC_GAMMA, bladePlanArea, slmMaxThrust, slmParked, slmCentrifugal, iecAllowable_MPa,
+  ROOT_DEFAULT, printedBlade, FLANGE, PETG_DENSITY_KG_M3, flangeAt_mm, bladeMass, IEC_SWT_CLASS, SLM, IEC_GAMMA, bladePlanArea, slmMaxThrust, slmParked, slmCentrifugal, iecAllowable_MPa,
   MARGIN_POLICY, PETG_Z_MPA, seamCheck, segSq, wallT_mm, SECTION_A, bladeSection, jointStress_MPa, PETG_LONG_TERM_MPA, anchorBearing, sectionCuts };
 // ===== CORE-END
 window.KHAWTAK = KHAWTAK;

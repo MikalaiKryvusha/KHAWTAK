@@ -48,6 +48,10 @@ const MUTANTS = [
   ['mB_kg * Rcog_m * omega * omega', 'mB_kg * Rcog_m * omega'], // breaks case E (ω, not ω²)
   ['mMinimal: { fatigue: 10, ultimate: 3.0 }', 'mMinimal: { fatigue: 10, ultimate: 2.0 }'], // breaks γm of an untested material
   ['fSlm: { fatigue: 1.0, ultimate: 3.0 }', 'fSlm: { fatigue: 1.0, ultimate: 2.0 }'],         // breaks γf of the SLM loads (the strict seam)
+  ['section.k, g * Fc_D_N)', 'section.k, Fc_D_N)'],       // the strict line forgets to factor F_c (the judge, F1)
+  ['kgm: 0.124 }', 'kgm: 0.248 }'],                     // breaks the M5 stud's mass (F_c of the default seam)
+  ['const PETG_DENSITY_KG_M3 = 1250', 'const PETG_DENSITY_KG_M3 = 1000'], // breaks the blade mass (recon 02 §7.2)
+  ['const FLANGE = { mmPerMetreR: 3', 'const FLANGE = { mmPerMetreR: 2'], // breaks the flange law (recon 02 §0)
   ['gammaLoad: 1, studMargin: 1.5', 'gammaLoad: 1.2, studMargin: 1.5'], // breaks the owner's policy: loads ×1 (interview #003)
   ['gammaLoad: 1, studMargin: 1.5', 'gammaLoad: 1, studMargin: 2.0'],   // breaks the owner's stud margin 1.5 (interview #003)
   ['cRoot_per_R: 0.18', 'cRoot_per_R: 0.12'],           // breaks the printed root chord (recon 02 §0/§10)
@@ -237,7 +241,8 @@ function run(K, log = true) {
   // Criterion 10 — BEM WITH DRAG (every case above runs at C_d = 0, so the drag terms were never exercised). The Schmitz blade
   // designed at each λ, C_l constant, C_d = C_l/(L/D), hub 0.1R → the BEM column of researches/01 §1.6. Re-derived 2026-11-17
   // (EXP-0004): the core is 0.2–1.5 % lower, the gap growing with drag; the core's drag LOSS equals the analytic loss of the
-  // optimum blade (16/27)·λ/(L/D) within 1 % (the next case), the recon's lies ≈ 6 % lower; its script is deleted → ± 2 %.
+  // optimum blade (16/27)·λ/(L/D) within 1.25 % (the next case; its band ± 3 % = that worst cell rounded up, the analytic
+  // estimate being a large-λ limit), the recon's lies ≈ 6 % lower; its script is deleted → ± 2 %.
   // GAP: drag inside the induction (C_d in c_n) moves Cp by ≈ 0.1 % — no case here can see it.
   const lams = [4, 5, 6, 7, 8, 10];
   const reconBem = { 100: [0.461, 0.476, 0.484, 0.488, 0.490, 0.489], 60: [0.447, 0.458, 0.462, 0.462, 0.460, 0.450], 40: [0.429, 0.435, 0.434, 0.429, 0.422, 0.402] };
@@ -288,8 +293,8 @@ function run(K, log = true) {
   if (log) console.log('S7. loads — IEC 61400-2 SLM, the blade cases D, H, E (researches/01 §6.1, §7)');
   // recon 01 §7 (class IV, ρ 1.225, Schmitz blade λ 6, C_l 1.2, hub 0.1R), re-derived 2026-11-17 through the core's Schmitz
   // chord before it became a target (EXP-0004): every cell matches to the table's rounding. Rows: D, A_proj,B, M_yB,D at V_ave
-  // 6 / 4, M_yB,H, F_x D / H. Tolerances = the table's rounding (half its last digit; ± 0.6 on the integer columns: ± 0.5
-  // rounding + the plan-area integral, ≤ 0.1 % at D 4.2).
+  // 6 / 4, M_yB,H, F_x D / H. Tolerances = the table's rounding: half its last digit (± 0.05, and ± 0.5 on F_x,D — no plan
+  // area in it); ± 0.6 on case H's integers (± 0.5 rounding + the plan-area integral, ≤ 0.1 % at D 4.2 — the judge, F6).
   const slmRows = [[0.6, 0.007, 1.3, 0.6, 2, 19, 34], [1.0, 0.019, 6.0, 2.7, 8, 54, 94], [1.4, 0.038, 16.5, 7.3, 21, 106, 184],
     [2.0, 0.077, 48.1, 21.4, 62, 216, 375], [2.4, 0.111, 83.1, 36.9, 108, 312, 540], [3.0, 0.173, 162.4, 72.2, 211, 487, 843],
     [4.2, 0.340, 445.5, 198.0, 578, 955, 1653]];
@@ -298,7 +303,7 @@ function run(K, log = true) {
     const R = D / 2, Aproj = K.bladePlanArea((r) => K.schmitzChord(r, R, 3, 1.2, 6), 0.1 * R, R);
     const d6 = K.slmMaxThrust({ R, rho: 1.225, vAve: IV.vAve }), d4 = K.slmMaxThrust({ R, rho: 1.225, vAve: 4 });
     const h = K.slmParked({ R, rho: 1.225, vRef: IV.vRef, Aproj });
-    return { D, ok: { A: near(Aproj, Ap, 5e-4), D: near(d6.MyB_Nm, mD6, 0.05) && near(d4.MyB_Nm, mD4, 0.05) && near(d6.Fx_N, fD, 0.6),
+    return { D, ok: { A: near(Aproj, Ap, 5e-4), D: near(d6.MyB_Nm, mD6, 0.05) && near(d4.MyB_Nm, mD4, 0.05) && near(d6.Fx_N, fD, 0.5),
       H: near(h.MyB_Nm, mH, 0.6) && near(h.Fx_N, fH, 0.6) }, Aproj, d6, h };
   });
   check('plan area of a blade: the core\'s Schmitz chord from 0.1R to R → recon 01 §7, D 0.6 … 4.2 m (0.007 … 0.340 m²)',
@@ -307,9 +312,9 @@ function run(K, log = true) {
     slm.every((s) => s.ok.D), slm.map((s) => `${s.d6.MyB_Nm.toFixed(1)}/${s.d6.Fx_N.toFixed(0)}`).join(' · '));
   check('criterion 11: case H, parked at V_e50 = 1.4·30 = 42 m/s — M_yB and F_x of recon 01 §7, all seven rotors',
     slm.every((s) => s.ok.H) && near(slm[0].h.vE50, 42, 1e-12), slm.map((s) => `${s.h.MyB_Nm.toFixed(1)}/${s.h.Fx_N.toFixed(0)}`).join(' · '));
-  // Case E against an external measurement: Alber et al., TORQUE 2022 — a 1.2 kg blade, CoG 0.39R of R 1 m, 600 rpm → 1850 N
-  // (quoted in researches/02 §2.4); and recon 01 §6.2's D 1.4: 0.33 kg, CoG 0.28 m, λ 6 at 10 m/s → 673 N (± 1.5 %: its
-  // inputs are rounded to two digits).
+  // Case E against the figure of Alber et al., TORQUE 2022 — a 1.2 kg blade, CoG 0.39R of R 1 m, 600 rpm → 1850 N (quoted in
+  // researches/02 §2.4; most likely their own m·r·ω², so it guards ω² and the units, not a measured force — the judge, F7);
+  // and recon 01 §6.2's D 1.4: 0.33 kg, CoG 0.28 m, λ 6 at 10 m/s → 673 N (± 1.5 %: its inputs are rounded to two digits).
   const fE1 = K.slmCentrifugal({ mB_kg: 1.2, Rcog_m: 0.39, omega: 600 * Math.PI / 30 });
   const fE2 = K.slmCentrifugal({ mB_kg: 0.33, Rcog_m: 0.28, omega: 6 * 10 / 0.7 });
   check('case E, centrifugal pull: 1.2 kg at 0.39 m, 600 rpm → 1850 N ± 0.5 % (Alber et al. 2022); 0.33 kg at 0.28 m, λ 6, 10 m/s, R 0.7 → 673 N ± 1.5 %',
@@ -324,31 +329,55 @@ function run(K, log = true) {
   // EXP-0006). Rotor 1.36 m (the «333» class, HOUSE_RULES §7), class IV, ρ 1.225; the seam at the root block r 110 mm with the
   // ROOT OF researches/02 §0/§10 — chord 0.18R = 122 mm (the core's linear blade gives only 63 mm there, and that seam holds
   // under no policy: plan 02, the root finding of 2026-11-17), t/c 25 % (recon 02 §10: «корневой профиль толще (21–25 %)»),
-  // flanges 3 mm, M5; F_c 781 N = the 139 g outboard of the seam at CoG 0.32 m, λ 6 at 2.5·V_ave (case D's speed).
-  // Since interview #003 Q1 «A» (2026-11-17 10:41) the cases go through seamCheck — the owner's policy in the core — and the
-  // PRINTED blade (the root transition, printedBlade): its wider root raises A_proj by 26 %, so the strict line moves from the
-  // interview's 6.8 kN / 20.9 MPa (computed on the linear planform) to 7.8 kN / 25.1 MPa; the homebuilder's verdict stays —
-  // case D (thrust + F_c) governs it, not the storm.
+  // M5. Since interview #003 Q1 «A» (2026-11-17 10:41) the cases go through seamCheck — the owner's policy in the core — and
+  // the PRINTED blade (printedBlade). Since the second judge (2026-11-17, F1–F3): the flanges by the recon's law (flangeAt_mm,
+  // 2.04 mm here, not a typed 3 mm), F_c from the blade's own mass (bladeMass: 162.5 g outboard of the seam, CoG 0.297 m, at
+  // case D's ω — 845 N, no longer a typed 781 N from a temp probe on the linear blade), and the strict line factors F_c too:
+  // the homebuilder's numbers move 2.78 → 2.85 kN, σ_p 4.5 → 5.3 MPa (M5 4.8 and «caution» stay); the strict line 7.8 →
+  // 8.56 kN, σ_max 25.1 → 30.3 MPa (still fails).
   const R136 = 0.68, pb136 = K.printedBlade({ R: R136, Cl: 1.2, lambda: 6, alphaD_rad: 6 * deg });
   const Ap136 = K.bladePlanArea(pb136.chord, 0.1 * R136, R136);
-  const root136 = K.bladeSection({ chord_mm: pb136.chord(0.11) * 1000, t: pb136.tc(0.11), stud_d_mm: 5, flange_mm: 3 });
-  const seam136 = K.seamCheck({ section: root136, grade: '4.8', Fc_D_N: 781,
-    MyB_H_Nm: K.slmParked({ R: R136, rho: 1.225, vRef: IV.vRef, Aproj: Ap136 }).MyB_Nm,
-    MyB_D_Nm: K.slmMaxThrust({ R: R136, rho: 1.225, vAve: IV.vAve }).MyB_Nm });
-  check(`default seam, the owner's policy (homebuilder's margin, interview #003 «A»): F0 2.78 kN ± 2 % → M5 4.8, wrench 2.8 N·m, σ_p 4.5 MPa «caution», closed`,
-    rel(seam136.F0_N, 2780, 0.02) && seam136.stud === 'M5' && near(seam136.wrench_Nm, 2.78, 0.06) && seam136.verdict === 'caution' && !seam136.opens
-    && K.smallestStud(seam136.F0_N / 1000, '8.8') === 'M4',
-    `F0 ${(seam136.F0_N / 1000).toFixed(2)} kN, ${seam136.stud ?? 'no stud ≤ M14'} 4.8, wrench ${seam136.wrench_Nm?.toFixed(2) ?? '—'} N·m, σ_p ${seam136.sigmaP.toFixed(1)}, σ_max ${seam136.sigmaMax.toFixed(1)} MPa`);
-  check(`default seam, the strict IEC line beside it (loads ×3, untested PETG → 4.3 MPa): F0 7.8 kN, σ_max 25.1 MPa — does not pass`,
-    rel(seam136.iec.F0_N, 7830, 0.02) && rel(seam136.iec.sigmaMax, 25.1, 0.02) && near(seam136.iec.allowed, 4.33, 0.01) && !seam136.iec.passes,
+  const root136 = K.bladeSection({ chord_mm: pb136.chord(0.11) * 1000, t: pb136.tc(0.11), stud_d_mm: 5, flange_mm: K.flangeAt_mm(0.11, R136) });
+  const mass136 = K.bladeMass({ blade: pb136, R: R136, stud: 'M5', studLen_m: 0.332 });   // the owner's 333 mm piece, ≈ 332 after the kerf
+  const Fc136 = K.slmCentrifugal({ mB_kg: mass136.m_kg, Rcog_m: mass136.cog_m, omega: 6 * K.SLM.VHUB_PER_VAVE_D * IV.vAve / R136 });
+  const seamOf = (MH, MD, Fc = Fc136) => K.seamCheck({ section: root136, grade: '4.8', Fc_D_N: Fc, MyB_H_Nm: MH, MyB_D_Nm: MD });
+  const seam136 = seamOf(K.slmParked({ R: R136, rho: 1.225, vRef: IV.vRef, Aproj: Ap136 }).MyB_Nm, K.slmMaxThrust({ R: R136, rho: 1.225, vAve: IV.vAve }).MyB_Nm);
+  check(`default seam, the owner's policy (homebuilder's margin, interview #003 «A»): F0 2.85 kN ± 2 % → M5 4.8, wrench 2.85 N·m, σ_p 5.3 MPa «caution», closed`,
+    rel(seam136.F0_N, 2852, 0.02) && seam136.stud === 'M5' && near(seam136.wrench_Nm, 2.85, 0.06) && rel(seam136.sigmaP, 5.27, 0.02)
+    && seam136.verdict === 'caution' && !seam136.opens && K.smallestStud(seam136.F0_N / 1000, '8.8') === 'M4',
+    `F_c ${Fc136.toFixed(0)} N, F0 ${(seam136.F0_N / 1000).toFixed(2)} kN, ${seam136.stud ?? 'no stud ≤ M14'} 4.8, wrench ${seam136.wrench_Nm?.toFixed(2) ?? '—'} N·m, σ_p ${seam136.sigmaP.toFixed(2)}, σ_max ${seam136.sigmaMax.toFixed(1)} MPa`);
+  check(`default seam, the strict IEC line beside it (every load ×3, untested PETG → 4.3 MPa): F0 8.56 kN, σ_max 30.3 MPa — does not pass`,
+    rel(seam136.iec.F0_N, 8557, 0.02) && rel(seam136.iec.sigmaMax, 30.3, 0.02) && near(seam136.iec.allowed, 4.33, 0.01) && !seam136.iec.passes,
     `F0 ${(seam136.iec.F0_N / 1000).toFixed(2)} kN, σ_max ${seam136.iec.sigmaMax.toFixed(1)} vs ${seam136.iec.allowed.toFixed(1)} MPa`);
+  // the strict line's pass branch, exercised once (the judge, F4): a breeze and a stopped rotor — with the rotor turning, F_c ×3
+  // alone already presses the seam to 4.8 MPa (the first draft of this case forgot it and went red on its own premise)
+  const calm = seamOf(0.1, 0.1, 0);
+  check('the strict IEC line can say «passes»: 0.1 N·m, no centrifugal pull, on the same seam → σ_max under 4.3 MPa', calm.iec.passes && calm.iec.sigmaMax < calm.iec.allowed,
+    `σ_max ${calm.iec.sigmaMax.toFixed(2)} MPa`);
+  // The blade's mass (bladeMass) against recon 02 on the recon's OWN planform (§0: c/R 0.18 → 0.10 at 0.7 → 0.05; t/c 18 → 12 %
+  // by r/R; flanges by flangeAt_mm; the root block excluded): §7.2's R 1.0 m — 455 g ± 2 %; §10's classes 250 / 333 / 500 —
+  // 117 / 175 / 343 g ± 5 % (the classes from 1000 mm differ by 4.5–11 %, outside the MVP — recon 02 §10's note); §2.4's
+  // F_c of that R 1.0 m blade with 0.8 m of M8 at 600 rpm — 1.22 kN ± 2 %.
+  const reconBlade = (R) => ({ chord: (r) => { const x = r / R; return R * (x <= 0.15 ? 0.18 : x <= 0.7 ? 0.18 - 0.08 * (x - 0.15) / 0.55 : 0.10 - 0.05 * (x - 0.7) / 0.3); },
+    tc: (r) => 0.18 - 0.06 * r / R });
+  check('flanges along the span: 3 mm·R at the root block (2.04 mm at R 0.68, 3.0 at R 1.0), half by mid-taper, none from 0.4R',
+    near(K.flangeAt_mm(0.11, 0.68), 2.04, 1e-9) && near(K.flangeAt_mm(0.11, 1.0), 3, 1e-9) && near(K.flangeAt_mm(0.255, 1.0), 1.5, 1e-9)
+    && K.flangeAt_mm(0.4, 1.0) === 0 && K.flangeAt_mm(0.05, 1.0) === 3);
+  const mR1 = K.bladeMass({ blade: reconBlade(1.0), R: 1.0, stud: 'M8', studLen_m: 0 });
+  const mCls = [[0.58, 'M4', 117], [0.68, 'M5', 175], [0.89, 'M6', 343]].map(([R, s, w]) => [K.bladeMass({ blade: reconBlade(R), R, stud: s, studLen_m: 0 }).m_kg * 1000, w]);
+  check('blade mass: recon 02 §7.2 R 1.0 m → 455 g ± 2 %; §10 classes 250 / 333 / 500 → 117 / 175 / 343 g ± 5 %',
+    rel(mR1.m_kg * 1000, 455, 0.02) && mCls.every(([g, w]) => rel(g, w, 0.05)), `${(mR1.m_kg * 1000).toFixed(1)} · ${mCls.map(([g]) => g.toFixed(1)).join(' · ')} g`);
+  const m8 = K.bladeMass({ blade: reconBlade(1.0), R: 1.0, stud: 'M8', studLen_m: 0.8 });
+  const fc8 = K.slmCentrifugal({ mB_kg: m8.m_kg, Rcog_m: m8.cog_m, omega: 600 * Math.PI / 30 });
+  check('blade mass → F_c: recon 02 §2.4 — the R 1.0 m blade + 0.8 m of M8 at 600 rpm → 1.22 kN ± 2 %', rel(fc8, 1220, 0.02), `${fc8.toFixed(0)} N`);
   // The printed blade (the root transition): the recon's root at the root block, the linear blade from 0.4R out, no jump.
   const lin136 = pb136.linear, r1 = 0.4 * R136;
   check('printed blade: chord 0.18R = 122.4 mm and t/c 25 % at the root block (r 110 mm); the linear blade there is 63 mm',
     near(pb136.chord(0.11) * 1000, 122.4, 0.05) && near(pb136.tc(0.11), 0.25, 1e-12) && near(lin136.chord(0.11) * 1000, 63.1, 0.1),
     `${(pb136.chord(0.11) * 1000).toFixed(1)} mm, ${(100 * pb136.tc(0.11)).toFixed(1)} % (linear ${(lin136.chord(0.11) * 1000).toFixed(1)} mm)`);
   check('printed blade: from 0.4R out it IS the linear blade (chord, twist, t/c); continuous at 0.4R; chord never grows outward',
-    [r1, 0.5, 0.6, 0.68].every((r) => near(pb136.chord(r), lin136.chord(r), 1e-12) && near(pb136.twist(r), lin136.twist(r), 1e-12))
+    [r1, 0.5, 0.6, 0.68].every((r) => near(pb136.chord(r), lin136.chord(r), 1e-12) && near(pb136.twist(r), lin136.twist(r), 1e-12)
+      && near(pb136.tc(r), pb136.tcLin(r), 1e-12) && near(pb136.tcLin(r), 0.21 + (0.12 - 0.21) * (r - 0.068) / (0.68 - 0.068), 1e-12))
     && near(pb136.chord(r1 - 1e-9), pb136.chord(r1), 1e-9) && near(pb136.tc(r1 - 1e-9), pb136.tc(r1), 1e-9)
     && Array.from({ length: 60 }, (_, i) => 0.11 + i * (0.68 - 0.11) / 59).every((r, i, a) => i === 0 || pb136.chord(r) <= pb136.chord(a[i - 1]) + 1e-12),
     `A_proj ${Ap136.toFixed(4)} m² (linear ${K.bladePlanArea(lin136.chord, 0.068, R136).toFixed(4)})`);

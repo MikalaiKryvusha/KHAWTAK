@@ -2,8 +2,8 @@
 
 > **The INTERNAL map: how the system thinks** — the abstractions of the calculator and how they interact. Companion:
 > `PROJECT_STRUCTURE_EXTERNAL_MAP.md` (where things live). **Living reference — never DONE-tagged.**
-> Status 2026-11-17: **partly built** in `kalculator/index.html` (core only, no UI; `node kalculator/test.mjs` 99/99,
-> `--control` 55/55 — hygiene, not a functional run). Where each abstraction lives in the core:
+> Status 2026-11-17: **partly built** in `kalculator/index.html` (core only, no UI; `node kalculator/test.mjs` 103/103,
+> `--control` 59/59 — hygiene, not a functional run). Where each abstraction lives in the core:
 >
 > | Abstraction | Core functions (plan 02 step) | State |
 > |---|---|---|
@@ -11,7 +11,7 @@
 > | Rotor design | `nacaHalfThickness`, `nacaCamber`, `minChordForStud_mm`, `printableTrailingEdgeX`, `airfoilSection`, `schmitz*`, `linearBlade`, `bladeStations`, `printedBlade` + `ROOT_DEFAULT` (S3–S4; the printed root: 0.18R and t/c 25 % at the root block, blended into the linear blade by 0.4R) | built; the polar (FORK in plan 02) open; the root's fit on the bed — phase 2 |
 > | Performance | `prandtlF`, `bemStation`, `bemRotor` (S5, with drag — criterion 10); `airViscosity`, `designReynolds`, `RE_POLAR_MIN` (S5 Re); `powerCurve`, `tipSpeed` (S6) | built; the power curve uses the MEASURED Cp_e 0.25 on purpose (plan 02 S6, FORK) — BEM is the ceiling and the shape |
 > | Loads | `IEC_SWT_CLASS`, `SLM`, `IEC_GAMMA`, `bladePlanArea`, `slmMaxThrust`, `slmParked`, `slmCentrifugal`, `iecAllowable_MPa`, `MARGIN_POLICY`, `PETG_Z_MPA`, `seamCheck` (S7) | built: cases D, H, E (criterion 11) and the owner's margin policy — interview #003 «A» (the homebuilder's verdict, strict IEC as a line beside it); case A after the generator |
-> | Structure | `STUDS`, `studCapacity_kN`, `smallestStud`, `jointPreload_N`, `wrenchTorque_Nm`, `shellSection`, `wallT_mm`, `SECTION_A`, `bladeSection`, `jointStress_MPa`, `PETG_LONG_TERM_MPA`, `anchorBearing` (S8) | built for one section in the chord frame; the flange law along the span and the twisted section — next |
+> | Structure | `STUDS`, `studCapacity_kN`, `smallestStud`, `jointPreload_N`, `wrenchTorque_Nm`, `shellSection`, `wallT_mm`, `SECTION_A`, `bladeSection`, `jointStress_MPa`, `PETG_LONG_TERM_MPA`, `anchorBearing`, `FLANGE`, `flangeAt_mm`, `PETG_DENSITY_KG_M3`, `bladeMass` (S8) | built: the section in the chord frame, the flange law along the span, the blade mass (recon 02 §7.2/§10/§2.4 re-derived); the twisted section — next |
 > | Sectioning | `sectionCuts` | first helper; the mesh is phase 2 |
 > | Blade geometry · Hub · STL writer | — | phase 2 |
 

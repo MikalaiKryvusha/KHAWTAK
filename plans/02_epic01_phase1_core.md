@@ -4,7 +4,7 @@
 > `plans/01_EPIC_mvp_blade.md` → phase table, row «1 · ядро расчёта» · **Статус:** 🔧 S1–S2 done 2026-11-16 (criteria 1 and 7
 > green); S3 nearly done, S4–S5 done (criteria 1, 2, 3, 4, 7 green); S6 done, S8 half done (criteria 1–7 green); S8 done
 > 2026-11-17 (criterion 9 green, 81/81, `--control` 35/35); criterion 10 (BEM with drag) and Re green 2026-11-17 (90/90,
-> 42/42); S7 ✅ 2026-11-17 — loads D, H, E (criterion 11), the owner's margin policy (interview #003 «A»), the printed root (99/99, 55/55); next —
+> 42/42); S7 ✅ 2026-11-17 — loads D, H, E (criterion 11), the owner's margin policy (interview #003 «A»), the printed root, the blade mass (103/103, 59/59); next —
 > S3's polar, `--control` expectations, S9 · **Вовне:** one question to the
 > owner at step S7 — answered: interview #003, Q1 «A» (2026-11-17 10:41 +03:00)
 
@@ -45,7 +45,7 @@ that cannot fail.
 11. Loads of the IEC 61400-2 Simplified Load Model (class IV, ρ 1.225, the Schmitz blade λ 6, C_l 1.2, hub 0.1R): the plan
    area A_proj,B, case D (maximum thrust, F_x and M_yB = F_x·2R/(3B) at V_ave 6 and 4) and case H (parked at V_e50 42 m/s)
    equal recon 01 §7 for D 0.6 … 4.2 m to the table's rounding (re-derived 2026-11-17 through the core's Schmitz chord, every
-   cell); case E (centrifugal pull) equals an external measurement — Alber et al., TORQUE 2022: 1.2 kg, CoG 0.39 m, 600 rpm
+   cell); case E (centrifugal pull) equals the figure of Alber et al., TORQUE 2022 (most likely their own m·r·ω² — it guards ω² and the units): 1.2 kg, CoG 0.39 m, 600 rpm
    → 1850 N ± 0.5 %. Class IV's V_ave 6 is derived (V_ave = 0.2·V_ref of the other classes; [15] has a typo, the standard's
    Table 1 is not in its free sample); it enters case D only.
 
@@ -92,8 +92,8 @@ Each step quotes its anchor in the epic: «ядро расчёта … мест�
 - [x] **S7 · loads.** ✅ 2026-11-17 for the MVP — the margin policy is the owner's answer, interview #003, Q1 «A» (10:41
   +03:00): `MARGIN_POLICY` (loads ×1, stud ×1.5) and `seamCheck` (the homebuilder's verdict + the strict IEC line beside it);
   the printed root `printedBlade` (FORK in the core: the recon's root 0.18R / t/c 25 % at the root block, blended into the
-  linear blade by 0.4R); the default seam through both: M5 4.8 at 2.78 kN, σ_p 4.5 MPa; strict IEC 7.8 kN, σ_max 25.1 MPa
-  against 4.3; 99 of 99, `--control` 55 of 55. Case A (fatigue) stays out of the MVP with the generator (interview 001 Q4).
+  linear blade by 0.4R); the default seam through both: M5 4.8 at 2.85 kN, σ_p 5.3 MPa; strict IEC 8.56 kN, σ_max 30.3 MPa
+  against 4.3 (after the second judge: F_c from the blade mass, the flange law, F_c ×3 on the strict line); 103 of 103, `--control` 59 of 59. Case A (fatigue) stays out of the MVP with the generator (interview 001 Q4).
   Part 1 ✅ 2026-11-17: `IEC_SWT_CLASS`, `SLM`, `IEC_GAMMA`, `bladePlanArea`, `slmMaxThrust`
   (case D), `slmParked` (case H), `slmCentrifugal` (case E), `iecAllowable_MPa`; criterion 11 green, 95 of 95, `--control`
   49 of 49. Left: case A (fatigue ranges need the generator's design torque — after the MVP's generator), and the owner
