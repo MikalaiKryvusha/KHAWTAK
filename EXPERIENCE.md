@@ -56,7 +56,8 @@
 > <!-- classes: question-already-answered, guard-not-proven-against-threat, shown-as-link,
 >      claim-before-evidence, owner-decision-not-applied, text-in-agents-world,
 >      etalon-from-dirty-tree, shell-lied, escaping-layer, twins-missed,
->      field-dropped-in-rebuild, subagent-wrong-root, shared-temp-collision, unverified-reference, question-without-stake -->
+>      field-dropped-in-rebuild, subagent-wrong-root, shared-temp-collision, unverified-reference, question-without-stake,
+>      evidence-discarded -->
 >
 > | Class slug | The failure it names |
 > |---|---|
@@ -75,6 +76,7 @@
 > | `shared-temp-collision` | two agents share one temp folder and a cleanup of one would delete the other's files |
 > | `unverified-reference` | a number from a recon or a subagent becomes a test target without being re-derived by a second route |
 > | `question-without-stake` | the owner is asked something whose answer changes no work in progress — a user input, not a fork |
+> | `evidence-discarded` | the script that produced a quoted number was deleted, so a later mismatch can be bounded but not traced |
 >
 > The `#tags` are **trigger-tags**: before a task, grep by the task's tags and QUOTE the relevant
 > lessons in your report (id + one line) — or state "no relevant lessons". An unquoted recall is
@@ -83,6 +85,21 @@
 > Skill: `/experience` (capture a lesson · recall relevant lessons).
 
 ## Entries
+
+### EXP-0006 · 2026-11-17 · ❌→✅ · #recon #checkpoint #scripts #reproducibility
+class: evidence-discarded
+**Context:** two recon checkpoint tables (recon 02 §2.4 sections, recon 01 §1.6 BEM with drag) were re-derived by the core.
+**Tried / did:** the sections agreed within the method spread; the drag table sat 0.2–1.5 % off, the gap growing with drag.
+**Result:** ❌→✅ — the recon scripts had been deleted («удалён после разведки»), so the gap could be BOUNDED by an analytic
+route but never TRACED; the criterion took a band instead of a cause. The second route of this session was kept:
+`tools/section-raster.mjs`.
+**Lesson:** a script that produced a checkpoint is evidence — keep it in the repository next to the numbers, never in a
+temp folder that a cleanup deletes.   → link: plans/02_epic01_phase1_core.md (criteria 9, 10) · researches/01 §1.6
+**Repro:** a recon or a second-route run with [РАСЧЁТ] numbers → its script lands as `researches/NN_*/<name>.mjs` or
+`tools/<name>.mjs` in the same commit; `git ls-files researches/NN_* tools/` shows it.
+**Trigger:** writing a recon brief or deleting a temp script that printed a number a document quotes → keep it instead.
+**Not for:** throwaway probes whose output no document quotes.
+none-cheap: first strike; the cure is one brief line («keep the script in researches/NN/»), the subagents deleted theirs because the brief allowed one file only.
 
 ### EXP-0005 · 2026-11-16 · ❌ · #interview #owner #questions
 class: question-without-stake

@@ -26,6 +26,7 @@ KHAWTAK/
 ├── tools/
 │   ├── hooks/*.mjs         # four Claude Code hooks ported from KUMM via KATAK (scratch-sweep, stamp-gate, no-backslash-heredoc, no-permission-question)
 │   ├── test-hooks.mjs      # their 67-case hygiene suite
+│   ├── section-raster.mjs  # the second route for section properties (a raster of section A) — plan 02 criterion 9
 │   └── ui-run.mjs          # (planned) the Chrome run of the page
 ├── plans/ ideas/ bugs/ interviews/ homeworks/ reports/ testcases/   # KAIF knowledge dirs (each with its README)
 ├── .kaif/                  # KAIF machinery: kaif.json marker (+ testHook kinds), kaif-core.mjs, hooks/, tools/, spheres/
