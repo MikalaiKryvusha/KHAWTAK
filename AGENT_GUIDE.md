@@ -1080,7 +1080,8 @@ The universal baseline:
 
 High-signal guidance from the owner that changes how the framework works HERE. Standing rules about the project itself live
 in `HOUSE_RULES.md` §1 (R1 temp files · R2 two subagents at most · R3 test in Chrome yourself · R4 every recon becomes a
-note · R5 `.mjs` · R6 Windows only · R7 the page is self-contained · R8 parts come ready to print with their joints).
+note · R5 `.mjs` · R6 Windows only · R7 the page is self-contained · R8 parts come ready to print with their joints · R9 the
+public files and the history name the place only as «Брестская область» — check `node private/redact.mjs --scan .`).
 
 - **The owner's voice portrait is installed** — the PUBLIC snapshot `AUTHOR_STYLOMETRY.md` (copy of
   `D:\work\ai_sandbox\KAIF\AUTHOR_STYLOMETRY.md`), git-ignored because the repository may become public. Text the owner

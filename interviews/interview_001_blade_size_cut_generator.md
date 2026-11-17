@@ -4,7 +4,7 @@
 > Source of the idea: `GOAL.md` (20:26 и дополнение 20:31), `researches/01_hawt_aero_generator_loads`,
 > `researches/02_segmented_printed_blade`, 2026-11-16
 > Created: 2026-11-16 21:04 +03:00
-> Status: **✅ answered by the owner 2026-11-16 21:35 +03:00** (commit b8b1fce) — applied: `MASTER_PLAN.md` decision log, `HOUSE_RULES.md` §7, `PROJECT_ARCHITECTURE_INTERNAL_MAP.md`
+> Status: **✅ answered by the owner 2026-11-16 21:35 +03:00** (commit 59793d8) — applied: `MASTER_PLAN.md` decision log, `HOUSE_RULES.md` §7, `PROJECT_ARCHITECTURE_INTERNAL_MAP.md`
 
 ## Что выяснили разведки
 

@@ -14,7 +14,7 @@ EXPERIENCE recall: the project's log was empty before this session; EXP-0001 (`s
 ## 1. Chronology with numbers
 
 - 20:28 `git init -b main`; owner's `GOAL.md` (his chat message verbatim) committed first (`162eb1b`); his addenda appended
-  verbatim and committed alone (`3f36b7c` 20:31, `6afc233` 21:16).
+  verbatim and committed alone (`3f36b7c` 20:31, `c9bb14d` 21:16).
 - `KAIF.md` fetched from `raw.githubusercontent.com/MikalaiKryvusha/KAIF/main/KAIF.md` (15 353 bytes), byte-equal (CR
   stripped) to the local `KAIF/dist/KAIF.md` at KAIF `d2f2127`. Loader extracted mechanically (`awk` between the six-backtick
   fences) — 149 lines, `node --check` ok.

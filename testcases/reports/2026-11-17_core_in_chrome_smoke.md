@@ -1,7 +1,7 @@
 # Test run report — the calculation core in Chrome (smoke) and in Node (hygiene)
 
 **Created:** 2026-11-17 10:26 +03:00 · **Run by:** the agent (Claude Opus 5.5) ·
-**Version/build:** commit 87165ab (`kalculator/index.html` as committed; no build step)
+**Version/build:** commit a5e8cdd (`kalculator/index.html` as committed; no build step)
 
 ## 1. Work
 

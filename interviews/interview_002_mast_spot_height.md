@@ -3,7 +3,7 @@
 > Topic: место и высота мачты — от них выработка зависит сильнее, чем от размера ротора.
 > Source of the idea: слово владельца 21:16 «могу поставить на мачту, но не знаю, как высоко»; `researches/03_site_wind`
 > Created: 2026-11-16 21:49 +03:00
-> Status: **✅ answered by the owner 2026-11-16 22:11 +03:00** (commit 543b443): Q1 B, Q2 B, each with «не понимаю, зачем
+> Status: **✅ answered by the owner 2026-11-16 22:11 +03:00** (commit 67eb0cb): Q1 B, Q2 B, each with «не понимаю, зачем
 > тебе эта информация» — applied as the calculator's default EXAMPLE (`HOUSE_RULES.md` §7); the lesson — `EXPERIENCE.md` EXP-0005
 
 ## Что выяснила разведка 03
@@ -23,7 +23,7 @@
 ## QUESTIONS
 
 ### Q1. Где встанет мачта?
-<!-- archaeology: LC_ALL=C.UTF-8 grep -rniE "встан|мачта" interviews/ GOAL.md MASTER_PLAN.md plans/ → 19 hits · read: MASTER_PLAN.md, plans/01_EPIC_mvp_blade.md, interviews/interview_001_blade_size_cut_generator.md · prior: "будет в брестской области, в поселке […], не в городе" + GOAL.md (commit 6afc233) — names the village, not the spot of the mast -->
+<!-- archaeology: LC_ALL=C.UTF-8 grep -rniE "встан|мачта" interviews/ GOAL.md MASTER_PLAN.md plans/ → 19 hits · read: MASTER_PLAN.md, plans/01_EPIC_mvp_blade.md, interviews/interview_001_blade_size_cut_generator.md · prior: "будет в брестской области, в поселке […], не в городе" + GOAL.md (commit c9bb14d) — names the village, not the spot of the mast -->
 
 **Answer target:** значения по умолчанию места в ядре (`kalculator/index.html` → `SITE_DEFAULT.z0`), `HOUSE_RULES.md` §7.
 **Origin:** от окружения мачты выработка меняется в 2–4 раза сильнее, чем от высоты.
@@ -51,7 +51,7 @@
 **Комментарий владельца (16 ноября 2026, 22:11 (+03:00)):** не понимаю, зачем тебе эта информация <!-- owner-review: by Mikalai Kryvusha · 16 ноября 2026, 22:11 (+03:00) -->
 
 ### Q2. Какой высоты мачта?
-<!-- archaeology: LC_ALL=C.UTF-8 grep -rniE "высот|мачта" interviews/ GOAL.md MASTER_PLAN.md plans/ → 29 hits · read: GOAL.md, MASTER_PLAN.md, plans/01_EPIC_mvp_blade.md, interviews/interview_001_blade_size_cut_generator.md · prior: "высота установки - чуть выше деревенского дома, метра может 4...7" + GOAL.md:39 (20:31), then "могу поставить на мачту, но не знаю, как высоко" (21:16, commit 6afc233) — changed: a mast is possible, the height is open -->
+<!-- archaeology: LC_ALL=C.UTF-8 grep -rniE "высот|мачта" interviews/ GOAL.md MASTER_PLAN.md plans/ → 29 hits · read: GOAL.md, MASTER_PLAN.md, plans/01_EPIC_mvp_blade.md, interviews/interview_001_blade_size_cut_generator.md · prior: "высота установки - чуть выше деревенского дома, метра может 4...7" + GOAL.md:39 (20:31), then "могу поставить на мачту, но не знаю, как высоко" (21:16, commit c9bb14d) — changed: a mast is possible, the height is open -->
 
 **Answer target:** высота ступицы по умолчанию в ядре; нагрузки на мачту — после MVP.
 **Origin:** ты писал «метра может 4...7», потом «могу поставить на мачту, но не знаю, как высоко»; самодельщики ставят

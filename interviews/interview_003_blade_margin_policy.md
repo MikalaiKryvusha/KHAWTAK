@@ -3,7 +3,7 @@
 > Topic: каким правилом страница решает, проходит лопасть по прочности или нет — запасом самодельщика или строгими коэффициентами IEC 61400-2.
 > Source of the idea: план 02, шаг S7 («вопрос владельцу до закрытия шага»); эпик 01, риски; разведка 01 §6.2
 > Created: 2026-11-17 10:39 +03:00
-> Status: **✅ ANSWERS RECEIVED 2026-11-17 10:41 +03:00** (Q1 «A», page of the queue; commit f5f9139) — applied in 4a20712: `MARGIN_POLICY`, `seamCheck`, `plans/02` S7, `MASTER_PLAN.md` decision log
+> Status: **✅ ANSWERS RECEIVED 2026-11-17 10:41 +03:00** (Q1 «A», page of the queue; commit 83c2312) — applied in 884be1f: `MARGIN_POLICY`, `seamCheck`, `plans/02` S7, `MASTER_PLAN.md` decision log
 
 ## Что посчитало ядро
 
