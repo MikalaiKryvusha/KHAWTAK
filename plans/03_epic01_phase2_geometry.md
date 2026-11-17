@@ -34,7 +34,14 @@ Each step quotes its anchor in the epic: «сечения профиля по р
 утолщения, трубка, перегородка, закрытые ячейки с крышей 45°); стык — буртик и шип, зазор под клей; карман закладной в вершинной
 секции; корневой узел; двоичный STL».
 
-- [ ] **G1 · the outer mesh and the STL writer.** Stations at the section cuts plus intermediate ones (the same point count per
+- [x] **G1 · the outer mesh and the STL writer.** ✅ 2026-11-17 15:29 +03:00 — `meshClosed`, `meshVolume`, `meshBounds`, `airfoilCap` (a
+  ladder of rungs upper(i)–lower(i), never folds), `MESH_DEFAULT` (n 60, dz ≤ 5 mm, the trailing edge ≥ T(2) [AI]),
+  `sectionMesh`, `meshToSTL`. The default blade: three sections of 9 434 triangles, closed (criterion 1), the volume against
+  ∫A dz 0.004–0.014 % (criterion 2), the seams 0 mm apart (criterion 6), the caps CCW, the STL read back; 7 cases, 11 mutants
+  each red; 115/115, `--control` 75/75. Criterion 4 already on the outer mesh: `node tools/slicer-check.mjs` — PrusaSlicer
+  `manifold = yes`, one part, its volume = the core's (210 748.0 mm³), 190 mm high, 89 × 89 on the bed. Chrome = Node byte for
+  byte (`node tools/chrome-core-smoke.mjs`: the STL hash). Seen by eye: a Blender render of section 1 (the twisted root, the
+  kink of the linear root blend at 0.4R — `printedBlade`'s [AI] choice, cosmetic). The step as planned: Stations at the section cuts plus intermediate ones (the same point count per
   outline, cosine spacing — `airfoilSection`); strips of triangles between neighbouring outlines; the end caps; the binary STL of
   KATAK (80-byte header not starting with `solid`, uint32 count, 50 bytes per triangle — recon 04 §1). The checks of criteria 1, 2,
   6 land in the same step (an edge map, the divergence-theorem volume).
@@ -62,5 +69,17 @@ Each step quotes its anchor in the epic: «сечения профиля по р
 - **High — the cavity geometry (G2):** offsetting a twisted airfoil inward near the trailing edge collapses (the edge is thinner
   than two walls): the cavity ends where the profile is thinner than 2 × shell — the TE zone stays solid (as the raster of plan 02
   criterion 9 already shows).
+- **High — the tip anchor does not fit where the 333 mm stud ends (G5; found 2026-11-17 while G1 was built).** On the core's
+  printed blade (rotor 1.36 m, λ 6, Cl 1.2) the profile at the stud axis (0.40c) is 12.8 mm thick — what an M5 nut needs (recon 02
+  §4.5: the hex corner + 2 × T(3) + 2 × 0.5 mm) — only up to r 237 mm (0.349R); a stud from the root nut (r 35 mm) reaching it is
+  202 mm. The owner's 333 mm stud (332 after the saw cut) ends at r 367 mm, where the profile is 7.56 mm thick: the M5 tube still
+  fits (Ø 7.11 mm, up to r 394 mm), a nut or a tapped strip does not. Recon 02 §10 put the class-333 nut at r/R 0.52 on ITS planform
+  (§0: chord 85.8 mm, 12.35 mm thick there); the core's linear blade is 47.9 mm, 7.78 mm thick at the same radius. Recon 02 §4.7's
+  recommendation [AI] «the stud ends where the nut fits + a carbon rod beyond» would clamp only the first section — against the
+  owner's scheme (interview 001 Q3: the stud screws into the TIP section and pulls the whole stack). A fork of the owner's level:
+  the interview before G5; G1–G4 do not wait on it. The default seam's numbers (`bladeMass` with studLen 0.332 m) move with the
+  answer. Numbers: `node tools/stud-fit.mjs` (kept, EXP-0006/0008).
+- **Note for G2:** along the stud's run the tube nearly fills the profile at its end (7.56 mm thick at r 367 mm against the tube's
+  7.11 mm): the cavity builder meets a tube that merges with the shell — a case, not an exception.
 - **Medium — the slicer reads cavities differently** (PrusaSlicer, OrcaSlicer, Cura): the probe G6 before any full blade.
 - **Low — the ZIP «stored» format** for many files is from memory (recon 04 §3, source 3 not opened) — at phase 4, not here.

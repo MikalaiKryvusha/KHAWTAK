@@ -83,6 +83,18 @@ const MUTANTS = [
   ['const pts = polys.flat()', 'const pts = polys[0]'],     // forgets the union of the outlines (the third judge, F1)
   ['withTube: r < studTo });', 'withTube: true });'],         // the tube to the tip again (the fourth judge, finding 4)
   ['const webH = ys.length < 2 ? NaN : Math.max(0, webH0);', 'const webH = ys.length < 2 ? NaN : webH0;'], // a negative web (finding 3)
+  // plan 03 G1 — the section mesh and the STL
+  ['closed: open === 0 && doubled === 0', 'closed: open === 0'],    // forgets the doubled edges
+  ['return s / 6;', 'return s / 3;'],                               // the divergence theorem's sixth
+  ['[at(k, i), at(k + 1, i + 1), at(k + 1, i)]', '[at(k, i), at(k + 1, i), at(k + 1, i + 1)]'], // a side triangle turned inside out
+  ['[at(0, a), at(0, c), at(0, b)]', '[at(0, a), at(0, b), at(0, c)]'], // the bottom cap facing up
+  ['[U(i + 1), L(i), L(i + 1)]', '[U(i + 1), L(i + 1), L(i)]'],     // a folded cap triangle
+  ['Math.ceil(span_mm / dz_mm - 1e-9)', 'Math.ceil(span_mm / dz_mm / 4 - 1e-9)'], // stations 20 mm apart
+  ['minTE_mm = wallT_mm(MESH_DEFAULT.teLines) }) {', 'minTE_mm = 0 }) {'], // the knife-thin trailing edge
+  ['const z = (stations_m[k] - rFrom_m) * 1000;', 'const z = (stations_m[k] - rFrom_m) * 100;'], // metres to mm wrong
+  ["('KHAWTAK binary STL - ' + name)", "('solid KHAWTAK - ' + name)"],  // a binary file that claims to be ASCII
+  ['dv.setUint32(80, N, true);', 'dv.setUint32(80, N, false);'],    // the count big-endian
+  ['nx /= l; ny /= l; nz /= l;', 'nx /= 1; ny /= l; nz /= l;'],      // a normal that is not a unit vector
 ];
 
 function load(src) {
@@ -520,6 +532,47 @@ function run(K, log = true) {
   const fit136 = K.bedFit(outl);
   check('the default blade\'s first section (r 110 … 300 mm, chord 122 → 51 mm, twisted) stands on the 220 × 220 bed',
     span136.length === 4 && fit136.fits, `${span136.length - 1} sections · ${fit136.w_mm.toFixed(0)} × ${fit136.h_mm.toFixed(0)} mm at ${fit136.angle_deg}°`);
+
+  if (log) console.log('G1. The section mesh and the binary STL (plan 03, criteria 1, 2, 6)');
+  // By hand first: a tetrahedron with outward faces is closed and holds 1/6; one face fewer leaves 3 open edges; the same
+  // faces twice are doubled, not closed.
+  const tet = { v: [[0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1]], f: [[0, 2, 1], [0, 1, 3], [0, 3, 2], [1, 2, 3]] };
+  const tOpen = K.meshClosed({ v: tet.v, f: tet.f.slice(0, 3) }), tTwice = K.meshClosed({ v: tet.v, f: tet.f.concat(tet.f) });
+  check('mesh checks by hand: the tetrahedron is closed with V = 1/6; a face missing → 3 open edges; every face twice → doubled',
+    K.meshClosed(tet).closed && near(K.meshVolume(tet), 1 / 6, 1e-15) && !tOpen.closed && tOpen.open === 3 && !tTwice.closed && tTwice.doubled > 0
+    && K.airfoilCap(60).length === 119, `open ${tOpen.open}, doubled ${tTwice.doubled}`);
+  // The default blade (rotor 1.36 m): its three sections, each meshed at the station cuts of sectionCuts.
+  const r0m = K.ROOT_DEFAULT.r0_m, meshes = span136.slice(0, -1).map((z, i) => K.sectionMesh({ blade: pb136, rFrom_m: r0m + z / 1000, rTo_m: r0m + span136[i + 1] / 1000 }));
+  const minTE = K.wallT_mm(K.MESH_DEFAULT.teLines);
+  const areaAt = (r) => K.polygonArea(K.airfoilSection({ chord_mm: pb136.chord(r) * 1000, t: pb136.tc(r), twist_rad: pb136.twist(r), n: K.MESH_DEFAULT.n, minTE_mm: minTE }));
+  const simpson = (a, b, N = 400) => { const h = (b - a) / N; let s = areaAt(a) + areaAt(b); for (let i = 1; i < N; i++) s += (i % 2 ? 4 : 2) * areaAt(a + i * h); return s * h / 3 * 1000; };
+  const vols = meshes.map((m) => [K.meshVolume(m), simpson(m.stations_m[0], m.stations_m.at(-1))]);
+  check('criterion 1: each section of the default blade is closed — every directed edge once and its reverse once, the volume positive',
+    meshes.every((m) => K.meshClosed(m).closed) && vols.every(([V]) => V > 0), meshes.map((m) => K.meshClosed(m).triangles).join(' · ') + ' triangles');
+  check('criterion 2: the mesh volume (divergence theorem) = ∫A dz of the same outlines (Simpson, 400 steps) within 0.5 %',
+    vols.every(([V, I]) => rel(V, I, 0.005)), vols.map(([V, I]) => `${(V / 1000).toFixed(1)} cm³ (${((V / I - 1) * 100).toFixed(3)} %)`).join(' · '));
+  const ccw = (ol) => K.airfoilCap(K.MESH_DEFAULT.n).every(([a, b, c]) => (ol[b][0] - ol[a][0]) * (ol[c][1] - ol[a][1]) - (ol[b][1] - ol[a][1]) * (ol[c][0] - ol[a][0]) > 0);
+  check('the caps do not fold: every cap triangle of every section end is counter-clockwise like its outline',
+    meshes.every((m) => ccw(m.bottom) && ccw(m.top)));
+  const gaps = meshes.slice(0, -1).map((m, i) => Math.max(...m.top.map((p, j) => Math.hypot(p[0] - meshes[i + 1].bottom[j][0], p[1] - meshes[i + 1].bottom[j][1]))));
+  check('criterion 6: neighbours meet without a step — the top outline of section i is the bottom outline of i + 1 to 1e-6 mm',
+    gaps.every((g) => g <= 1e-6), gaps.map((g) => g.toExponential(1)).join(' · '));
+  const teOk = meshes.every((m) => m.stations_m.every((r) => { const ol = K.airfoilSection({ chord_mm: pb136.chord(r) * 1000, t: pb136.tc(r), twist_rad: pb136.twist(r), n: K.MESH_DEFAULT.n, minTE_mm: minTE });
+    return Math.hypot(ol[0][0] - ol.at(-1)[0], ol[0][1] - ol.at(-1)[1]) >= minTE - 1e-6; }));
+  const zs = meshes.map((m) => { const b = K.meshBounds(m); return [b.lo[2], b.hi[2]]; });
+  const step = Math.max(...meshes.flatMap((m) => m.stations_m.slice(1).map((r, k) => (r - m.stations_m[k]) * 1000)));
+  check('each section stands 0 … 190 mm (≤ the 240 mm bed), stations ≤ 5 mm apart, the trailing edge ≥ T(2) = 0.857 mm at every station',
+    zs.every(([lo, hi]) => lo === 0 && near(hi, 190, 1e-9)) && step <= 5 + 1e-9 && teOk, `step ${step.toFixed(3)} mm, TE ≥ ${minTE.toFixed(3)} mm`);
+  // The binary STL read back: the size, the header, the count, every normal a unit vector, the first vertex as float32.
+  const stl = K.meshToSTL(meshes[0], 'section1'), sv = new DataView(stl.buffer), nT = sv.getUint32(80, true);
+  const head = String.fromCharCode(...stl.slice(0, 5));
+  let unit = true;
+  // read only the triangles the buffer holds: a wrong count must turn the case red, not throw past the buffer's end
+  for (let t = 0; t < Math.min(nT, (stl.length - 84) / 50); t++) { const o = 84 + 50 * t; unit &&= Math.abs(Math.hypot(sv.getFloat32(o, true), sv.getFloat32(o + 4, true), sv.getFloat32(o + 8, true)) - 1) < 1e-5; }
+  const v0 = meshes[0].v[meshes[0].f[0][0]], r0v = [0, 4, 8].map((d) => sv.getFloat32(96 + d, true));
+  check('binary STL: 84 + 50·N bytes, the header does not start with «solid», N = the triangles, unit normals, the vertices as float32',
+    stl.length === 84 + 50 * meshes[0].f.length && nT === meshes[0].f.length && head !== 'solid' && unit && r0v.every((x, i) => x === Math.fround(v0[i])),
+    `${stl.length} bytes, ${nT} triangles`);
 
   return { bad, total, failed };
 }

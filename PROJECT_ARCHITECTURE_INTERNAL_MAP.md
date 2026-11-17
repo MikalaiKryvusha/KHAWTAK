@@ -12,8 +12,9 @@
 > | Performance | `prandtlF`, `bemStation`, `bemRotor` (S5, with drag — criterion 10); `airViscosity`, `designReynolds`, `RE_POLAR_MIN` (S5 Re); `powerCurve`, `tipSpeed` (S6) | built; the power curve uses the MEASURED Cp_e 0.25 on purpose (plan 02 S6, FORK) — BEM is the ceiling and the shape |
 > | Loads | `IEC_SWT_CLASS`, `SLM`, `IEC_GAMMA`, `bladePlanArea`, `slmMaxThrust`, `slmParked`, `slmCentrifugal`, `iecAllowable_MPa`, `MARGIN_POLICY`, `PETG_Z_MPA`, `seamCheck` (S7) | built: cases D, H, E (criterion 11) and the owner's margin policy — interview #003 «A» (the homebuilder's verdict, strict IEC as a line beside it); case A after the generator |
 > | Structure | `STUDS`, `studCapacity_kN`, `smallestStud`, `jointPreload_N`, `wrenchTorque_Nm`, `shellSection`, `wallT_mm`, `SECTION_A`, `bladeSection`, `jointStress_MPa`, `PETG_LONG_TERM_MPA`, `anchorBearing`, `FLANGE`, `flangeAt_mm`, `PETG_DENSITY_KG_M3`, `bladeMass` (S8) | built: the section in the chord frame, the flange law along the span, the blade mass (recon 02 §7.2/§10/§2.4 re-derived); the twisted section — next |
-> | Sectioning | `sectionCuts`, `BED_DEFAULT`, `bedFit` | the cut and the bed fit (the twisted outlines' union, the best turn); the mesh is phase 2 |
-> | Blade geometry · Hub · STL writer | — | phase 2 |
+> | Sectioning | `sectionCuts`, `BED_DEFAULT`, `bedFit` | the cut and the bed fit (the twisted outlines' union, the best turn) |
+> | Blade geometry · STL writer | `meshClosed`, `meshVolume`, `meshBounds`, `airfoilCap`, `MESH_DEFAULT`, `sectionMesh`, `meshToSTL` (plan 03 G1) | built: the OUTER mesh of a section (closed, printed upright, the stud axis at x = y = 0) and the binary STL; the cavities, roofs, joint and anchor pocket — G2–G5 |
+> | Hub | — | plan 03 G7 |
 
 ## The core abstractions
 

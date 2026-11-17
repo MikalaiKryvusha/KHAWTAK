@@ -604,6 +604,99 @@ function sectionCuts(span_mm, maxZ_mm) {
   return Array.from({ length: n + 1 }, (_, i) => span_mm * i / n);
 }
 
+// ---- plan 03 G1 · the outer mesh of a section and the binary STL (epic 01 phase 2: «сечения профиля по размаху, ось крутки =
+// ось шпильки на 0,40c … двоичный STL»). A mesh is { v: [[x, y, z], …] in mm, f: [[a, b, c], …] — vertex indices,
+// counter-clockwise seen from outside }. [NOT-TESTED] — hygiene in test.mjs (closure, volume, caps, seams, STL bytes) and
+// `node tools/slicer-check.mjs` (PrusaSlicer reads every section: manifold, one part, the same volume); no functional run yet.
+
+/** Closedness of a mesh (a consistently oriented 2-manifold): every directed edge a→b occurs exactly once and its reverse b→a
+ *  exactly once. source: researches/04 §1 («каждое ребро — в двух треугольниках с противоположным обходом»; KATAK's
+ *  checkClosed). Returns { closed, open, doubled, triangles }. */
+function meshClosed(m) {
+  const seen = new Map();
+  for (const [a, b, c] of m.f) for (const [p, q] of [[a, b], [b, c], [c, a]]) { const k = p + ',' + q; seen.set(k, (seen.get(k) || 0) + 1); }
+  let open = 0, doubled = 0;
+  for (const [k, n] of seen) { if (n > 1) doubled++; const [p, q] = k.split(','); if (!seen.has(q + ',' + p)) open++; }
+  return { closed: open === 0 && doubled === 0, open, doubled, triangles: m.f.length };
+}
+
+/** Signed volume of a closed mesh by the divergence theorem, mm³: Σ a·(b × c) / 6 — positive when the normals face out. */
+function meshVolume(m) {
+  let s = 0;
+  for (const [a, b, c] of m.f) {
+    const [ax, ay, az] = m.v[a], [bx, by, bz] = m.v[b], [cx, cy, cz] = m.v[c];
+    s += ax * (by * cz - bz * cy) - ay * (bx * cz - bz * cx) + az * (bx * cy - by * cx);
+  }
+  return s / 6;
+}
+
+/** The axis-aligned box of a mesh: { lo: [x, y, z], hi: [x, y, z] }, mm. */
+function meshBounds(m) {
+  const lo = [Infinity, Infinity, Infinity], hi = [-Infinity, -Infinity, -Infinity];
+  for (const p of m.v) for (let i = 0; i < 3; i++) { lo[i] = Math.min(lo[i], p[i]); hi[i] = Math.max(hi[i], p[i]); }
+  return { lo, hi };
+}
+
+/** The cap of an airfoil outline as triangles (indices into the outline), counter-clockwise like the outline. airfoilSection's
+ *  order is the upper surface edge → nose (n + 1 points), then the lower surface nose → edge (n points): the point at chord
+ *  station i is n − i on the upper side and n + i on the lower. The ladder of rungs upper(i)–lower(i) lies inside the profile
+ *  (each rung crosses the thickness at one chord station), so the quads between rungs never fold — 2n − 1 triangles. */
+function airfoilCap(n) {
+  const U = (i) => n - i, L = (i) => n + i, tris = [[U(1), U(0), L(1)]];
+  for (let i = 1; i < n; i++) tris.push([U(i + 1), U(i), L(i)], [U(i + 1), L(i), L(i + 1)]);
+  return tris;
+}
+
+// The mesh resolution: n points per surface (airfoilSection's cosine spacing) and stations at most dz_mm apart along the span;
+// the trailing edge at least teLines extrusion lines thick (researches/04 §2.1 «≥ 2 линий, ≈ 0,9–1,0 мм»; T(2) = 0.857 mm,
+// researches/02 §0). [AI] n 60 and dz 5 mm are a resolution choice judged by plan 03 criterion 2 (the mesh volume against
+// ∫A dz: 0.004–0.014 % on the default blade); a section of the default blade is 9 434 triangles, 0.47 MB of STL.
+const MESH_DEFAULT = { n: 60, dz_mm: 5, teLines: 2 };
+
+/** The outer mesh of one blade section printed upright (researches/04 §2.2): stations from rFrom_m (the root-side cut — on
+ *  the bed, z = 0) to rTo_m (the top cut), at most dz_mm apart; at each the profile of the blade there — chord, t/c and the
+ *  twist about the stud axis (x = y = 0) — with the same point count; neighbouring outlines stitched by strips of triangles,
+ *  both ends closed by caps. The cut planes are stations themselves, so the top outline of a section IS the bottom outline of
+ *  the next one. Returns { v, f, stations_m, bottom, top } — the mesh and its two end outlines. */
+function sectionMesh({ blade, rFrom_m, rTo_m, n = MESH_DEFAULT.n, dz_mm = MESH_DEFAULT.dz_mm,
+  minTE_mm = wallT_mm(MESH_DEFAULT.teLines) }) {
+  const span_mm = (rTo_m - rFrom_m) * 1000;
+  const K = Math.max(1, Math.ceil(span_mm / dz_mm - 1e-9));     // 1e-9: (0.300 − 0.110)·1000 is 190.00000000000003 — 38 steps
+  const stations_m = Array.from({ length: K + 1 }, (_, k) => rFrom_m + (rTo_m - rFrom_m) * k / K);
+  const outlines = stations_m.map((r) => airfoilSection({ chord_mm: blade.chord(r) * 1000, t: blade.tc(r), twist_rad: blade.twist(r),
+    n, minTE_mm }));
+  const P = outlines[0].length, v = [], f = [];
+  outlines.forEach((ol, k) => { const z = (stations_m[k] - rFrom_m) * 1000; for (const [x, y] of ol) v.push([x, y, z]); });
+  const at = (k, i) => k * P + (i % P);
+  for (let k = 0; k < K; k++) for (let i = 0; i < P; i++) {    // the sides: outward for a counter-clockwise outline
+    f.push([at(k, i), at(k, i + 1), at(k + 1, i + 1)], [at(k, i), at(k + 1, i + 1), at(k + 1, i)]);
+  }
+  for (const [a, b, c] of airfoilCap(n)) {                      // the top cap faces +z, the bottom cap −z
+    f.push([at(K, a), at(K, b), at(K, c)], [at(0, a), at(0, c), at(0, b)]);
+  }
+  return { v, f, stations_m, bottom: outlines[0], top: outlines[K] };
+}
+
+/** A mesh as a binary STL (researches/04 §1, KATAK's toSTL): an 80-byte ASCII header that does not start with «solid», the
+ *  uint32 triangle count, then 50 bytes per triangle — the unit normal and three vertices as float32 little-endian, mm, and a
+ *  zero uint16 attribute. Returns a Uint8Array. */
+function meshToSTL(m, name = 'section') {
+  const N = m.f.length, buf = new ArrayBuffer(84 + 50 * N), dv = new DataView(buf);
+  const head = ('KHAWTAK binary STL - ' + name).slice(0, 80);
+  for (let i = 0; i < head.length; i++) dv.setUint8(i, head.charCodeAt(i) & 0x7f);
+  dv.setUint32(80, N, true);
+  let o = 84;
+  for (const [a, b, c] of m.f) {
+    const A = m.v[a], B = m.v[b], C = m.v[c];
+    const ux = B[0] - A[0], uy = B[1] - A[1], uz = B[2] - A[2], wx = C[0] - A[0], wy = C[1] - A[1], wz = C[2] - A[2];
+    let nx = uy * wz - uz * wy, ny = uz * wx - ux * wz, nz = ux * wy - uy * wx;
+    const l = Math.hypot(nx, ny, nz) || 1; nx /= l; ny /= l; nz /= l;
+    for (const p of [[nx, ny, nz], A, B, C]) { dv.setFloat32(o, p[0], true); dv.setFloat32(o + 4, p[1], true); dv.setFloat32(o + 8, p[2], true); o += 12; }
+    dv.setUint16(o, 0, true); o += 2;
+  }
+  return new Uint8Array(buf);
+}
+
 // The owner's site as the default: a village in Brest region (owner 2026-11-16 21:16), 160 m above sea level; the
 // reference wind 3.0 m/s at 10 m over open ground, Weibull k 1.8 (Baranovichi WMO 26941, 1991–2020), mean air 7.4 °C.
 // source: researches/03 §0, §2.4, Appendix A. The default mast: hub 7 m on the owner's own plot in the village (z0 0.25) —
@@ -617,7 +710,8 @@ const KHAWTAK = { airDensity, shearLog, shearTwoLayer, shearPower, gamma, weibul
   designReynolds, PERF_DEFAULT, powerCurve, tipSpeed,
   STUDS, studCapacity_kN, smallestStud, jointPreload_N, wrenchTorque_Nm, TC_DEFAULT, bladeStations, shellSection,
   ROOT_DEFAULT, printedBlade, FLANGE, PETG_DENSITY_KG_M3, flangeAt_mm, bladeMass, IEC_SWT_CLASS, SLM, IEC_GAMMA, bladePlanArea, slmMaxThrust, slmParked, slmCentrifugal, iecAllowable_MPa,
-  MARGIN_POLICY, PETG_Z_MPA, seamCheck, segSq, wallT_mm, SECTION_A, bladeSection, jointStress_MPa, PETG_LONG_TERM_MPA, anchorBearing, BED_DEFAULT, bedFit, sectionCuts };
+  MARGIN_POLICY, PETG_Z_MPA, seamCheck, segSq, wallT_mm, SECTION_A, bladeSection, jointStress_MPa, PETG_LONG_TERM_MPA, anchorBearing, BED_DEFAULT, bedFit, sectionCuts,
+  meshClosed, meshVolume, meshBounds, airfoilCap, MESH_DEFAULT, sectionMesh, meshToSTL };
 // ===== CORE-END
 window.KHAWTAK = KHAWTAK;
 </script>

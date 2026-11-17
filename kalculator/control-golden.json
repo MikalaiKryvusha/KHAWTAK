@@ -1,4 +1,7 @@
 {
+  "('KHAWTAK binary STL - ' + name) → ('solid KHAWTAK - ' + name)": [
+    "binary STL: 84 + 50·N bytes, the header does not start with «solid», N = the triangles, unit normals, the vertices as float32"
+  ],
   "(2 / 3) * Math.atan → (3 / 4) * Math.atan": [
     "criterion 2: twist there at α_D 6° → 39.47° ± 0.05 (source table 39.466°)"
   ],
@@ -93,7 +96,11 @@
     "plan area of a blade: the core's Schmitz chord from 0.1R to R → recon 01 §7, D 0.6 … 4.2 m (0.007 … 0.340 m²)",
     "printed blade: chord 0.18R = 122.4 mm and t/c 25 % at the root block (r 110 mm); the linear blade there is 63 mm"
   ],
+  "Math.ceil(span_mm / dz_mm - 1e-9) → Math.ceil(span_mm / dz_mm / 4 - 1e-9)": [
+    "each section stands 0 … 190 mm (≤ the 240 mm bed), stations ≤ 5 mm apart, the trailing edge ≥ T(2) = 0.857 mm at every station"
+  ],
   "Math.ceil(span_mm / maxZ_mm) → Math.round(span_mm / maxZ_mm)": [
+    "each section stands 0 … 190 mm (≤ the 240 mm bed), stations ≤ 5 mm apart, the trailing edge ≥ T(2) = 0.857 mm at every station",
     "sections: exactly one bed height fits in one section (240 → 1), one millimetre more needs two",
     "the default blade's first section (r 110 … 300 mm, chord 122 → 51 mm, twisted) stands on the 220 × 220 bed"
   ],
@@ -150,10 +157,25 @@
     "default seam, the owner's policy (homebuilder's margin, interview #003 «A»): F0 2.79 kN ± 2 % → M5 4.8, wrench 2.79 N·m, σ_p 5.15 MPa «caution», closed",
     "default seam, the strict IEC line beside it (every load ×3, untested PETG → 4.3 MPa): F0 8.38 kN, σ_max 30.0 MPa — does not pass"
   ],
+  "[U(i + 1), L(i), L(i + 1)] → [U(i + 1), L(i + 1), L(i)]": [
+    "criterion 1: each section of the default blade is closed — every directed edge once and its reverse once, the volume positive",
+    "criterion 2: the mesh volume (divergence theorem) = ∫A dz of the same outlines (Simpson, 400 steps) within 0.5 %",
+    "the caps do not fold: every cap triangle of every section end is counter-clockwise like its outline"
+  ],
+  "[at(0, a), at(0, c), at(0, b)] → [at(0, a), at(0, b), at(0, c)]": [
+    "criterion 1: each section of the default blade is closed — every directed edge once and its reverse once, the volume positive"
+  ],
+  "[at(k, i), at(k + 1, i + 1), at(k + 1, i)] → [at(k, i), at(k + 1, i), at(k + 1, i + 1)]": [
+    "criterion 1: each section of the default blade is closed — every directed edge once and its reverse once, the volume positive",
+    "criterion 2: the mesh volume (divergence theorem) = ∫A dz of the same outlines (Simpson, 400 steps) within 0.5 %"
+  ],
   "cRoot_per_R: 0.18 → cRoot_per_R: 0.12": [
     "default seam, the owner's policy (homebuilder's margin, interview #003 «A»): F0 2.79 kN ± 2 % → M5 4.8, wrench 2.79 N·m, σ_p 5.15 MPa «caution», closed",
     "default seam, the strict IEC line beside it (every load ×3, untested PETG → 4.3 MPa): F0 8.38 kN, σ_max 30.0 MPa — does not pass",
     "printed blade: chord 0.18R = 122.4 mm and t/c 25 % at the root block (r 110 mm); the linear blade there is 63 mm"
+  ],
+  "closed: open === 0 && doubled === 0 → closed: open === 0": [
+    "mesh checks by hand: the tetrahedron is closed with V = 1/6; a face missing → 3 open edges; every face twice → doubled"
   ],
   "const BED_DEFAULT = { w_mm: 220, d_mm: 220, margin_mm: 5 } → const BED_DEFAULT = { w_mm: 220, d_mm: 220, margin_mm: 0 }": [
     "bed fit by hand: 200 × 10 straight · 280 × 10 only on the diagonal (≈ 45°) · 300 × 10 does not fit the 210 × 210 spot",
@@ -258,11 +280,18 @@
   "const webH = ys.length < 2 ? NaN : Math.max(0, webH0); → const webH = ys.length < 2 ? NaN : webH0;": [
     "a profile thinner than two shells: the web is 0, not negative, and A stays finite and equal to its parts"
   ],
+  "const z = (stations_m[k] - rFrom_m) * 1000; → const z = (stations_m[k] - rFrom_m) * 100;": [
+    "criterion 2: the mesh volume (divergence theorem) = ∫A dz of the same outlines (Simpson, 400 steps) within 0.5 %",
+    "each section stands 0 … 190 mm (≤ the 240 mm bed), stations ≤ 5 mm apart, the trailing edge ≥ T(2) = 0.857 mm at every station"
+  ],
   "ct = Cl * sp - Cd * cp → ct = Cl * sp - 0.5 * Cd * cp": [
     "criterion 10: BEM with drag, L/D 100, λ 4–10 → researches/01 §1.6 ± 2 %",
     "criterion 10: BEM with drag, L/D 40, λ 4–10 → researches/01 §1.6 ± 2 %",
     "criterion 10: BEM with drag, L/D 60, λ 4–10 → researches/01 §1.6 ± 2 %",
     "drag loss = the optimum blade's (16/27)·λ/(L/D) ± 3 % in all 18 cells (an analytic route, not the recon)"
+  ],
+  "dv.setUint32(80, N, true); → dv.setUint32(80, N, false);": [
+    "binary STL: 84 + 50·N bytes, the header does not start with «solid», N = the triangles, unit normals, the vertices as float32"
   ],
   "fSlm: { fatigue: 1.0, ultimate: 3.0 } → fSlm: { fatigue: 1.0, ultimate: 2.0 }": [
     "allowable stress f_k/(γf·γm), ultimate, SLM loads: PETG Z 39 MPa untested → 4.3; steel 4.6 → 73, 8.8 → 194 MPa (recon 01 §6.1)",
@@ -322,6 +351,12 @@
     "allowable stress f_k/(γf·γm), ultimate, SLM loads: PETG Z 39 MPa untested → 4.3; steel 4.6 → 73, 8.8 → 194 MPa (recon 01 §6.1)",
     "default seam, the strict IEC line beside it (every load ×3, untested PETG → 4.3 MPa): F0 8.38 kN, σ_max 30.0 MPa — does not pass"
   ],
+  "minTE_mm = wallT_mm(MESH_DEFAULT.teLines) }) { → minTE_mm = 0 }) {": [
+    "criterion 2: the mesh volume (divergence theorem) = ∫A dz of the same outlines (Simpson, 400 steps) within 0.5 %"
+  ],
+  "nx /= l; ny /= l; nz /= l; → nx /= 1; ny /= l; nz /= l;": [
+    "binary STL: 84 + 50·N bytes, the header does not start with «solid», N = the triangles, unit normals, the vertices as float32"
+  ],
   "opens: sigmaP - sigmaB < 0 → opens: sigmaP + sigmaB < 0": [
     "seam A2 at the ultimate 60 N·m: the windward side −2.8 ± 0.4 MPa — the seam OPENS (researches/02 §2.4)"
   ],
@@ -334,6 +369,10 @@
     "criterion 5: wrench torque M8, K 0.2 → 7.9 N·m ± 0.1",
     "default seam, the owner's policy (homebuilder's margin, interview #003 «A»): F0 2.79 kN ± 2 % → M5 4.8, wrench 2.79 N·m, σ_p 5.15 MPa «caution», closed",
     "default seam, the strict IEC line beside it (every load ×3, untested PETG → 4.3 MPa): F0 8.38 kN, σ_max 30.0 MPa — does not pass"
+  ],
+  "return s / 6; → return s / 3;": [
+    "criterion 2: the mesh volume (divergence theorem) = ∫A dz of the same outlines (Simpson, 400 steps) within 0.5 %",
+    "mesh checks by hand: the tetrahedron is closed with V = 1/6; a face missing → 3 open edges; every face twice → doubled"
   ],
   "section.k, g * Fc_D_N) → section.k, Fc_D_N)": [
     "default seam, the strict IEC line beside it (every load ×3, untested PETG → 4.3 MPa): F0 8.38 kN, σ_max 30.0 MPa — does not pass"
@@ -366,11 +405,14 @@
   "yc + yt * Math.cos(th) → yc - yt * Math.cos(th)": [
     "blade mass (PETG, the tube along the stud): recon 02 §7.2 R 1.0 m → 455 g ± 2 %; §10 classes 250 / 333 / 500 → 117 / 175 / 343 g ± 4 %",
     "blade mass → F_c: recon 02 §2.4 — the R 1.0 m blade + 0.8 m of M8 at 600 rpm → 1.22 kN ± 3 %",
+    "criterion 1: each section of the default blade is closed — every directed edge once and its reverse once, the volume positive",
+    "criterion 2: the mesh volume (divergence theorem) = ∫A dz of the same outlines (Simpson, 400 steps) within 0.5 %",
     "criterion 5 through the core's own section: F0 = 30 N·m / k(A2) + 1.22 kN → 4.95 kN ± 0.05",
     "criterion 9: section A1 (shell T(3) + tube + web) — A 518 ± 2 %, Ix 63 560 ± 2 %, k 6.75 ± 3 % (researches/02 §2.4)",
     "criterion 9: section A2 (+ flanges 3 mm over 0.15–0.50c) — A 894 ± 2 %, Ix 126 000 ± 2 %, k 8.04 ± 3 %",
     "default seam, the owner's policy (homebuilder's margin, interview #003 «A»): F0 2.79 kN ± 2 % → M5 4.8, wrench 2.79 N·m, σ_p 5.15 MPa «caution», closed",
     "default seam, the strict IEC line beside it (every load ×3, untested PETG → 4.3 MPa): F0 8.38 kN, σ_max 30.0 MPa — does not pass",
+    "each section stands 0 … 190 mm (≤ the 240 mm bed), stations ≤ 5 mm apart, the trailing edge ≥ T(2) = 0.857 mm at every station",
     "seam A1 at 30 N·m, F0 5.7 kN: σ_b 8.6, σ_p 10.9 «too high», σ_max 19.5 MPa — the thin shell alone does not do",
     "seam A2 at 30 N·m, F0 4.95 kN: σ_b 4.2, σ_p 5.5 «caution», σ_max 9.7 MPa, the seam stays closed",
     "seam A2 at the ultimate 60 N·m: the windward side −2.8 ± 0.4 MPa — the seam OPENS (researches/02 §2.4)",
@@ -381,7 +423,8 @@
     "section: the stud axis (origin) lies inside the section",
     "section: the twist turns it about the stud axis — area kept, origin still inside",
     "stud OUT of the kern at 0.30c: centroid 21 ± 0.6 mm, ky 17.8 ± 0.6, |xc| > ky — why the stud goes to 0.40c",
-    "stud in the kern at 0.40c: centroid 3.5 ± 0.6 mm toward the edge, |xc| < ky (researches/02 §2.4)"
+    "stud in the kern at 0.40c: centroid 3.5 ± 0.6 mm toward the edge, |xc| < ky (researches/02 §2.4)",
+    "the caps do not fold: every cap triangle of every section end is counter-clockwise like its outline"
   ],
   "z0: 0.25, hub_m: 7 → z0: 0.25, hub_m: 10": [
     "default site: hub at the owner's 7 m mast (interview 002 Q2 «B») → 2.39 m/s ± 0.01"

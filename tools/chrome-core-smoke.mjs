@@ -44,7 +44,11 @@ const expr = `JSON.stringify((() => { const K = window.KHAWTAK; if (!K) return {
       const s = K.seamCheck({ section: sec, grade: '4.8', Fc_D_N: Fc,
         MyB_H_Nm: K.slmParked({ R, rho: 1.225, vRef: 30, Aproj: K.bladePlanArea(pb.chord, 0.1 * R, R) }).MyB_Nm,
         MyB_D_Nm: K.slmMaxThrust({ R, rho: 1.225, vAve: 6 }).MyB_Nm });
-      return { rootChord_mm: pb.chord(0.11) * 1000, F0: s.F0_N, stud: s.stud, verdict: s.verdict, iecPasses: s.iec.passes }; })() }; })())`;
+      return { rootChord_mm: pb.chord(0.11) * 1000, F0: s.F0_N, stud: s.stud, verdict: s.verdict, iecPasses: s.iec.passes }; })(),
+    mesh: (() => { const pb = K.printedBlade({ R: 0.68, Cl: 1.2, lambda: 6, alphaD_rad: 6 * Math.PI / 180 });   // plan 03 G1: section 1
+      const m = K.sectionMesh({ blade: pb, rFrom_m: 0.11, rTo_m: 0.3 }), stl = K.meshToSTL(m, 'section1');
+      let h = 0; for (const b of stl) h = (h * 31 + b) >>> 0;                    // a byte hash: Chrome's STL = Node's, byte for byte
+      return { triangles: m.f.length, closed: K.meshClosed(m).closed, V: K.meshVolume(m), stlBytes: stl.length, stlHash: h }; })() }; })())`;
 const res = await send('Runtime.evaluate', { expression: expr, returnByValue: true });
 console.log('chrome computed:', res.result.result.value);
 console.log('console errors:', errors.length ? errors : 'none');

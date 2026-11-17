@@ -23,6 +23,7 @@ the page opened from disk as `file://`. No production exists — no `REAL WORLD:
 | 1 | 2026-11-17 10:25 +03:00 | `node kalculator/test.mjs` | exit 0 · 90 of 90 as expected |
 | 2 | 2026-11-17 10:25 +03:00 | `node .work/tmp/chrome-smoke/smoke.mjs` (now `node tools/chrome-core-smoke.mjs`) | exit 0 · the core evaluated in Chrome, no errors |
 | 3 | 2026-11-17 10:20 +03:00 | `node kalculator/test.mjs --control` | exit 0 · 42 of 42 mutants seen red (≈ 41 s) |
+| 5 | ≈ 2026-11-17 15:27 +03:00 (recorded 2026-11-17 15:29 +03:00) | `node tools/chrome-core-smoke.mjs` (+ the mesh of section 1) | exit 0 · no errors, no requests; `node kalculator/test.mjs` 115/115, `--control` 75/75 |
 | 4 | ≈ 2026-11-17 14:53 +03:00 (recorded 14:54) | `node tools/chrome-core-smoke.mjs` (after the third judge's fixes: the tube only along the stud) | exit 0 · no errors, no requests; the default seam case below; `node kalculator/test.mjs` 106/106, `--control` 62/62 |
 
 ## 4. Checks
@@ -40,6 +41,7 @@ the page opened from disk as `file://`. No production exists — no `REAL WORLD:
 | Chrome = Node: F0 through k(A2), 30 N·m, F_c 1.22 kN | pass | Chrome 4908.086131993044 N, Node 4908.0861319930455 N |
 | the owner's default mast in the browser (interview 002 Q2 «B») | pass | hub 7 m → 2.3865734483410836 m/s (criterion 7: 2.39 ± 0.01) |
 | Sutherland at 15 °C, Re of D 1.4 at 0.75R | pass | 1.7893e-5 Pa·s (standard 1.7894e-5); Re 62 010 (recon 01 §7: 62 thousand) |
+| run 5 · Chrome = Node: section 1's mesh and STL (plan 03 G1) | pass | Chrome: 9434 triangles, closed, V 210748.00258818534 mm³, 471784 bytes, byte hash 2768478605; Node: the same count, V 210748.00258818528, the same bytes and hash |
 | run 4 · Chrome = Node: the default seam (rotor 1.36 m, printed root, the blade's own mass, the tube along the stud) | pass | Chrome F0 2791.822146684068 N, M5, «caution», strict IEC fails; Node 2791.8221466840682 N — equal to the 15th digit |
 
 ## 5. Found

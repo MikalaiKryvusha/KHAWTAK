@@ -29,6 +29,8 @@ KHAWTAK/
 │   ├── test-hooks.mjs      # their 67-case hygiene suite
 │   ├── section-raster.mjs  # the second route for section properties (a raster of section A) — plan 02 criterion 9
 │   ├── chrome-core-smoke.mjs # the core evaluated in this machine's Chrome via the DevTools protocol (no dependencies)
+│   ├── slicer-check.mjs    # the default blade's section STLs through PrusaSlicer --info (plan 03 criterion 4)
+│   ├── stud-fit.mjs        # where the stud's tube and its tip nut fit inside the printed profile (plan 03, risk G5)
 │   └── ui-run.mjs          # (planned) the Chrome run of the page
 ├── plans/ ideas/ bugs/ interviews/ homeworks/ reports/ testcases/   # KAIF knowledge dirs (each with its README)
 ├── .kaif/                  # KAIF machinery: kaif.json marker (+ testHook kinds), kaif-core.mjs, hooks/, tools/, spheres/
