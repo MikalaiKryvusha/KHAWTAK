@@ -2,14 +2,14 @@
 
 > **The INTERNAL map: how the system thinks** — the abstractions of the calculator and how they interact. Companion:
 > `PROJECT_STRUCTURE_EXTERNAL_MAP.md` (where things live). **Living reference — never DONE-tagged.**
-> Status 2026-11-17: **partly built** in `kalculator/index.html` (core only, no UI; `node kalculator/test.mjs` 82/82,
-> `--control` 38/38 — hygiene, not a functional run). Where each abstraction lives in the core:
+> Status 2026-11-17: **partly built** in `kalculator/index.html` (core only, no UI; `node kalculator/test.mjs` 90/90,
+> `--control` 42/42 — hygiene, not a functional run). Where each abstraction lives in the core:
 >
 > | Abstraction | Core functions (plan 02 step) | State |
 > |---|---|---|
 > | Site | `airDensity`, `shearLog`, `shearTwoLayer`, `shearPower`, `gamma`, `weibullScale`, `weibullPdf`, `yearlyEnergy_kWh`, `SITE_DEFAULT` (S2; hub 7 m — interview 002) | built |
 > | Rotor design | `nacaHalfThickness`, `nacaCamber`, `minChordForStud_mm`, `printableTrailingEdgeX`, `airfoilSection`, `schmitz*`, `linearBlade`, `bladeStations` (S3–S4) | built; the polar (FORK in plan 02) open |
-> | Performance | `prandtlF`, `bemStation`, `bemRotor` (S5); `powerCurve`, `tipSpeed` (S6) | built; the power curve still uses a fixed Cp_e |
+> | Performance | `prandtlF`, `bemStation`, `bemRotor` (S5, with drag — criterion 10); `airViscosity`, `designReynolds`, `RE_POLAR_MIN` (S5 Re); `powerCurve`, `tipSpeed` (S6) | built; the power curve uses the MEASURED Cp_e 0.25 on purpose (plan 02 S6, FORK) — BEM is the ceiling and the shape |
 > | Loads | — (S7) | planned; an owner question first (IEC factors or a hobby margin) |
 > | Structure | `STUDS`, `studCapacity_kN`, `smallestStud`, `jointPreload_N`, `wrenchTorque_Nm`, `shellSection`, `wallT_mm`, `SECTION_A`, `bladeSection`, `jointStress_MPa`, `PETG_LONG_TERM_MPA`, `anchorBearing` (S8) | built for one section in the chord frame; the flange law along the span and the twisted section — next |
 > | Sectioning | `sectionCuts` | first helper; the mesh is phase 2 |

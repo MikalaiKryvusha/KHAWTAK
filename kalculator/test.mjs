@@ -8,7 +8,7 @@
 //
 // Criteria: plans/02_epic01_phase1_core.md. Covered now: criterion 1 (air density) and the identities S2 rests on (Γ, log
 // and power shear, Weibull/Rayleigh scale, the energy integral); then S3–S6 and S8 — criteria 1–7 and 9 are covered.
-// Not covered yet: criterion 8 as a whole (S9), loads (S7).
+// Covered since 2026-11-17: criterion 10 (BEM with drag), μ and Re. Not covered yet: criterion 8 as a whole (S9), loads (S7).
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 
@@ -36,6 +36,10 @@ const MUTANTS = [
   ['if (k <= 2 / 3) a = k / (1 + k);', 'if (k <= 2 / 3) a = k / (1 + 2 * k);'], // breaks the BEM induction (criterion 3)
   ['(R - r) / (r * s)', '(R - r) / (R * s)'],          // breaks the Prandtl tip loss
   ['(r - Rhub) / (Rhub * s)', '(r - Rhub) / (R * s)'], // breaks the Prandtl hub loss
+  ['ct = Cl * sp - Cd * cp', 'ct = Cl * sp - 0.5 * Cd * cp'], // halves the drag in the torque (criterion 10)
+  ['S: 110.4', 'S: 120'],                               // breaks Sutherland's constant
+  ['const RE_POLAR_MIN = 100e3', 'const RE_POLAR_MIN = 150e3'], // moves the polar-data threshold
+  ['(lambda * rOverR) ** 2', 'lambda ** 2'],            // breaks the relative wind at the station
   ['CpE: 0.25, vCutIn: 3', 'CpE: 0.30, vCutIn: 3'],     // breaks the power curve (S6)
   ['Math.min(v, vRated)', 'Math.min(v, 2 * vRated)'],   // breaks the flat top above rated (S6)
   ['M5: { d: 5, As: 14.2, p48: 4.40', 'M5: { d: 5, As: 14.2, p48: 3.40'], // breaks the stud table (criterion 6)
@@ -215,6 +219,44 @@ function run(K, log = true) {
   const Fhub = K.prandtlF(0.1001, 1, 0.1, 3, 0.2);
   check('Prandtl F: → 0 at the hub too (the hub loss is not 1 — the judge found it unchecked)', Fhub < 0.1, Fhub.toFixed(4));
   check('Prandtl F: ≈ 1 mid-span, → 0 at the tip', Fmid > 0.99 && Ftip < 0.1, `${Fmid.toFixed(4)}, ${Ftip.toFixed(4)}`);
+
+  // Criterion 10 — BEM WITH DRAG (every case above runs at C_d = 0, so the drag terms were never exercised). The Schmitz blade
+  // designed at each λ, C_l constant, C_d = C_l/(L/D), hub 0.1R → the BEM column of researches/01 §1.6. Re-derived 2026-11-17
+  // (EXP-0004): the core is 0.2–1.5 % lower, the gap growing with drag; the core's drag LOSS equals the analytic loss of the
+  // optimum blade (16/27)·λ/(L/D) within 1 % (the next case), the recon's lies ≈ 6 % lower; its script is deleted → ± 2 %.
+  // GAP: drag inside the induction (C_d in c_n) moves Cp by ≈ 0.1 % — no case here can see it.
+  const lams = [4, 5, 6, 7, 8, 10];
+  const reconBem = { 100: [0.461, 0.476, 0.484, 0.488, 0.490, 0.489], 60: [0.447, 0.458, 0.462, 0.462, 0.460, 0.450], 40: [0.429, 0.435, 0.434, 0.429, 0.422, 0.402] };
+  const cpAt = (lam, LD) => K.bemRotor({ R: 1, Rhub: 0.1, lambda: lam,
+    blade: { chord: (r) => K.schmitzChord(r, 1, 3, 1, lam), twist: (r) => K.schmitzPhi(r, 1, lam) },
+    polar: () => ({ Cl: 1, Cd: LD === Infinity ? 0 : 1 / LD }) }).Cp;
+  const cpInf = lams.map((l) => cpAt(l, Infinity));
+  let worstLoss = 0;
+  for (const LD of [100, 60, 40]) {
+    const cps = lams.map((l) => cpAt(l, LD));
+    const devs = cps.map((cp, i) => cp / reconBem[LD][i] - 1);
+    check(`criterion 10: BEM with drag, L/D ${LD}, λ 4–10 → researches/01 §1.6 ± 2 %`, devs.every((d) => Math.abs(d) <= 0.02),
+      cps.map((cp) => cp.toFixed(3)).join(' ') + ` (worst ${(100 * Math.max(...devs.map(Math.abs))).toFixed(1)} %)`);
+    cps.forEach((cp, i) => { worstLoss = Math.max(worstLoss, Math.abs((cpInf[i] - cp) / (16 / 27 * lams[i] / LD) - 1)); });
+  }
+  check('drag loss = the optimum blade\'s (16/27)·λ/(L/D) ± 3 % in all 18 cells (an analytic route, not the recon)', worstLoss <= 0.03,
+    `worst ${(100 * worstLoss).toFixed(2)} %`);
+
+  if (log) console.log('S5 (Re). viscosity and the Reynolds number (researches/01 §1.7, §2.1, §7)');
+  const mu15 = K.airViscosity(15), mu7 = K.airViscosity(7);
+  check('Sutherland at 15 °C = the 1976 Standard Atmosphere\'s sea level 1.7894e-5 Pa·s ± 0.0005e-5 (PDAS atmos76.f90)',
+    near(mu15, 1.7894e-5, 5e-9), mu15.toExponential(5));
+  check('Sutherland at 7 °C = 1.750e-5 Pa·s ± 0.0005e-5 (researches/01 §1.7, Appendix A)', near(mu7, 1.75e-5, 5e-9), mu7.toExponential(5));
+  // recon 01 §7, the last column: Re at 0.75R, 5 m/s, λ 6, Schmitz chord at C_l 1.2 — with Appendix A's air (ρ 1.2275, μ at
+  // 7 °C) every cell reproduces to the rounding of the table (± 0.5 thousand).
+  const reRow = [[0.6, 27], [1.0, 44], [1.4, 62], [2.0, 89], [3.0, 133]].map(([D, want]) => {
+    const R = D / 2, st = K.designReynolds({ rho: 1.2275, V: 5, lambda: 6, rOverR: 0.75, chord_m: K.schmitzChord(0.75 * R, R, 3, 1.2, 6), mu: mu7 });
+    return { D, want, Re: st.Re / 1000, below: st.belowPolars };
+  });
+  check('Re at 0.75R, 5 m/s: D 0.6 / 1.0 / 1.4 / 2.0 / 3.0 → 27 / 44 / 62 / 89 / 133 thousand ± 0.5 (researches/01 §7)',
+    reRow.every((x) => Math.abs(x.Re - x.want) <= 0.5), reRow.map((x) => x.Re.toFixed(1)).join(' / '));
+  check('Re warning: every rotor up to D 2.0 runs below the measured polars (< 100 000), D 3.0 does not',
+    reRow.filter((x) => x.D <= 2).every((x) => x.below) && !reRow.find((x) => x.D === 3).below, reRow.map((x) => `${x.D}:${x.below ? 'below' : 'ok'}`).join(' '));
 
   if (log) console.log('S6. performance (researches/01 §7, researches/03 Appendix A)');
   // The core's power curve must equal the model the recons used (the test-local curve of criterion 7) — then the site

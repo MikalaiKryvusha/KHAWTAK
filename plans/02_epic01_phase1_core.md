@@ -3,7 +3,8 @@
 > **Создан:** 2026-11-16 (main agent, the autonomous stretch the owner ordered at 21:40) · **Родитель:**
 > `plans/01_EPIC_mvp_blade.md` → phase table, row «1 · ядро расчёта» · **Статус:** 🔧 S1–S2 done 2026-11-16 (criteria 1 and 7
 > green); S3 nearly done, S4–S5 done (criteria 1, 2, 3, 4, 7 green); S6 done, S8 half done (criteria 1–7 green); S8 done
-> 2026-11-17 (criterion 9 green, 81/81, `--control` 35/35); next — S3's polar, `--control` expectations, S9, S7 · **Вовне:** one question to the
+> 2026-11-17 (criterion 9 green, 81/81, `--control` 35/35); criterion 10 (BEM with drag) and Re green 2026-11-17 (90/90,
+> 42/42); next — S3's polar, `--control` expectations, S9, S7 · **Вовне:** one question to the
 > owner at step S7 (load factors: IEC or the hobby margin)
 
 ## Goal vector
@@ -26,7 +27,7 @@ that cannot fail.
    `researches/02` §10 with ISO 898-1 / ISO 3506 (STATUS, 2026-11-16).
 7. Brest region site, 1.4 m rotor, two log profiles (z0 0.25, k 1.8, ρ 1.2345): hub 2.39 / 2.64 / 2.77 m/s ± 0.01 and
    50 / 72 / 85 kWh ± 1 % at masts 7 / 10 / 12 m — `researches/03` §3.2, §4.2, re-computed by the core 2026-11-16.
-8. Control case (gate 5): each of 1–7 and 9 is seen RED once on a deliberately broken constant before it is trusted.
+8. Control case (gate 5): each of 1–7, 9 and 10 is seen RED once on a deliberately broken constant before it is trusted.
 9. The root seam of the R 1.0 m blade — chord 180 mm, t/c 18 %, NACA 44xx, M8 at 0.40c: section A1 (shell T(3) + tube +
    web) A 518 mm² ± 2 %, Ix 63 560 mm⁴ ± 2 %, k 6.75 mm ± 3 %; A2 (+ flanges 3 mm over 0.15–0.50c) A 894 ± 2 %, Ix 126 000
    ± 2 %, k 8.04 ± 3 % — `researches/02` §2.4. Re-derived 2026-11-17 by a second route (EXPERIENCE.md EXP-0004): a raster of
@@ -34,6 +35,12 @@ that cannot fail.
    (the thin-walled sum — the recon's script and the core; the raster reuses the core's airfoil): the tolerances are their
    largest pairwise spread — A 1.55 %, Ix 1.02 %, k 2.4 % — not a fit to the code; terms below ~1 % of Ix are guarded part
    by part (the judge's findings 1–3, 2026-11-17).
+10. BEM with drag: the Schmitz blade designed at each λ, C_l constant, C_d = C_l/(L/D), hub 0.1R — Cp at L/D 100 / 60 / 40
+   for λ 4, 5, 6, 7, 8, 10 equals the BEM column of `researches/01` §1.6 ± 2 % (18 cells). Re-derived 2026-11-17: the core
+   is 0.2–1.5 % lower, the gap growing with drag; the core's drag loss equals the analytic loss of the optimum blade
+   (16/27)·λ/(L/D) within 1.25 % (guarded as its own case), the recon's is ≈ 6 % smaller — the recon script is deleted, the
+   cause is not traceable, the band is the spread of the routes. With it: Sutherland's μ against the 1976 Standard
+   Atmosphere (1.7894e-5 Pa·s at 15 °C, PDAS `atmos76.f90`) and recon 01 §7's Re column (27 / 44 / 62 / 89 / 133 thousand).
 
 ## Steps
 
@@ -67,7 +74,13 @@ Each step quotes its anchor in the epic: «ядро расчёта … мест�
   verbatim from `researches/01` §1.4–1.5. Criterion 3.
 - [x] **S6 · performance.** ✅ 2026-11-16: `powerCurve` (Cp_e 0.25, cut-in 3, rated 10.5 — the recons' model, now in the
   core), `tipSpeed` (warning above 65 m/s); criterion 7 re-run through the core's curve (71.6 kWh); 51 of 51, `--control`
-  17 of 17. A BEM-derived Cp per rotor replaces the fixed Cp_e when S3's polar lands. The step as planned: P(V) assuming the owner's smart controller holds λ near optimum up to rated (interview 001 Q5;
+  17 of 17. 2026-11-17 — `FORK: options <the BEM Cp × η replaces Cp_e | Cp_e 0.25 stays the measured number; BEM gives the
+  ceiling, the optimum λ, Ct and the Re warning> · price of error <BEM at L/D 40–60 gives rotor Cp 0.43–0.46, measured small
+  rotors 0.25–0.35 — the user's kWh inflated by ≈ 30 %> · consulted <researches/01 §1.6 («подгонку брать как потолок
+  аэродинамики, а реальный Cp — из измерений малых роторов»), §3.2 (Piggott 1.8 m, TU Delft tunnel: Cp_max 0.25–0.35)>` →
+  Cp_e stays; the earlier line «a BEM-derived Cp replaces the fixed Cp_e» is withdrawn. Then BEM with drag (criterion 10),
+  `airViscosity` and `designReynolds` with the «below the measured polars» flag (recon 01 §1.7, §2.1); the bisection
+  trimmed 100 → 60 halvings (byte-identical suite output, the run 2.5 s → 1 s); 90 of 90, `--control` 42 of 42. The step as planned: P(V) assuming the owner's smart controller holds λ near optimum up to rated (interview 001 Q5;
   the generator itself is out of the MVP); cut-in, rated, yearly energy; v_tip warning above 60–70 m/s (§6.4).
 - [ ] **S7 · loads.** IEC 61400-2 SLM cases that load the blade: A fatigue, D thrust, E max rpm (centrifugal), H parked
   (`researches/01` §6.1). Owner question before closing the step, filed in `interviews/`: strict IEC factors (no PETG root

@@ -22,9 +22,9 @@
 // SI units inside; millimetres only at the print/STL boundary.
 
 // ---- S2 · air and wind — researches/01 §5.1 (the same formulas as KATAK, so the two calculators agree)
-// [NOT-TESTED] — hygiene green 2026-11-17: `node kalculator/test.mjs` 82/82 for the whole core so far (criteria 1–7 and 9 + the Γ,
+// [NOT-TESTED] — hygiene green 2026-11-17: `node kalculator/test.mjs` 90/90 for the whole core so far (criteria 1–7, 9, 10 + the Γ,
 // shear, Weibull, NACA, section, station, Schmitz, BEM, power-curve, stud, shell, section-A, seam-stress, anchor and cut
-// identities), `--control` 38/38. The marker flips only on a functional run of the page (TESTING_FRAMEWORK.md).
+// identities, μ and Re), `--control` 42/42. The marker flips only on a functional run of the page (TESTING_FRAMEWORK.md).
 
 // International Standard Atmosphere: sea-level pressure, lapse rate, sea-level temperature, exponent g·M/(R·L);
 // specific gas constant of dry air. source: researches/01 §5.1 (KATAK researches/01 §3.1).
@@ -212,11 +212,13 @@ function bemResidual(phi, { r, R, Rhub, B, chord, twist, lambdaR, polar }) {
   return { res: sp / (1 - a) - cp * (1 - kp) / lambdaR, a, ap, cn, ct };
 }
 
-/** Solve one station: bisection for the root of R(φ) on (0, π/2]. */
+/** Solve one station: bisection for the root of R(φ) on (0, π/2]. 60 halvings shrink the bracket to π/2·2⁻⁶⁰ ≈ 1.4e-18 rad —
+ *  below double precision (≈ 2⁻⁵² relative), so more steps change nothing but the run time. */
+const BEM_BISECTIONS = 60;
 function bemStation(st) {
   let lo = 1e-6, hi = Math.PI / 2;
   let flo = bemResidual(lo, st).res;
-  for (let i = 0; i < 100; i++) {
+  for (let i = 0; i < BEM_BISECTIONS; i++) {
     const mid = (lo + hi) / 2, fm = bemResidual(mid, st).res;
     if ((fm < 0) === (flo < 0)) { lo = mid; flo = fm; } else hi = mid;
   }
@@ -240,10 +242,36 @@ function bemRotor({ R, Rhub, B = 3, lambda, blade, polar, n = 200 }) {
   return { Cp: omega * Q / (0.5 * rho * A * V ** 3), Ct: T / (0.5 * rho * A * V * V) };
 }
 
+// ---- S5 (Re) · the Reynolds number along the blade — the polars of small-rotor airfoils are measured only from Re 100 000
+// up; below it L/D is lower than any table says, and the page must say so. [NOT-TESTED] — hygiene in test.mjs.
+
+// Sutherland's law: reference 1.716e-5 Pa·s at 273.15 K, constant 110.4 K. source: researches/01 §1.7; the same constants give
+// the 1976 Standard Atmosphere's sea-level 1.7894e-5 Pa·s at 288.15 K (PDAS atmos76.f90: MUZERO 1.7894E-5, SUTH 110.4).
+const SUTHERLAND = { mu0: 1.716e-5, T0: 273.15, S: 110.4 };
+// The lowest Re with wind-tunnel polars of the small-rotor airfoils (SG604x, UIUC). source: researches/01 §2.1 («от Re 100 тыс.»)
+const RE_POLAR_MIN = 100e3;
+
+/** Dynamic viscosity of air at t_C (°C), Pa·s — Sutherland's law. */
+function airViscosity(t_C) {
+  const T = t_C + 273.15, { mu0, T0, S } = SUTHERLAND;
+  return mu0 * Math.pow(T / T0, 1.5) * (T0 + S) / (T + S);
+}
+
+/** Reynolds number of a blade station at the design point: Re = ρ·W·c/μ with W ≈ V·√((2/3)² + (λ·r/R)²) (a = 1/3,
+ *  a′ ≈ 0), chord in m; flags a station below the measured polars. source: researches/01 §1.7, §2.1 */
+function designReynolds({ rho, V, lambda, rOverR, chord_m, mu }) {
+  const W = V * Math.sqrt((2 / 3) ** 2 + (lambda * rOverR) ** 2);
+  const Re = rho * W * chord_m / mu;
+  return { Re, W, belowPolars: Re < RE_POLAR_MIN };
+}
+
 // ---- S6 · performance — the owner's smart controller holds λ near its optimum (interview 001 Q5), so below rated the
 // rotor delivers ½ρA·Cp_e·V³; above rated the power is held flat (the brake/furling are after the MVP).
 // source: researches/01 §7 (Cp_e 0.25 = rotor Cp 0.33–0.35 × efficiency 0.75; cut-in 3 m/s; rated 10.5 m/s),
 // researches/03 Appendix A (the same model); v_tip warning: researches/01 §6.4. [NOT-TESTED] — hygiene in test.mjs.
+// Cp_e stays the MEASURED number, not the BEM one: BEM at L/D 40–60 gives rotor Cp 0.43–0.46, measured small rotors 0.25–0.35
+// (researches/01 §1.6: «подгонку брать как потолок аэродинамики, а реальный Cp — из измерений малых роторов», §3.2) —
+// BEM is the ceiling and the shape (the optimum λ, Ct), never the yield the page promises (plan 02 S6, the FORK line).
 const PERF_DEFAULT = { CpE: 0.25, vCutIn: 3, vRated: 10.5, vTipWarn: 65 };
 
 /** Electrical power curve P(v), W, for rotor diameter D_m at air density rho. */
@@ -442,7 +470,8 @@ const SITE_DEFAULT = { name: 'Brest region', altitude_m: 160, t_C: 7.4, vRef: 3.
 
 const KHAWTAK = { airDensity, shearLog, shearTwoLayer, shearPower, gamma, weibullScale, weibullPdf, yearlyEnergy_kWh, SITE_DEFAULT,
   nacaHalfThickness, nacaCamber, minChordForStud_mm, printableTrailingEdgeX, airfoilSection, polygonArea, pointInPolygon,
-  schmitzPhi, schmitzChord, schmitzTwist, linearBlade, prandtlF, bemStation, bemRotor, PERF_DEFAULT, powerCurve, tipSpeed,
+  schmitzPhi, schmitzChord, schmitzTwist, linearBlade, prandtlF, bemStation, bemRotor, SUTHERLAND, RE_POLAR_MIN, airViscosity,
+  designReynolds, PERF_DEFAULT, powerCurve, tipSpeed,
   STUDS, studCapacity_kN, smallestStud, jointPreload_N, wrenchTorque_Nm, TC_DEFAULT, bladeStations, shellSection,
   segSq, wallT_mm, SECTION_A, bladeSection, jointStress_MPa, PETG_LONG_TERM_MPA, anchorBearing, sectionCuts };
 // ===== CORE-END
