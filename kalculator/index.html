@@ -22,9 +22,9 @@
 // SI units inside; millimetres only at the print/STL boundary.
 
 // ---- S2 · air and wind — researches/01 §5.1 (the same formulas as KATAK, so the two calculators agree)
-// [NOT-TESTED] — hygiene green 2026-11-17: `node kalculator/test.mjs` 90/90 for the whole core so far (criteria 1–7, 9, 10 + the Γ,
+// [NOT-TESTED] — hygiene green 2026-11-17: `node kalculator/test.mjs` 95/95 for the whole core so far (criteria 1–7, 9–11 + the Γ,
 // shear, Weibull, NACA, section, station, Schmitz, BEM, power-curve, stud, shell, section-A, seam-stress, anchor and cut
-// identities, μ and Re), `--control` 42/42. The marker flips only on a functional run of the page (TESTING_FRAMEWORK.md).
+// identities, μ, Re and the SLM loads), `--control` 49/49. The marker flips only on a functional run of the page (TESTING_FRAMEWORK.md).
 
 // International Standard Atmosphere: sea-level pressure, lapse rate, sea-level temperature, exponent g·M/(R·L);
 // specific gas constant of dry air. source: researches/01 §5.1 (KATAK researches/01 §3.1).
@@ -298,6 +298,50 @@ function bladeStations({ R, Rhub, B = 3, Cl, lambda, alphaD_rad, n = 20, tcRoot 
   return out;
 }
 
+// ---- S7 · loads — the IEC 61400-2 Simplified Load Model, the cases that load the BLADE: D maximum thrust, H parked in the
+// 50-year gust, E the centrifugal pull at maximum rpm. Formulas of researches/01 §6.1 (from [15], a TalTech thesis that
+// reproduces the SLM; checked there between its text and its code). [NOT-TESTED] — hygiene: recon 01 §7 re-derived in test.mjs.
+// Case A (fatigue ranges) needs the design torque of the generator — after the MVP's generator decision.
+
+// Small-wind-turbine classes, m/s (researches/01 §5.2, [15] table 1.1). V_ave of class IV: [15] prints «0» (a typo); the
+// three other classes follow V_ave = 0.2·V_ref, which gives 6 — derived, not sourced: the standard's Table 1 is not in its
+// free sample (IEC 61400-2:2006 sample, checked 2026-11-17). V_ave enters only case D; case H, the blade's governing case,
+// takes V_ref alone.
+const IEC_SWT_CLASS = { I: { vRef: 50, vAve: 10 }, II: { vRef: 42.5, vAve: 8.5 }, III: { vRef: 37.5, vAve: 7.5 }, IV: { vRef: 30, vAve: 6 } };
+// SLM constants: C_T of case D, the drag coefficient of a parked blade, V_e50 / V_ref, V_hub / V_ave of case D. source: researches/01 §6.1
+const SLM = { CT_D: 0.5, CD_PARKED: 1.5, VE50_PER_VREF: 1.4, VHUB_PER_VAVE_D: 2.5 };
+// Partial safety factors (researches/01 §6.1, [15] tables 3.2–3.3): γf for loads by the SLM; γm by how well the material is
+// characterised. Allowable stress = f_k / (γf · γm).
+const IEC_GAMMA = { fSlm: { fatigue: 1.0, ultimate: 3.0 }, mFull: { fatigue: 1.25, ultimate: 1.1 }, mMinimal: { fatigue: 10, ultimate: 3.0 } };
+
+/** Plan area of one blade A_proj,B = ∫ c(r) dr from rHub to R, m² (midpoint rule; chord(r) in m). source: researches/01 §6.1 */
+function bladePlanArea(chord, rHub, R, n = 400) {
+  const dr = (R - rHub) / n;
+  let A = 0;
+  for (let i = 0; i < n; i++) A += chord(rHub + (i + 0.5) * dr) * dr;
+  return A;
+}
+
+/** Case D — maximum thrust: F_x-shaft = C_T·½ρ·(2.5·V_ave)²·πR² = C_T·3.125·ρ·V_ave²·πR², N; the flapwise root moment of
+ *  one blade M_yB = F_x·2R/(3B), N·m — the lever 2R/3 that case A's own pair ΔM_yB = λQ/B, ΔF_x = 3λQ/(2R) implies. */
+function slmMaxThrust({ R, B = 3, rho, vAve }) {
+  const Fx = SLM.CT_D * 0.5 * rho * (SLM.VHUB_PER_VAVE_D * vAve) ** 2 * Math.PI * R * R;
+  return { Fx_N: Fx, MyB_Nm: Fx * 2 * R / (3 * B) };
+}
+
+/** Case H — the rotor parked in the 50-year gust V_e50 = 1.4·V_ref: M_yB = (C_d/4)·ρ·V_e50²·A_proj,B·R (N·m) and
+ *  F_x-shaft = ½·B·ρ·C_d·V_e50²·A_proj,B (N), C_d 1.5. */
+function slmParked({ R, B = 3, rho, vRef, Aproj }) {
+  const v = SLM.VE50_PER_VREF * vRef, Cd = SLM.CD_PARKED;
+  return { vE50: v, MyB_Nm: Cd / 4 * rho * v * v * Aproj * R, Fx_N: 0.5 * B * rho * Cd * v * v * Aproj };
+}
+
+/** Case E — maximum rpm: the centrifugal pull of one blade F_zB = m_B·R_cog·ω², N (ω in rad/s). */
+function slmCentrifugal({ mB_kg, Rcog_m, omega }) { return mB_kg * Rcog_m * omega * omega; }
+
+/** Allowable stress f_k / (γf · γm), MPa. */
+function iecAllowable_MPa(fk_MPa, gammaF, gammaM) { return fk_MPa / (gammaF * gammaM); }
+
 // ---- S8 · structure (first part) — the joint preload, the wrench torque, the smallest stud for the user's grade.
 // [NOT-TESTED] — hygiene: criteria 5 and 6 in test.mjs; the thin-walled shell is below, the full section A after it.
 
@@ -473,6 +517,7 @@ const KHAWTAK = { airDensity, shearLog, shearTwoLayer, shearPower, gamma, weibul
   schmitzPhi, schmitzChord, schmitzTwist, linearBlade, prandtlF, bemStation, bemRotor, SUTHERLAND, RE_POLAR_MIN, airViscosity,
   designReynolds, PERF_DEFAULT, powerCurve, tipSpeed,
   STUDS, studCapacity_kN, smallestStud, jointPreload_N, wrenchTorque_Nm, TC_DEFAULT, bladeStations, shellSection,
+  IEC_SWT_CLASS, SLM, IEC_GAMMA, bladePlanArea, slmMaxThrust, slmParked, slmCentrifugal, iecAllowable_MPa,
   segSq, wallT_mm, SECTION_A, bladeSection, jointStress_MPa, PETG_LONG_TERM_MPA, anchorBearing, sectionCuts };
 // ===== CORE-END
 window.KHAWTAK = KHAWTAK;

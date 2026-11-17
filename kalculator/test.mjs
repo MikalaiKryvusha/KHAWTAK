@@ -8,7 +8,7 @@
 //
 // Criteria: plans/02_epic01_phase1_core.md. Covered now: criterion 1 (air density) and the identities S2 rests on (Γ, log
 // and power shear, Weibull/Rayleigh scale, the energy integral); then S3–S6 and S8 — criteria 1–7 and 9 are covered.
-// Covered since 2026-11-17: criterion 10 (BEM with drag), μ and Re. Not covered yet: criterion 8 as a whole (S9), loads (S7).
+// Covered since 2026-11-17: criteria 10 (BEM with drag) and 11 (SLM loads D, H, E), μ and Re. Not covered yet: criterion 8 as a whole (S9), load case A.
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 
@@ -41,6 +41,13 @@ const MUTANTS = [
   ['const RE_POLAR_MIN = 100e3', 'const RE_POLAR_MIN = 150e3'], // moves the polar-data threshold
   ['(lambda * rOverR) ** 2', 'lambda ** 2'],            // breaks the relative wind at the station
   ['CpE: 0.25, vCutIn: 3', 'CpE: 0.30, vCutIn: 3'],     // breaks the power curve (S6)
+  ['CT_D: 0.5', 'CT_D: 0.6'],                           // breaks case D's thrust coefficient (criterion 11)
+  ['MyB_Nm: Fx * 2 * R / (3 * B)', 'MyB_Nm: Fx * R / (2 * B)'], // breaks case D's lever 2R/3
+  ['VE50_PER_VREF: 1.4', 'VE50_PER_VREF: 1.5'],         // breaks the 50-year gust of case H
+  ['Cd / 4 * rho * v * v', 'Cd / 2 * rho * v * v'],     // breaks case H's root moment
+  ['mB_kg * Rcog_m * omega * omega', 'mB_kg * Rcog_m * omega'], // breaks case E (ω, not ω²)
+  ['mMinimal: { fatigue: 10, ultimate: 3.0 }', 'mMinimal: { fatigue: 10, ultimate: 2.0 }'], // breaks γm of an untested material
+  ['const dr = (R - rHub) / n;\n  let A = 0;', 'const dr = R / n;\n  let A = 0;'], // breaks the plan-area integral's span
   ['Math.min(v, vRated)', 'Math.min(v, 2 * vRated)'],   // breaks the flat top above rated (S6)
   ['M5: { d: 5, As: 14.2, p48: 4.40', 'M5: { d: 5, As: 14.2, p48: 3.40'], // breaks the stud table (criterion 6)
   ['return M_Nm * 1000 / k_mm + Fc_N', 'return M_Nm * 1000 / k_mm'],     // breaks the preload (criterion 5)
@@ -74,6 +81,7 @@ function run(K, log = true) {
   let bad = 0, total = 0;
   const check = (name, ok, got = '') => { total++; if (!ok) bad++; if (log) console.log(`${ok ? 'ok  ' : 'FAIL'} ${name}${got !== '' ? ' — ' + got : ''}`); };
   const near = (a, b, eps) => Math.abs(a - b) <= eps;
+  const rel = (a, b, r) => Math.abs(a - b) <= r * Math.abs(b);
 
   if (log) console.log('S2. air and wind (researches/01 §5.1)');
   const rho = K.airDensity(220, 7);
@@ -271,6 +279,41 @@ function run(K, log = true) {
   check('tip speed λ·V: λ 6 at 10 m/s → 60 m/s, under the 65 m/s warning; λ 7 at 10 → 70, warned',
     near(ts.vTip, 60, 1e-12) && !ts.warn && K.tipSpeed(7, 10).warn);
 
+  if (log) console.log('S7. loads — IEC 61400-2 SLM, the blade cases D, H, E (researches/01 §6.1, §7)');
+  // recon 01 §7 (class IV, ρ 1.225, Schmitz blade λ 6, C_l 1.2, hub 0.1R), re-derived 2026-11-17 through the core's Schmitz
+  // chord before it became a target (EXP-0004): every cell matches to the table's rounding. Rows: D, A_proj,B, M_yB,D at V_ave
+  // 6 / 4, M_yB,H, F_x D / H. Tolerances = the table's rounding (half its last digit; ± 0.6 on the integer columns: ± 0.5
+  // rounding + the plan-area integral, ≤ 0.1 % at D 4.2).
+  const slmRows = [[0.6, 0.007, 1.3, 0.6, 2, 19, 34], [1.0, 0.019, 6.0, 2.7, 8, 54, 94], [1.4, 0.038, 16.5, 7.3, 21, 106, 184],
+    [2.0, 0.077, 48.1, 21.4, 62, 216, 375], [2.4, 0.111, 83.1, 36.9, 108, 312, 540], [3.0, 0.173, 162.4, 72.2, 211, 487, 843],
+    [4.2, 0.340, 445.5, 198.0, 578, 955, 1653]];
+  const IV = K.IEC_SWT_CLASS.IV;
+  const slm = slmRows.map(([D, Ap, mD6, mD4, mH, fD, fH]) => {
+    const R = D / 2, Aproj = K.bladePlanArea((r) => K.schmitzChord(r, R, 3, 1.2, 6), 0.1 * R, R);
+    const d6 = K.slmMaxThrust({ R, rho: 1.225, vAve: IV.vAve }), d4 = K.slmMaxThrust({ R, rho: 1.225, vAve: 4 });
+    const h = K.slmParked({ R, rho: 1.225, vRef: IV.vRef, Aproj });
+    return { D, ok: { A: near(Aproj, Ap, 5e-4), D: near(d6.MyB_Nm, mD6, 0.05) && near(d4.MyB_Nm, mD4, 0.05) && near(d6.Fx_N, fD, 0.6),
+      H: near(h.MyB_Nm, mH, 0.6) && near(h.Fx_N, fH, 0.6) }, Aproj, d6, h };
+  });
+  check('plan area of a blade: the core\'s Schmitz chord from 0.1R to R → recon 01 §7, D 0.6 … 4.2 m (0.007 … 0.340 m²)',
+    slm.every((s) => s.ok.A), slm.map((s) => s.Aproj.toFixed(4)).join(' / '));
+  check('criterion 11: case D, maximum thrust (class IV, V_ave 6 and 4) — M_yB and F_x of recon 01 §7, all seven rotors',
+    slm.every((s) => s.ok.D), slm.map((s) => `${s.d6.MyB_Nm.toFixed(1)}/${s.d6.Fx_N.toFixed(0)}`).join(' · '));
+  check('criterion 11: case H, parked at V_e50 = 1.4·30 = 42 m/s — M_yB and F_x of recon 01 §7, all seven rotors',
+    slm.every((s) => s.ok.H) && near(slm[0].h.vE50, 42, 1e-12), slm.map((s) => `${s.h.MyB_Nm.toFixed(1)}/${s.h.Fx_N.toFixed(0)}`).join(' · '));
+  // Case E against an external measurement: Alber et al., TORQUE 2022 — a 1.2 kg blade, CoG 0.39R of R 1 m, 600 rpm → 1850 N
+  // (quoted in researches/02 §2.4); and recon 01 §6.2's D 1.4: 0.33 kg, CoG 0.28 m, λ 6 at 10 m/s → 673 N (± 1.5 %: its
+  // inputs are rounded to two digits).
+  const fE1 = K.slmCentrifugal({ mB_kg: 1.2, Rcog_m: 0.39, omega: 600 * Math.PI / 30 });
+  const fE2 = K.slmCentrifugal({ mB_kg: 0.33, Rcog_m: 0.28, omega: 6 * 10 / 0.7 });
+  check('case E, centrifugal pull: 1.2 kg at 0.39 m, 600 rpm → 1850 N ± 0.5 % (Alber et al. 2022); 0.33 kg at 0.28 m, λ 6, 10 m/s, R 0.7 → 673 N ± 1.5 %',
+    rel(fE1, 1850, 0.005) && rel(fE2, 673, 0.015), `${fE1.toFixed(0)} N, ${fE2.toFixed(0)} N`);
+  const G = K.IEC_GAMMA;
+  const aPetg = K.iecAllowable_MPa(39, G.fSlm.ultimate, G.mMinimal.ultimate);
+  const a46 = K.iecAllowable_MPa(240, G.fSlm.ultimate, G.mFull.ultimate), a88 = K.iecAllowable_MPa(640, G.fSlm.ultimate, G.mFull.ultimate);
+  check('allowable stress f_k/(γf·γm), ultimate, SLM loads: PETG Z 39 MPa untested → 4.3; steel 4.6 → 73, 8.8 → 194 MPa (recon 01 §6.1)',
+    near(aPetg, 4.33, 0.01) && near(a46, 72.7, 0.1) && near(a88, 193.9, 0.1), `${aPetg.toFixed(2)} · ${a46.toFixed(1)} · ${a88.toFixed(1)}`);
+
   if (log) console.log('S3 (span). blade stations (researches/01 §2.2, §1.3)');
   const st = K.bladeStations({ R: 0.7, Rhub: 0.07, Cl: 1.2, lambda: 6, alphaD_rad: 6 * Math.PI / 180, n: 20 });
   const lin = K.linearBlade({ R: 0.7, Cl: 1.2, lambda: 6, alphaD_rad: 6 * Math.PI / 180 });
@@ -306,7 +349,6 @@ function run(K, log = true) {
   // region at 0.05 mm (A 511.1 / 890.5, Ix 63 594 / 127 109, k 6.92 / 8.21 for A1 / A2). Largest pairs: A 1.55 % (core vs
   // raster), Ix 1.02 % (core vs recon), k 2.4 % (recon vs raster) → ± 2 %, ± 2 %, ± 3 % (the judge, finding 1, 2026-11-17).
   // The bands cannot see terms below ~1 % of Ix — those are guarded part by part below.
-  const rel = (a, b, r) => Math.abs(a - b) <= r * Math.abs(b);
   const seam = { chord_mm: 180, t: 0.18, stud_d_mm: 8 };
   const A1 = K.bladeSection({ ...seam, flange_mm: 0 }), A2 = K.bladeSection({ ...seam, flange_mm: 3 });
   check('criterion 9: section A1 (shell T(3) + tube + web) — A 518 ± 2 %, Ix 63 560 ± 2 %, k 6.75 ± 3 % (researches/02 §2.4)',
