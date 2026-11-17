@@ -4,9 +4,9 @@
 > `plans/01_EPIC_mvp_blade.md` → phase table, row «1 · ядро расчёта» · **Статус:** 🔧 S1–S2 done 2026-11-16 (criteria 1 and 7
 > green); S3 nearly done, S4–S5 done (criteria 1, 2, 3, 4, 7 green); S6 done, S8 half done (criteria 1–7 green); S8 done
 > 2026-11-17 (criterion 9 green, 81/81, `--control` 35/35); criterion 10 (BEM with drag) and Re green 2026-11-17 (90/90,
-> 42/42); S7 part 1 2026-11-17 — loads D, H, E (criterion 11; 95/95, 49/49); next — the margin question (interview 003),
+> 42/42); S7 ✅ 2026-11-17 — loads D, H, E (criterion 11), the owner's margin policy (interview #003 «A»), the printed root (99/99, 55/55); next —
 > S3's polar, `--control` expectations, S9 · **Вовне:** one question to the
-> owner at step S7 (load factors: IEC or the hobby margin)
+> owner at step S7 — answered: interview #003, Q1 «A» (2026-11-17 10:41 +03:00)
 
 ## Goal vector
 
@@ -89,7 +89,12 @@ Each step quotes its anchor in the epic: «ядро расчёта … мест�
   `airViscosity` and `designReynolds` with the «below the measured polars» flag (recon 01 §1.7, §2.1); the bisection
   trimmed 100 → 60 halvings (byte-identical suite output, the run 2.5 s → 1 s); 90 of 90, `--control` 42 of 42. The step as planned: P(V) assuming the owner's smart controller holds λ near optimum up to rated (interview 001 Q5;
   the generator itself is out of the MVP); cut-in, rated, yearly energy; v_tip warning above 60–70 m/s (§6.4).
-- [ ] 🔧 **S7 · loads.** Part 1 ✅ 2026-11-17: `IEC_SWT_CLASS`, `SLM`, `IEC_GAMMA`, `bladePlanArea`, `slmMaxThrust`
+- [x] **S7 · loads.** ✅ 2026-11-17 for the MVP — the margin policy is the owner's answer, interview #003, Q1 «A» (10:41
+  +03:00): `MARGIN_POLICY` (loads ×1, stud ×1.5) and `seamCheck` (the homebuilder's verdict + the strict IEC line beside it);
+  the printed root `printedBlade` (FORK in the core: the recon's root 0.18R / t/c 25 % at the root block, blended into the
+  linear blade by 0.4R); the default seam through both: M5 4.8 at 2.78 kN, σ_p 4.5 MPa; strict IEC 7.8 kN, σ_max 25.1 MPa
+  against 4.3; 99 of 99, `--control` 55 of 55. Case A (fatigue) stays out of the MVP with the generator (interview 001 Q4).
+  Part 1 ✅ 2026-11-17: `IEC_SWT_CLASS`, `SLM`, `IEC_GAMMA`, `bladePlanArea`, `slmMaxThrust`
   (case D), `slmParked` (case H), `slmCentrifugal` (case E), `iecAllowable_MPa`; criterion 11 green, 95 of 95, `--control`
   49 of 49. Left: case A (fatigue ranges need the generator's design torque — after the MVP's generator), and the owner
   question — filed 2026-11-17 as `interviews/interview_003_blade_margin_policy.md` with the core's numbers for the default

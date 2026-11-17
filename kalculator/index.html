@@ -22,9 +22,9 @@
 // SI units inside; millimetres only at the print/STL boundary.
 
 // ---- S2 · air and wind — researches/01 §5.1 (the same formulas as KATAK, so the two calculators agree)
-// [NOT-TESTED] — hygiene green 2026-11-17: `node kalculator/test.mjs` 97/97 for the whole core so far (criteria 1–7, 9–11 + the Γ,
+// [NOT-TESTED] — hygiene green 2026-11-17: `node kalculator/test.mjs` 99/99 for the whole core so far (criteria 1–7, 9–11 + the Γ,
 // shear, Weibull, NACA, section, station, Schmitz, BEM, power-curve, stud, shell, section-A, seam-stress, anchor and cut
-// identities, μ, Re and the SLM loads), `--control` 50/50. The marker flips only on a functional run of the page (TESTING_FRAMEWORK.md).
+// identities, μ, Re and the SLM loads, the seam policy, the printed root), `--control` 55/55. The marker flips only on a functional run of the page (TESTING_FRAMEWORK.md).
 
 // International Standard Atmosphere: sea-level pressure, lapse rate, sea-level temperature, exponent g·M/(R·L);
 // specific gas constant of dry air. source: researches/01 §5.1 (KATAK researches/01 §3.1).
@@ -342,6 +342,29 @@ function slmCentrifugal({ mB_kg, Rcog_m, omega }) { return mB_kg * Rcog_m * omeg
 /** Allowable stress f_k / (γf · γm), MPa. */
 function iecAllowable_MPa(fk_MPa, gammaF, gammaM) { return fk_MPa / (gammaF * gammaM); }
 
+// ---- S3 (root) · the PRINTED blade: the linear blade carried down to the root block is too narrow for the seam (63 mm for a
+// 1.36 m rotor — no margin policy holds it: plan 02, the root finding of 2026-11-17).
+// FORK: options <the linear blade to the hub | the exact Schmitz chord inboard | a root transition: the recon's root chord and
+// thickness at the root block, blended linearly into the linear blade> · price of error <a seam that opens | a root that
+// stalls and weighs> · consulted <researches/02 §0 (root block to r 110 mm, the flanges end by 0.4R), §10 (root 0.18R within
+// the bed; «корневой профиль толще (21–25 %: I ∝ t²)»), researches/01 §3.2 (the tunnel: the linearised printed blade beat
+// the exact Schmitz one, Cp_max 0.42–0.46 against 0.27–0.29)> → the transition: the measured-better linear blade outboard,
+// the structural root inboard. t/c 25 % at the root block is [AI] — the top of the recon's 21–25 % range.
+// [NOT-TESTED] — hygiene in test.mjs. GAP: the aerodynamic cost of the wider root waits for the airfoil polar.
+const ROOT_DEFAULT = { r0_m: 0.110, cRoot_per_R: 0.18, tcRoot: 0.25, rBlend_per_R: 0.4 };
+
+/** The printed blade: chord(r), twist(r) and t/c(r) — the linear blade outboard of rBlend, and inboard of it a linear blend
+ *  up to the root chord cRoot = 0.18R and the root t/c at the root block r0. Twist stays the linear blade's. */
+function printedBlade({ R, B = 3, Cl, lambda, alphaD_rad, rHub = 0.1 * R, tcRootAero = TC_DEFAULT.root, tcTip = TC_DEFAULT.tip,
+  root = ROOT_DEFAULT }) {
+  const lin = linearBlade({ R, B, Cl, lambda, alphaD_rad });
+  const tcLin = (r) => tcRootAero + (tcTip - tcRootAero) * (r - rHub) / (R - rHub);
+  const r0 = root.r0_m, r1 = Math.max(root.rBlend_per_R * R, r0), cRoot = root.cRoot_per_R * R;
+  const w = (r) => (r <= r0 ? 1 : r >= r1 ? 0 : (r1 - r) / (r1 - r0));         // 1 at the root block → 0 at rBlend
+  const dc = Math.max(0, cRoot - lin.chord(r0)), dtc = Math.max(0, root.tcRoot - tcLin(r0));
+  return { chord: (r) => lin.chord(r) + w(r) * dc, twist: lin.twist, tc: (r) => tcLin(r) + w(r) * dtc, r0, r1, linear: lin };
+}
+
 // ---- S8 · structure (first part) — the joint preload, the wrench torque, the smallest stud for the user's grade.
 // [NOT-TESTED] — hygiene: criteria 5 and 6 in test.mjs; the thin-walled shell is below, the full section A after it.
 
@@ -365,7 +388,8 @@ function studCapacity_kN(size, grade) {
 }
 
 /** The thinnest stud M3–M14 whose capacity is at least margin × the load F_kN; null when even M14 is not enough. */
-// margin 1.5 — [AI] a working default, no source: the owner decides the margin policy at plan 02 S7 (IEC or hobby).
+// margin 1.5 — [OWNER] interview #003, Q1 «A» (2026-11-17 10:41 +03:00): the homebuilder's margin, «шпилька держит в 1,5 раза
+// больше своей нагрузки» (its definition in the interview).
 function smallestStud(F_kN, grade, margin = 1.5) {
   for (const size of Object.keys(STUDS)) if (studCapacity_kN(size, grade) >= margin * F_kN) return size;
   return null;
@@ -487,6 +511,28 @@ function jointStress_MPa({ M_Nm, F0_N, A, I, yMax }) {
     verdict: sigmaP <= PETG_LONG_TERM_MPA.ok ? 'ok' : sigmaP <= PETG_LONG_TERM_MPA.limit ? 'caution' : 'too high' };
 }
 
+// The margin policy — [OWNER] interview #003, Q1 «A» (2026-11-17 10:41 +03:00): the verdict of the strength step is the
+// HOMEBUILDER'S margin — loads ×1 (the parked 50-year storm, the maximum thrust), the preload keeps the seam closed, the sustained
+// compression within the long-term PETG limit, the stud ≥ 1.5 × its load; strict IEC 61400-2 (loads ×3, untested PETG γm 3)
+// stands as a line beside it. PETG across the layers: 39 MPa (Bambu PETG Basic TDS — researches/01 §6.1, researches/02 §0).
+const MARGIN_POLICY = { gammaLoad: 1, studMargin: 1.5 };
+const PETG_Z_MPA = 39;
+
+/** The seam check by the owner's policy: the preload F0 that keeps the seam closed in both blade cases (H parked: M only; D
+ *  thrust: M and the centrifugal pull F_c, researches/02 §2.3), the thinnest stud of the grade with its wrench torque, the
+ *  stresses and the long-term verdict — and the strict IEC line (loads ×γf, allowed f_k/(γf·γm) for untested PETG). */
+function seamCheck({ section, MyB_H_Nm, MyB_D_Nm, Fc_D_N, grade }) {
+  const at = (g) => {
+    const F0 = Math.max(jointPreload_N(g * MyB_H_Nm, section.k, 0), jointPreload_N(g * MyB_D_Nm, section.k, Fc_D_N));
+    return { F0, st: jointStress_MPa({ M_Nm: g * Math.max(MyB_H_Nm, MyB_D_Nm), F0_N: F0, A: section.A, I: section.Ix, yMax: section.yMax }) };
+  };
+  const hob = at(MARGIN_POLICY.gammaLoad), strict = at(IEC_GAMMA.fSlm.ultimate);
+  const stud = smallestStud(hob.F0 / 1000, grade, MARGIN_POLICY.studMargin);
+  const allowed = iecAllowable_MPa(PETG_Z_MPA, IEC_GAMMA.fSlm.ultimate, IEC_GAMMA.mMinimal.ultimate);
+  return { F0_N: hob.F0, stud, wrench_Nm: stud ? wrenchTorque_Nm(hob.F0, STUDS[stud].d) : null, ...hob.st,
+    iec: { F0_N: strict.F0, sigmaMax: strict.st.sigmaMax, allowed, passes: strict.st.sigmaMax <= allowed } };
+}
+
 // Long-term compression of printed PETG should stay ≤ 3–7 MPa: compressive yield 14.0–22.5 MPa over a material factor 3–5.
 // One limit for both places that press PETG for months — the tip anchor's plate (interview 001 Q3) and the tightened seam.
 // source: researches/02 §2.4, §5.2 [ОЦЕНКА — an estimate; PETG creep is unmeasured, §5.3]
@@ -517,8 +563,8 @@ const KHAWTAK = { airDensity, shearLog, shearTwoLayer, shearPower, gamma, weibul
   schmitzPhi, schmitzChord, schmitzTwist, linearBlade, prandtlF, bemStation, bemRotor, SUTHERLAND, RE_POLAR_MIN, airViscosity,
   designReynolds, PERF_DEFAULT, powerCurve, tipSpeed,
   STUDS, studCapacity_kN, smallestStud, jointPreload_N, wrenchTorque_Nm, TC_DEFAULT, bladeStations, shellSection,
-  IEC_SWT_CLASS, SLM, IEC_GAMMA, bladePlanArea, slmMaxThrust, slmParked, slmCentrifugal, iecAllowable_MPa,
-  segSq, wallT_mm, SECTION_A, bladeSection, jointStress_MPa, PETG_LONG_TERM_MPA, anchorBearing, sectionCuts };
+  ROOT_DEFAULT, printedBlade, IEC_SWT_CLASS, SLM, IEC_GAMMA, bladePlanArea, slmMaxThrust, slmParked, slmCentrifugal, iecAllowable_MPa,
+  MARGIN_POLICY, PETG_Z_MPA, seamCheck, segSq, wallT_mm, SECTION_A, bladeSection, jointStress_MPa, PETG_LONG_TERM_MPA, anchorBearing, sectionCuts };
 // ===== CORE-END
 window.KHAWTAK = KHAWTAK;
 </script>

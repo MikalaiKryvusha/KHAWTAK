@@ -48,6 +48,11 @@ const MUTANTS = [
   ['mB_kg * Rcog_m * omega * omega', 'mB_kg * Rcog_m * omega'], // breaks case E (ω, not ω²)
   ['mMinimal: { fatigue: 10, ultimate: 3.0 }', 'mMinimal: { fatigue: 10, ultimate: 2.0 }'], // breaks γm of an untested material
   ['fSlm: { fatigue: 1.0, ultimate: 3.0 }', 'fSlm: { fatigue: 1.0, ultimate: 2.0 }'],         // breaks γf of the SLM loads (the strict seam)
+  ['gammaLoad: 1, studMargin: 1.5', 'gammaLoad: 1.2, studMargin: 1.5'], // breaks the owner's policy: loads ×1 (interview #003)
+  ['gammaLoad: 1, studMargin: 1.5', 'gammaLoad: 1, studMargin: 2.0'],   // breaks the owner's stud margin 1.5 (interview #003)
+  ['cRoot_per_R: 0.18', 'cRoot_per_R: 0.12'],           // breaks the printed root chord (recon 02 §0/§10)
+  ['rBlend_per_R: 0.4 }', 'rBlend_per_R: 0.3 }'],       // breaks where the root transition ends
+  ['const PETG_Z_MPA = 39', 'const PETG_Z_MPA = 59'],   // breaks the PETG strength the strict line divides
   ['const dr = (R - rHub) / n;\n  let A = 0;', 'const dr = R / n;\n  let A = 0;'], // breaks the plan-area integral's span
   ['Math.min(v, vRated)', 'Math.min(v, 2 * vRated)'],   // breaks the flat top above rated (S6)
   ['M5: { d: 5, As: 14.2, p48: 4.40', 'M5: { d: 5, As: 14.2, p48: 3.40'], // breaks the stud table (criterion 6)
@@ -320,23 +325,33 @@ function run(K, log = true) {
   // ROOT OF researches/02 §0/§10 — chord 0.18R = 122 mm (the core's linear blade gives only 63 mm there, and that seam holds
   // under no policy: plan 02, the root finding of 2026-11-17), t/c 25 % (recon 02 §10: «корневой профиль толще (21–25 %)»),
   // flanges 3 mm, M5; F_c 781 N = the 139 g outboard of the seam at CoG 0.32 m, λ 6 at 2.5·V_ave (case D's speed).
-  const R136 = 0.68, lin136 = K.linearBlade({ R: R136, Cl: 1.2, lambda: 6, alphaD_rad: 6 * deg });
-  const Ap136 = K.bladePlanArea(lin136.chord, 0.1 * R136, R136);
-  const MH136 = K.slmParked({ R: R136, rho: 1.225, vRef: IV.vRef, Aproj: Ap136 }).MyB_Nm;
-  const MD136 = K.slmMaxThrust({ R: R136, rho: 1.225, vAve: IV.vAve }).MyB_Nm;
-  const root136 = K.bladeSection({ chord_mm: 0.18 * R136 * 1000, t: 0.25, stud_d_mm: 5, flange_mm: 3 });
-  const seamAt = (gF) => {
-    const F0 = Math.max(K.jointPreload_N(gF * MH136, root136.k, 0), K.jointPreload_N(gF * MD136, root136.k, 781));
-    return { F0, st: K.jointStress_MPa({ M_Nm: gF * Math.max(MH136, MD136), F0_N: F0, A: root136.A, I: root136.Ix, yMax: root136.yMax }) };
-  };
-  const hob = seamAt(1), iec = seamAt(K.IEC_GAMMA.fSlm.ultimate);
-  const iecAllow = K.iecAllowable_MPa(39, K.IEC_GAMMA.fSlm.ultimate, K.IEC_GAMMA.mMinimal.ultimate);
-  check(`default seam, homebuilder's margin (loads ×1): F0 2.78 kN ± 2 % → M5 4.8 / M4 8.8, wrench 2.8 N·m, σ_p 4.5 MPa «caution»`,
-    rel(hob.F0, 2780, 0.02) && K.smallestStud(hob.F0 / 1000, '4.8') === 'M5' && K.smallestStud(hob.F0 / 1000, '8.8') === 'M4' && hob.st.verdict === 'caution',
-    `F0 ${(hob.F0 / 1000).toFixed(2)} kN, ${K.smallestStud(hob.F0 / 1000, '4.8')} 4.8, wrench ${K.wrenchTorque_Nm(hob.F0, 5).toFixed(1)} N·m, σ_p ${hob.st.sigmaP.toFixed(1)}, σ_max ${hob.st.sigmaMax.toFixed(1)} MPa`);
-  check(`default seam, strict IEC (loads ×3, untested PETG → 4.3 MPa): F0 6.8 kN, σ_max 20.9 MPa — it does not pass`,
-    rel(iec.F0, 6800, 0.02) && iec.st.sigmaMax > iecAllow && iec.st.verdict === 'too high',
-    `F0 ${(iec.F0 / 1000).toFixed(2)} kN, σ_p ${iec.st.sigmaP.toFixed(1)}, σ_max ${iec.st.sigmaMax.toFixed(1)} vs ${iecAllow.toFixed(1)} MPa`);
+  // Since interview #003 Q1 «A» (2026-11-17 10:41) the cases go through seamCheck — the owner's policy in the core — and the
+  // PRINTED blade (the root transition, printedBlade): its wider root raises A_proj by 26 %, so the strict line moves from the
+  // interview's 6.8 kN / 20.9 MPa (computed on the linear planform) to 7.8 kN / 25.1 MPa; the homebuilder's verdict stays —
+  // case D (thrust + F_c) governs it, not the storm.
+  const R136 = 0.68, pb136 = K.printedBlade({ R: R136, Cl: 1.2, lambda: 6, alphaD_rad: 6 * deg });
+  const Ap136 = K.bladePlanArea(pb136.chord, 0.1 * R136, R136);
+  const root136 = K.bladeSection({ chord_mm: pb136.chord(0.11) * 1000, t: pb136.tc(0.11), stud_d_mm: 5, flange_mm: 3 });
+  const seam136 = K.seamCheck({ section: root136, grade: '4.8', Fc_D_N: 781,
+    MyB_H_Nm: K.slmParked({ R: R136, rho: 1.225, vRef: IV.vRef, Aproj: Ap136 }).MyB_Nm,
+    MyB_D_Nm: K.slmMaxThrust({ R: R136, rho: 1.225, vAve: IV.vAve }).MyB_Nm });
+  check(`default seam, the owner's policy (homebuilder's margin, interview #003 «A»): F0 2.78 kN ± 2 % → M5 4.8, wrench 2.8 N·m, σ_p 4.5 MPa «caution», closed`,
+    rel(seam136.F0_N, 2780, 0.02) && seam136.stud === 'M5' && near(seam136.wrench_Nm, 2.78, 0.06) && seam136.verdict === 'caution' && !seam136.opens
+    && K.smallestStud(seam136.F0_N / 1000, '8.8') === 'M4',
+    `F0 ${(seam136.F0_N / 1000).toFixed(2)} kN, ${seam136.stud ?? 'no stud ≤ M14'} 4.8, wrench ${seam136.wrench_Nm?.toFixed(2) ?? '—'} N·m, σ_p ${seam136.sigmaP.toFixed(1)}, σ_max ${seam136.sigmaMax.toFixed(1)} MPa`);
+  check(`default seam, the strict IEC line beside it (loads ×3, untested PETG → 4.3 MPa): F0 7.8 kN, σ_max 25.1 MPa — does not pass`,
+    rel(seam136.iec.F0_N, 7830, 0.02) && rel(seam136.iec.sigmaMax, 25.1, 0.02) && near(seam136.iec.allowed, 4.33, 0.01) && !seam136.iec.passes,
+    `F0 ${(seam136.iec.F0_N / 1000).toFixed(2)} kN, σ_max ${seam136.iec.sigmaMax.toFixed(1)} vs ${seam136.iec.allowed.toFixed(1)} MPa`);
+  // The printed blade (the root transition): the recon's root at the root block, the linear blade from 0.4R out, no jump.
+  const lin136 = pb136.linear, r1 = 0.4 * R136;
+  check('printed blade: chord 0.18R = 122.4 mm and t/c 25 % at the root block (r 110 mm); the linear blade there is 63 mm',
+    near(pb136.chord(0.11) * 1000, 122.4, 0.05) && near(pb136.tc(0.11), 0.25, 1e-12) && near(lin136.chord(0.11) * 1000, 63.1, 0.1),
+    `${(pb136.chord(0.11) * 1000).toFixed(1)} mm, ${(100 * pb136.tc(0.11)).toFixed(1)} % (linear ${(lin136.chord(0.11) * 1000).toFixed(1)} mm)`);
+  check('printed blade: from 0.4R out it IS the linear blade (chord, twist, t/c); continuous at 0.4R; chord never grows outward',
+    [r1, 0.5, 0.6, 0.68].every((r) => near(pb136.chord(r), lin136.chord(r), 1e-12) && near(pb136.twist(r), lin136.twist(r), 1e-12))
+    && near(pb136.chord(r1 - 1e-9), pb136.chord(r1), 1e-9) && near(pb136.tc(r1 - 1e-9), pb136.tc(r1), 1e-9)
+    && Array.from({ length: 60 }, (_, i) => 0.11 + i * (0.68 - 0.11) / 59).every((r, i, a) => i === 0 || pb136.chord(r) <= pb136.chord(a[i - 1]) + 1e-12),
+    `A_proj ${Ap136.toFixed(4)} m² (linear ${K.bladePlanArea(lin136.chord, 0.068, R136).toFixed(4)})`);
 
   if (log) console.log('S3 (span). blade stations (researches/01 §2.2, §1.3)');
   const st = K.bladeStations({ R: 0.7, Rhub: 0.07, Cl: 1.2, lambda: 6, alphaD_rad: 6 * Math.PI / 180, n: 20 });
