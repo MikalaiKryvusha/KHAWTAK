@@ -43,7 +43,7 @@
   - Check. Тот же случай, что в A.
 - **D) your own answer** — <напиши своё>
 
-**Answer:**
+**Answer:** A) <!-- owner-review: by Mikalai Kryvusha · 17 ноября 2026, 10:41 (+03:00) -->
 
 ## Proposed implementation plan (after answers)
 

@@ -1,0 +1,17 @@
+{
+  "kind": "interview",
+  "document": "interviews/interview_003_blade_margin_policy.md",
+  "by": "Mikalai Kryvusha",
+  "at": "2026-11-17T07:41:56.570Z",
+  "atHuman": "17 ноября 2026, 10:41 (+03:00)",
+  "comment": "",
+  "answers": {
+    "Q1": {
+      "choice": "A",
+      "text": "",
+      "comment": ""
+    }
+  },
+  "rev": "081796a518c8b033dee77deaed1f261d109e6375846aea38512dba35daddc1f9",
+  "revAfter": "4514aa6cf3e783b4bde02a86b148421bd9e3169930cb5144af7f6261c08595fa"
+}
