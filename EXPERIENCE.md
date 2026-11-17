@@ -86,7 +86,25 @@
 
 <!-- class-ok: evidence-discarded — price re-checked 2026-11-17 after the second strike: a deleted temp file leaves nothing a tool can scan, and the R1 sweep deletes drafts by design; the cure that holds is structural — the quantities the probes printed are now computed by the suite from the core (bladeMass → slmCentrifugal, bladeSection, tools/section-raster.mjs), so a probe's number has no input left to be typed into -->
 
+<!-- class-ok: shell-lied — price re-checked 2026-11-17 after the second strike: both strikes are Git Bash's GNU grep 3.0 answering a byte-level question with a green exit (EXP-0007 — `-i` does not fold Cyrillic; EXP-0010 — CR dropped before matching unless `-U`); a guard over every grep the agent types would cost more than both strikes did (minutes each; the second stopped itself on the script's own anchor check); the cure that holds is the trigger — byte, EOL and Cyrillic probes go through Node -->
+
 ## Entries
+
+### EXP-0010 · 2026-11-17 · ❌→✅ · #grep #crlf #eol #shell #scripts
+class: shell-lied
+**Context:** the closing trim of session 2 — a Node script moved STATUS lines into `PROJECT_HISTORY.md` by an exact anchor.
+**Tried / did:** probed the line endings first with `grep -c $'\r' STATUS.md PROJECT_HISTORY.md` in Git Bash → `0` and
+`0`, exit 0; the script then matched `'## Entries (newest first)\n\n'`.
+**Result:** ❌→✅ — «history anchor missing»: `PROJECT_HISTORY.md` is CRLF. `core.autocrlf=true` checks files out CRLF,
+while a file the agent rewrote stays LF until git touches it — the tree holds both. GNU grep 3.0 here drops CR before
+matching unless `-U` (`grep -U -c $'\r'` → 128 on the same file). The script's own anchor check stopped it before any write.
+**Lesson:** a script that edits text in this tree reads the EOL from the file it edits (`h.includes('\r\n')`) and writes in
+that EOL; a byte probe (CR, BOM, Cyrillic case) goes through Node, never the shell's grep.   → link: EXP-0007
+**Repro:** `node -e "console.log(require('fs').readFileSync('PROJECT_HISTORY.md','utf8').includes('\r\n'))"` → `true`
+while `grep -c $'\r' PROJECT_HISTORY.md` → `0`.
+**Trigger:** a script matches multi-line text in a tracked file, or a probe asks whether a file has CR → Node, the file's EOL.
+**Not for:** single-line ASCII matches that never span a line end.
+none-cheap: second strike of the class — its price is re-checked and declared above (`class-ok: shell-lied`).
 
 ### EXP-0009 · 2026-11-17 · ❌→✅ · #golden #control #mutants #rename
 class: claim-before-evidence
