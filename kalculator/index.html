@@ -22,9 +22,9 @@
 // SI units inside; millimetres only at the print/STL boundary.
 
 // ---- S2 · air and wind — researches/01 §5.1 (the same formulas as KATAK, so the two calculators agree)
-// [NOT-TESTED] — hygiene green 2026-11-17: `node kalculator/test.mjs` 105/105 for the whole core so far (criteria 1–7, 9–11 + the Γ,
+// [NOT-TESTED] — hygiene green 2026-11-17: `node kalculator/test.mjs` 106/106 for the whole core so far (criteria 1–7, 9–11 + the Γ,
 // shear, Weibull, NACA, section, station, Schmitz, BEM, power-curve, stud, shell, section-A, seam-stress, anchor and cut
-// identities, μ, Re and the SLM loads, the seam policy, the printed root, the blade mass, the bed fit), `--control` 61/61. The marker flips only on a functional run of the page (TESTING_FRAMEWORK.md).
+// identities, μ, Re and the SLM loads, the seam policy, the printed root, the blade mass, the bed fit), `--control` 62/62. The marker flips only on a functional run of the page (TESTING_FRAMEWORK.md).
 
 // International Standard Atmosphere: sea-level pressure, lapse rate, sea-level temperature, exponent g·M/(R·L);
 // specific gas constant of dry air. source: researches/01 §5.1 (KATAK researches/01 §3.1).
@@ -381,13 +381,15 @@ function flangeAt_mm(r, R, r0 = ROOT_DEFAULT.r0_m) {
  *  the stud from its root nut (r 35 mm, researches/02 §0) over its length — the mass integral of researches/02 §7.2, 2 mm step. */
 function bladeMass({ blade, R, stud, studLen_m, rFrom = ROOT_DEFAULT.r0_m, studFrom_m = 0.035, dr = 0.002 }) {
   const { d, kgm } = STUDS[stud], studTo = studFrom_m + studLen_m;
-  let m = 0, mr = 0;
+  let m = 0, mr = 0, petg = 0;
   for (let r = rFrom + dr / 2; r < R; r += dr) {
-    const s = bladeSection({ chord_mm: blade.chord(r) * 1000, t: blade.tc(r), stud_d_mm: d, flange_mm: flangeAt_mm(r, R), n: 40 });
-    const dm = PETG_DENSITY_KG_M3 * s.A * 1e-6 * dr + (r < studTo ? kgm * dr : 0);
+    const s = bladeSection({ chord_mm: blade.chord(r) * 1000, t: blade.tc(r), stud_d_mm: d, flange_mm: flangeAt_mm(r, R), n: 40,
+      withTube: r < studTo });
+    const dp = PETG_DENSITY_KG_M3 * s.A * 1e-6 * dr, dm = dp + (r < studTo ? kgm * dr : 0);
+    petg += dp;
     m += dm; mr += dm * r;
   }
-  return { m_kg: m, cog_m: mr / m };
+  return { m_kg: m, cog_m: mr / m, petg_kg: petg, steel_kg: m - petg };
 }
 
 // ---- S8 · structure (first part) — the joint preload, the wrench torque, the smallest stud for the user's grade.
@@ -470,7 +472,7 @@ const SECTION_A = { shellLines: 3, tubeLines: 2, webLines: 2, gap_mm: 0.2, xWeb:
  *  The recon warns (§ «Что не проверено»): the thin-walled sum overstates I for flanges above 4–5 mm. */
 function bladeSection({ chord_mm, t, m = 0.04, p = 0.4, xStud = 0.40, n = 60, stud_d_mm, flange_mm = 0,
   shellLines = SECTION_A.shellLines, tubeLines = SECTION_A.tubeLines, webLines = SECTION_A.webLines,
-  gap_mm = SECTION_A.gap_mm, xWeb = SECTION_A.xWeb, xFlange = SECTION_A.xFlange }) {
+  gap_mm = SECTION_A.gap_mm, xWeb = SECTION_A.xWeb, xFlange = SECTION_A.xFlange, withTube = true }) {
   const outer = airfoilSection({ chord_mm, t, m, p, n, xStud });
   const shell = wallT_mm(shellLines), tube = wallT_mm(tubeLines), web = wallT_mm(webLines);
   const strips = [];                                            // { kind, w, ds, x1, y1, x2, y2 } — a thin strip along a midline
@@ -492,9 +494,10 @@ function bladeSection({ chord_mm, t, m = 0.04, p = 0.4, xStud = 0.40, n = 60, st
       }
     }
   }
-  // the tube: a ring around the stud axis (the origin)
+  // the tube: a ring around the stud axis (the origin) — only where the stud runs (withTube; the glued tip sections beyond the
+  // stud's end have none, researches/02 §4.7 — the third judge, finding 7)
   const ri = stud_d_mm / 2 + gap_mm, ro = ri + tube;
-  const tubeA = Math.PI * (ro * ro - ri * ri), tubeI = Math.PI / 4 * (ro ** 4 - ri ** 4);
+  const tubeA = withTube ? Math.PI * (ro * ro - ri * ri) : 0, tubeI = withTube ? Math.PI / 4 * (ro ** 4 - ri ** 4) : 0;
   // the web: a vertical wall at xWeb between the inner faces of the shell
   const Xw = (xWeb - xStud) * chord_mm;
   const ys = [];
@@ -502,7 +505,10 @@ function bladeSection({ chord_mm, t, m = 0.04, p = 0.4, xStud = 0.40, n = 60, st
     const [ax, ay] = outer[i], [bx, by] = outer[(i + 1) % outer.length];
     if ((ax - Xw) * (bx - Xw) <= 0 && ax !== bx) ys.push(ay + (by - ay) * (Xw - ax) / (bx - ax));
   }
-  const webH = Math.max(...ys) - Math.min(...ys) - 2 * shell, webY = (Math.max(...ys) + Math.min(...ys)) / 2;
+  const webH0 = Math.max(...ys) - Math.min(...ys) - 2 * shell, webY = (Math.max(...ys) + Math.min(...ys)) / 2;
+  // near the tip the profile is thinner than two shells: no web (0); a web line that misses the profile altogether is broken
+  // geometry and stays NaN — the clamp must not hide it (the addressee golden caught exactly that, 2026-11-17)
+  const webH = ys.length < 2 ? NaN : Math.max(0, webH0);
   const webA = web * webH;
   // centroid
   let A = tubeA + webA, Sx = webA * Xw, Sy = webA * webY, shellA = 0, flangeA = 0;

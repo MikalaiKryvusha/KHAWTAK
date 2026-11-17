@@ -92,8 +92,10 @@ Each step quotes its anchor in the epic: «ядро расчёта … мест�
 - [x] **S7 · loads.** ✅ 2026-11-17 for the MVP — the margin policy is the owner's answer, interview #003, Q1 «A» (10:41
   +03:00): `MARGIN_POLICY` (loads ×1, stud ×1.5) and `seamCheck` (the homebuilder's verdict + the strict IEC line beside it);
   the printed root `printedBlade` (FORK in the core: the recon's root 0.18R / t/c 25 % at the root block, blended into the
-  linear blade by 0.4R); the default seam through both: M5 4.8 at 2.85 kN, σ_p 5.3 MPa; strict IEC 8.56 kN, σ_max 30.3 MPa
-  against 4.3 (after the second judge: F_c from the blade mass, the flange law, F_c ×3 on the strict line); 103 of 103, `--control` 59 of 59. Case A (fatigue) stays out of the MVP with the generator (interview 001 Q4).
+  linear blade by 0.4R); the default seam through both: M5 4.8 at 2.79 kN, σ_p 5.15 MPa; strict IEC 8.38 kN, σ_max 30.0 MPa
+  against 4.3 (after the second judge: F_c from the blade mass, the flange law, F_c ×3 on the strict line; after the third:
+  the stud tube only along the stud — 155.9 g outboard of the seam, F_c 785 N, the printed blade's storm moment 19.74 N·m);
+  106 of 106, `--control` 62 of 62. Case A (fatigue) stays out of the MVP with the generator (interview 001 Q4).
   Part 1 ✅ 2026-11-17: `IEC_SWT_CLASS`, `SLM`, `IEC_GAMMA`, `bladePlanArea`, `slmMaxThrust`
   (case D), `slmParked` (case H), `slmCentrifugal` (case E), `iecAllowable_MPa`; criterion 11 green, 95 of 95, `--control`
   49 of 49. Left: case A (fatigue ranges need the generator's design torque — after the MVP's generator), and the owner

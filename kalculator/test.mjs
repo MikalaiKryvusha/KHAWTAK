@@ -80,6 +80,7 @@ const MUTANTS = [
   ['Math.ceil(span_mm / maxZ_mm)', 'Math.round(span_mm / maxZ_mm)'], // breaks the section count (a section taller than the bed)
   ['const BED_DEFAULT = { w_mm: 220, d_mm: 220, margin_mm: 5 }', 'const BED_DEFAULT = { w_mm: 220, d_mm: 220, margin_mm: 0 }'], // forgets the 5 mm margin
   ['for (let deg = 0; deg < 180; deg += 0.25)', 'for (let deg = 0; deg < 1; deg += 0.25)'], // forgets that the part may be turned
+  ['const pts = polys.flat()', 'const pts = polys[0]'],     // forgets the union of the outlines (the third judge, F1)
 ];
 
 function load(src) {
@@ -334,10 +335,10 @@ function run(K, log = true) {
   // under no policy: plan 02, the root finding of 2026-11-17), t/c 25 % (recon 02 §10: «корневой профиль толще (21–25 %)»),
   // M5. Since interview #003 Q1 «A» (2026-11-17 10:41) the cases go through seamCheck — the owner's policy in the core — and
   // the PRINTED blade (printedBlade). Since the second judge (2026-11-17, F1–F3): the flanges by the recon's law (flangeAt_mm,
-  // 2.04 mm here, not a typed 3 mm), F_c from the blade's own mass (bladeMass: 162.5 g outboard of the seam, CoG 0.297 m, at
-  // case D's ω — 845 N, no longer a typed 781 N from a temp probe on the linear blade), and the strict line factors F_c too:
-  // the homebuilder's numbers move 2.78 → 2.85 kN, σ_p 4.5 → 5.3 MPa (M5 4.8 and «caution» stay); the strict line 7.8 →
-  // 8.56 kN, σ_max 25.1 → 30.3 MPa (still fails).
+  // 2.04 mm here, not a typed 3 mm), F_c from the blade's own mass (bladeMass), and the strict line factors F_c too. Since the
+  // third judge (F7): the stud tube only where the stud runs — 155.9 g outboard of the seam (PETG 124.1 g, steel 31.7 g), CoG
+  // 0.287 m, at case D's ω → F_c 785 N. The homebuilder's numbers: F0 2.79 kN, M5 4.8, σ_p 5.15 MPa «caution»; the strict line:
+  // 8.38 kN, σ_max 30.0 MPa (still fails). The storm moment of the printed blade is 19.74 N·m (its wider root).
   const R136 = 0.68, pb136 = K.printedBlade({ R: R136, Cl: 1.2, lambda: 6, alphaD_rad: 6 * deg });
   const Ap136 = K.bladePlanArea(pb136.chord, 0.1 * R136, R136);
   const root136 = K.bladeSection({ chord_mm: pb136.chord(0.11) * 1000, t: pb136.tc(0.11), stud_d_mm: 5, flange_mm: K.flangeAt_mm(0.11, R136) });
@@ -345,12 +346,12 @@ function run(K, log = true) {
   const Fc136 = K.slmCentrifugal({ mB_kg: mass136.m_kg, Rcog_m: mass136.cog_m, omega: 6 * K.SLM.VHUB_PER_VAVE_D * IV.vAve / R136 });
   const seamOf = (MH, MD, Fc = Fc136) => K.seamCheck({ section: root136, grade: '4.8', Fc_D_N: Fc, MyB_H_Nm: MH, MyB_D_Nm: MD });
   const seam136 = seamOf(K.slmParked({ R: R136, rho: 1.225, vRef: IV.vRef, Aproj: Ap136 }).MyB_Nm, K.slmMaxThrust({ R: R136, rho: 1.225, vAve: IV.vAve }).MyB_Nm);
-  check(`default seam, the owner's policy (homebuilder's margin, interview #003 «A»): F0 2.85 kN ± 2 % → M5 4.8, wrench 2.85 N·m, σ_p 5.3 MPa «caution», closed`,
-    rel(seam136.F0_N, 2852, 0.02) && seam136.stud === 'M5' && near(seam136.wrench_Nm, 2.85, 0.06) && rel(seam136.sigmaP, 5.27, 0.02)
+  check(`default seam, the owner's policy (homebuilder's margin, interview #003 «A»): F0 2.79 kN ± 2 % → M5 4.8, wrench 2.79 N·m, σ_p 5.15 MPa «caution», closed`,
+    rel(seam136.F0_N, 2792, 0.02) && seam136.stud === 'M5' && near(seam136.wrench_Nm, 2.79, 0.06) && rel(seam136.sigmaP, 5.15, 0.02)
     && seam136.verdict === 'caution' && !seam136.opens && K.smallestStud(seam136.F0_N / 1000, '8.8') === 'M4',
     `F_c ${Fc136.toFixed(0)} N, F0 ${(seam136.F0_N / 1000).toFixed(2)} kN, ${seam136.stud ?? 'no stud ≤ M14'} 4.8, wrench ${seam136.wrench_Nm?.toFixed(2) ?? '—'} N·m, σ_p ${seam136.sigmaP.toFixed(2)}, σ_max ${seam136.sigmaMax.toFixed(1)} MPa`);
-  check(`default seam, the strict IEC line beside it (every load ×3, untested PETG → 4.3 MPa): F0 8.56 kN, σ_max 30.3 MPa — does not pass`,
-    rel(seam136.iec.F0_N, 8557, 0.02) && rel(seam136.iec.sigmaMax, 30.3, 0.02) && near(seam136.iec.allowed, 4.33, 0.01) && !seam136.iec.passes,
+  check(`default seam, the strict IEC line beside it (every load ×3, untested PETG → 4.3 MPa): F0 8.38 kN, σ_max 30.0 MPa — does not pass`,
+    rel(seam136.iec.F0_N, 8375, 0.02) && rel(seam136.iec.sigmaMax, 30.0, 0.02) && near(seam136.iec.allowed, 4.33, 0.01) && !seam136.iec.passes,
     `F0 ${(seam136.iec.F0_N / 1000).toFixed(2)} kN, σ_max ${seam136.iec.sigmaMax.toFixed(1)} vs ${seam136.iec.allowed.toFixed(1)} MPa`);
   // the strict line's pass branch, exercised once (the judge, F4): a breeze and a stopped rotor — with the rotor turning, F_c ×3
   // alone already presses the seam to 4.8 MPa (the first draft of this case forgot it and went red on its own premise)
@@ -358,21 +359,24 @@ function run(K, log = true) {
   check('the strict IEC line can say «passes»: 0.1 N·m, no centrifugal pull, on the same seam → σ_max under 4.3 MPa', calm.iec.passes && calm.iec.sigmaMax < calm.iec.allowed,
     `σ_max ${calm.iec.sigmaMax.toFixed(2)} MPa`);
   // The blade's mass (bladeMass) against recon 02 on the recon's OWN planform (§0: c/R 0.18 → 0.10 at 0.7 → 0.05; t/c 18 → 12 %
-  // by r/R; flanges by flangeAt_mm; the root block excluded): §7.2's R 1.0 m — 455 g ± 2 %; §10's classes 250 / 333 / 500 —
-  // 117 / 175 / 343 g ± 5 % (the classes from 1000 mm differ by 4.5–11 %, outside the MVP — recon 02 §10's note); §2.4's
-  // F_c of that R 1.0 m blade with 0.8 m of M8 at 600 rpm — 1.22 kN ± 2 %.
+  // by r/R; flanges by flangeAt_mm; the tube along the recon's own stud; the root block excluded; PETG only): §7.2's R 1.0 m
+  // with 0.8 m of M8 — 455 g; §10's classes 250 / 333 / 500 — 117 / 175 / 343 g. Observed: −1.6 %, −0.8 %, −1.1 %, −3.2 %; the
+  // bands (± 2 %, ± 4 %) are that observed spread rounded up — NOT an independent tolerance (the recon's script is deleted;
+  // the gap trends with R, a method difference — the third judge, F6). §2.4's F_c of that blade at 600 rpm — 1.22 kN ± 3 %:
+  // the recon does not say where its stud starts; its own inputs (455 g at 0.424 m + 0.8 m of M8) give 1.20–1.22 kN by hand
+  // for a start at 35–55 mm — that unstated input, not the code, sets the band.
   const reconBlade = (R) => ({ chord: (r) => { const x = r / R; return R * (x <= 0.15 ? 0.18 : x <= 0.7 ? 0.18 - 0.08 * (x - 0.15) / 0.55 : 0.10 - 0.05 * (x - 0.7) / 0.3); },
     tc: (r) => 0.18 - 0.06 * r / R });
   check('flanges along the span: 3 mm·R at the root block (2.04 mm at R 0.68, 3.0 at R 1.0), half by mid-taper, none from 0.4R',
     near(K.flangeAt_mm(0.11, 0.68), 2.04, 1e-9) && near(K.flangeAt_mm(0.11, 1.0), 3, 1e-9) && near(K.flangeAt_mm(0.255, 1.0), 1.5, 1e-9)
     && K.flangeAt_mm(0.4, 1.0) === 0 && K.flangeAt_mm(0.05, 1.0) === 3);
-  const mR1 = K.bladeMass({ blade: reconBlade(1.0), R: 1.0, stud: 'M8', studLen_m: 0 });
-  const mCls = [[0.58, 'M4', 117], [0.68, 'M5', 175], [0.89, 'M6', 343]].map(([R, s, w]) => [K.bladeMass({ blade: reconBlade(R), R, stud: s, studLen_m: 0 }).m_kg * 1000, w]);
-  check('blade mass: recon 02 §7.2 R 1.0 m → 455 g ± 2 %; §10 classes 250 / 333 / 500 → 117 / 175 / 343 g ± 5 %',
-    rel(mR1.m_kg * 1000, 455, 0.02) && mCls.every(([g, w]) => rel(g, w, 0.05)), `${(mR1.m_kg * 1000).toFixed(1)} · ${mCls.map(([g]) => g.toFixed(1)).join(' · ')} g`);
+  const mR1 = K.bladeMass({ blade: reconBlade(1.0), R: 1.0, stud: 'M8', studLen_m: 0.8 });   // the recon's own stud: 0.8 m of M8 (§2.4)
+  const mCls = [[0.58, 'M4', 0.25, 117], [0.68, 'M5', 0.333, 175], [0.89, 'M6', 0.5, 343]].map(([R, s, L, w]) => [K.bladeMass({ blade: reconBlade(R), R, stud: s, studLen_m: L }).petg_kg * 1000, w]);
+  check('blade mass (PETG, the tube along the stud): recon 02 §7.2 R 1.0 m → 455 g ± 2 %; §10 classes 250 / 333 / 500 → 117 / 175 / 343 g ± 4 %',
+    rel(mR1.petg_kg * 1000, 455, 0.02) && mCls.every(([g, w]) => rel(g, w, 0.04)), `${(mR1.petg_kg * 1000).toFixed(1)} · ${mCls.map(([g]) => g.toFixed(1)).join(' · ')} g`);
   const m8 = K.bladeMass({ blade: reconBlade(1.0), R: 1.0, stud: 'M8', studLen_m: 0.8 });
   const fc8 = K.slmCentrifugal({ mB_kg: m8.m_kg, Rcog_m: m8.cog_m, omega: 600 * Math.PI / 30 });
-  check('blade mass → F_c: recon 02 §2.4 — the R 1.0 m blade + 0.8 m of M8 at 600 rpm → 1.22 kN ± 2 %', rel(fc8, 1220, 0.02), `${fc8.toFixed(0)} N`);
+  check('blade mass → F_c: recon 02 §2.4 — the R 1.0 m blade + 0.8 m of M8 at 600 rpm → 1.22 kN ± 3 %', rel(fc8, 1220, 0.03), `${fc8.toFixed(0)} N`);
   // The printed blade (the root transition): the recon's root at the root block, the linear blade from 0.4R out, no jump.
   const lin136 = pb136.linear, r1 = 0.4 * R136;
   check('printed blade: chord 0.18R = 122.4 mm and t/c 25 % at the root block (r 110 mm); the linear blade there is 63 mm',
@@ -482,12 +486,16 @@ function run(K, log = true) {
   const f200 = K.bedFit(strip(200, 10)), f280 = K.bedFit(strip(280, 10)), f300 = K.bedFit(strip(300, 10));
   check('bed fit by hand: 200 × 10 straight · 280 × 10 only on the diagonal (≈ 45°) · 300 × 10 does not fit the 210 × 210 spot',
     f200.fits && f280.fits && Math.abs(f280.angle_deg % 90 - 45) < 3 && !f300.fits, `280: ${f280.angle_deg}°, ${f280.w_mm.toFixed(1)} × ${f280.h_mm.toFixed(1)}`);
+  // The union decides (the third judge, F1): two 200 × 10 strips 205 mm apart — each alone fits, together 200 × 215 do not.
+  const pair = [strip(200, 10)[0], strip(200, 10)[0].map(([x, y]) => [x, y + 205])];
+  check('bed fit: the footprint is the UNION of the outlines — two strips that fit alone, 215 mm apart together, do not fit',
+    K.bedFit([pair[0]]).fits && K.bedFit([pair[1]]).fits && !K.bedFit(pair).fits);
   // The default blade's first section (rotor 1.36 m): the printed span 110 … 680 mm in three sections of 190 mm; its outlines
   // at the bottom, the middle and the top, each at its own chord, t/c and twist, together — the footprint fits the bed.
   const span136 = K.sectionCuts((0.68 - 0.11) * 1000, 240), rTop = 0.11 + span136[1] / 1000;
   const outl = [0.11, (0.11 + rTop) / 2, rTop].map((r) => K.airfoilSection({ chord_mm: pb136.chord(r) * 1000, t: pb136.tc(r), twist_rad: pb136.twist(r), n: 40 }));
   const fit136 = K.bedFit(outl);
-  check('the default blade\'s first section (r 110 … 300 mm, chord 122 → 75 mm, twisted) stands on the 220 × 220 bed',
+  check('the default blade\'s first section (r 110 … 300 mm, chord 122 → 51 mm, twisted) stands on the 220 × 220 bed',
     span136.length === 4 && fit136.fits, `${span136.length - 1} sections · ${fit136.w_mm.toFixed(0)} × ${fit136.h_mm.toFixed(0)} mm at ${fit136.angle_deg}°`);
 
   return { bad, total, failed };
@@ -500,7 +508,11 @@ function run(K, log = true) {
 // @guard control-addressees
 // THREAT:         a test edit leaves a mutant red only through an unrelated case — the criterion it guards quietly blind
 // PROVED-AGAINST: the golden's addressee of the root-chord mutant renamed by hand → the run prints ADDRESSEE DRIFT, exit 1
-// GAP:            a mutant that gains NEW red cases is not flagged (only lost ones are); the golden is the judges' state
+// GAP:            a mutant that gains NEW red cases is not flagged (only lost ones are); the golden is the judges' state;
+//                 a mutant edited or added, or a golden key without its mutant, fails the run until `--write-golden`;
+//                 `--write-golden` prints every lost / gained addressee and counts the NET LOSSES — it never refuses one
+//                 (a loss can be legitimate physics), the commit must name each; a loss balanced by an unrelated gain
+//                 counts as «change», not a net loss — the printed lost / gained names are the review, not the count
 // ON-REAL-PATH:   NOT YET (no page; the core's own control run)
 const GOLDEN = new URL('./control-golden.json', import.meta.url);
 if (!CONTROL) {
@@ -524,8 +536,24 @@ if (!CONTROL) {
     if (lost.length) drift++;
   }
   const unknown = write ? 0 : MUTANTS.filter(([f, t]) => !golden[`${f} → ${t}`]).length;
-  if (write) writeFileSync(GOLDEN, JSON.stringify(out, Object.keys(out).sort(), 2) + '\n');
+  const orphans = write ? [] : Object.keys(golden).filter((k) => !MUTANTS.some(([f, t]) => `${f} → ${t}` === k));
+  if (orphans.length) console.log(`ORPHANED golden keys (no such mutant): ${orphans.join(' | ')}`);
+  // The re-capture prints its own diff against the golden it replaces: a renamed case shows as one lost + one gained name; a
+  // mutant with more lost than gained stopped reddening a case under ANY name — a NET LOSS to justify in the commit (the
+  // 2026-11-17 re-capture: a filter by names called the tube-radius mutant's three lost cases «renamed» — EXP-0009).
+  let netLoss = 0;
+  if (write) {
+    for (const key of Object.keys(out)) {
+      const was = golden[key] || [], now = out[key];
+      const lost = was.filter((x) => !now.includes(x)), gained = now.filter((x) => !was.includes(x));
+      if (lost.length > gained.length) netLoss++;
+      if (lost.length || gained.length) console.log(`GOLDEN ${lost.length > gained.length ? 'NET LOSS' : 'change'} "${key}": lost ${lost.length}`
+        + ` · gained ${gained.length}${lost.length ? ` · lost: ${lost.join(' | ')}` : ''}${gained.length ? ` · gained: ${gained.join(' | ')}` : ''}`);
+    }
+    for (const key of Object.keys(golden)) if (!(key in out)) console.log(`GOLDEN dropped key (its mutant is gone): "${key}"`);
+    writeFileSync(GOLDEN, JSON.stringify(out, Object.keys(out).sort(), 2) + '\n');
+  }
   console.log(`-- control: ${MUTANTS.length - missed} of ${MUTANTS.length} mutants seen red · addressee drift ${drift}` +
-    (write ? ' · golden written' : ` · mutants not in the golden ${unknown}`));
-  process.exit(missed || drift ? 1 : 0);
+    (write ? ` · golden written · net losses ${netLoss}` : ` · mutants not in the golden ${unknown} · orphaned keys ${orphans.length}`));
+  process.exit(missed || drift || unknown || orphans.length ? 1 : 0);   // an edited mutant escapes nothing (the third judge, F3)
 }

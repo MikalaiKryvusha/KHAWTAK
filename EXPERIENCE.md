@@ -84,7 +84,39 @@
 >
 > Skill: `/experience` (capture a lesson · recall relevant lessons).
 
+<!-- class-ok: evidence-discarded — price re-checked 2026-11-17 after the second strike: a deleted temp file leaves nothing a tool can scan, and the R1 sweep deletes drafts by design; the cure that holds is structural — the quantities the probes printed are now computed by the suite from the core (bladeMass → slmCentrifugal, bladeSection, tools/section-raster.mjs), so a probe's number has no input left to be typed into -->
+
 ## Entries
+
+### EXP-0009 · 2026-11-17 · ❌→✅ · #golden #control #mutants #rename
+class: claim-before-evidence
+**Context:** re-capturing `kalculator/control-golden.json` after five test cases were renamed (the third judge's fixes).
+**Tried / did:** a filter checked that every DRIFT line named only one of the five renamed cases → «only renames, safe».
+**Result:** ❌→✅ — the per-mutant diff of the old and new golden showed the tube-radius mutant had lost three of those
+cases for real (the tube-along-the-stud fix cut its lever under the bands); the filter matched them by name and hid it.
+**Lesson:** a renamed case may also have stopped seeing a mutant — compare addressees PER MUTANT (lost vs gained), never
+the names of the drift lines alone.   → link: `kalculator/test.mjs` (`--write-golden`)
+**Repro:** `node kalculator/test.mjs --control --write-golden` prints `GOLDEN NET LOSS "<mutant>"` and `net losses N` on
+its summary line; every net loss is named in the commit before it lands.
+**Trigger:** renaming or re-targeting a case that a mutant reddens → re-capture and read the NET LOSS lines.
+**Not for:** a loss balanced by an unrelated gain — the count shows «change»; the printed names are the review.
+mechanized: `node kalculator/test.mjs --control --write-golden` — the NET LOSS report (proven 2026-11-17 on the old golden: exactly the tube mutant, net losses 1).
+
+### EXP-0008 · 2026-11-17 · ❌→✅ · #probe #tmp #tests #reproducibility
+class: evidence-discarded
+**Context:** the default seam of interview 003 and its test case needed the blade's centrifugal pull F_c.
+**Tried / did:** a temp probe computed 781 N on the LINEAR blade; the number was typed into `test.mjs` as an input, the probe
+deleted (after EXP-0006 was written — the second strike of the class).
+**Result:** ❌→✅ — the second judge could not trace it, and it belonged to the wrong blade; the suite now computes F_c from
+the core (`bladeMass` → `slmCentrifugal`: 845 N, 785 N after the third judge's tube fix). The third judge's F6 met the
+first strike again: the mass band against recon 02 can be bounded, never traced — that recon script is gone.
+**Lesson:** a number a test or an owner's document uses is computed IN the suite from the core; a probe may discover a
+number, only the suite may carry it.   → link: commit ac5f1d8 (F2) · `kalculator/test.mjs` (the «default seam» cases)
+**Repro:** `grep -nE "Fc_D_N: [0-9]|mB_kg: [0-9]|seamOf\([0-9]" kalculator/test.mjs` — every hit is a fixture with its
+source on the line above (recon 01 §7's masses, the «calm» branch case), never a probe's output.
+**Trigger:** about to type a number a temp probe printed into `test.mjs` or a document → move the computation into the case.
+**Not for:** hand-chosen fixture inputs that exercise a branch, declared as such in the comment.
+none-cheap: second strike — the class's price is re-checked and declared above (`class-ok: evidence-discarded`); the cure lives in the suite, not in a scanner.
 
 ### EXP-0007 · 2026-11-17 · ❌→✅ · #grep #cyrillic #shell #count
 class: shell-lied
