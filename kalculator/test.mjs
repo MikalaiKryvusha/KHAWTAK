@@ -47,6 +47,7 @@ const MUTANTS = [
   ['Cd / 4 * rho * v * v', 'Cd / 2 * rho * v * v'],     // breaks case H's root moment
   ['mB_kg * Rcog_m * omega * omega', 'mB_kg * Rcog_m * omega'], // breaks case E (ω, not ω²)
   ['mMinimal: { fatigue: 10, ultimate: 3.0 }', 'mMinimal: { fatigue: 10, ultimate: 2.0 }'], // breaks γm of an untested material
+  ['fSlm: { fatigue: 1.0, ultimate: 3.0 }', 'fSlm: { fatigue: 1.0, ultimate: 2.0 }'],         // breaks γf of the SLM loads (the strict seam)
   ['const dr = (R - rHub) / n;\n  let A = 0;', 'const dr = R / n;\n  let A = 0;'], // breaks the plan-area integral's span
   ['Math.min(v, vRated)', 'Math.min(v, 2 * vRated)'],   // breaks the flat top above rated (S6)
   ['M5: { d: 5, As: 14.2, p48: 4.40', 'M5: { d: 5, As: 14.2, p48: 3.40'], // breaks the stud table (criterion 6)
@@ -313,6 +314,29 @@ function run(K, log = true) {
   const a46 = K.iecAllowable_MPa(240, G.fSlm.ultimate, G.mFull.ultimate), a88 = K.iecAllowable_MPa(640, G.fSlm.ultimate, G.mFull.ultimate);
   check('allowable stress f_k/(γf·γm), ultimate, SLM loads: PETG Z 39 MPa untested → 4.3; steel 4.6 → 73, 8.8 → 194 MPa (recon 01 §6.1)',
     near(aPetg, 4.33, 0.01) && near(a46, 72.7, 0.1) && near(a88, 193.9, 0.1), `${aPetg.toFixed(2)} · ${a46.toFixed(1)} · ${a88.toFixed(1)}`);
+
+  // The default blade's root seam under the two margin policies — the numbers of interview 003 (re-run by this case,
+  // EXP-0006). Rotor 1.36 m (the «333» class, HOUSE_RULES §7), class IV, ρ 1.225; the seam at the root block r 110 mm with the
+  // ROOT OF researches/02 §0/§10 — chord 0.18R = 122 mm (the core's linear blade gives only 63 mm there, and that seam holds
+  // under no policy: plan 02, the root finding of 2026-11-17), t/c 25 % (recon 02 §10: «корневой профиль толще (21–25 %)»),
+  // flanges 3 mm, M5; F_c 781 N = the 139 g outboard of the seam at CoG 0.32 m, λ 6 at 2.5·V_ave (case D's speed).
+  const R136 = 0.68, lin136 = K.linearBlade({ R: R136, Cl: 1.2, lambda: 6, alphaD_rad: 6 * deg });
+  const Ap136 = K.bladePlanArea(lin136.chord, 0.1 * R136, R136);
+  const MH136 = K.slmParked({ R: R136, rho: 1.225, vRef: IV.vRef, Aproj: Ap136 }).MyB_Nm;
+  const MD136 = K.slmMaxThrust({ R: R136, rho: 1.225, vAve: IV.vAve }).MyB_Nm;
+  const root136 = K.bladeSection({ chord_mm: 0.18 * R136 * 1000, t: 0.25, stud_d_mm: 5, flange_mm: 3 });
+  const seamAt = (gF) => {
+    const F0 = Math.max(K.jointPreload_N(gF * MH136, root136.k, 0), K.jointPreload_N(gF * MD136, root136.k, 781));
+    return { F0, st: K.jointStress_MPa({ M_Nm: gF * Math.max(MH136, MD136), F0_N: F0, A: root136.A, I: root136.Ix, yMax: root136.yMax }) };
+  };
+  const hob = seamAt(1), iec = seamAt(K.IEC_GAMMA.fSlm.ultimate);
+  const iecAllow = K.iecAllowable_MPa(39, K.IEC_GAMMA.fSlm.ultimate, K.IEC_GAMMA.mMinimal.ultimate);
+  check(`default seam, homebuilder's margin (loads ×1): F0 2.78 kN ± 2 % → M5 4.8 / M4 8.8, wrench 2.8 N·m, σ_p 4.5 MPa «caution»`,
+    rel(hob.F0, 2780, 0.02) && K.smallestStud(hob.F0 / 1000, '4.8') === 'M5' && K.smallestStud(hob.F0 / 1000, '8.8') === 'M4' && hob.st.verdict === 'caution',
+    `F0 ${(hob.F0 / 1000).toFixed(2)} kN, ${K.smallestStud(hob.F0 / 1000, '4.8')} 4.8, wrench ${K.wrenchTorque_Nm(hob.F0, 5).toFixed(1)} N·m, σ_p ${hob.st.sigmaP.toFixed(1)}, σ_max ${hob.st.sigmaMax.toFixed(1)} MPa`);
+  check(`default seam, strict IEC (loads ×3, untested PETG → 4.3 MPa): F0 6.8 kN, σ_max 20.9 MPa — it does not pass`,
+    rel(iec.F0, 6800, 0.02) && iec.st.sigmaMax > iecAllow && iec.st.verdict === 'too high',
+    `F0 ${(iec.F0 / 1000).toFixed(2)} kN, σ_p ${iec.st.sigmaP.toFixed(1)}, σ_max ${iec.st.sigmaMax.toFixed(1)} vs ${iecAllow.toFixed(1)} MPa`);
 
   if (log) console.log('S3 (span). blade stations (researches/01 §2.2, §1.3)');
   const st = K.bladeStations({ R: 0.7, Rhub: 0.07, Cl: 1.2, lambda: 6, alphaD_rad: 6 * Math.PI / 180, n: 20 });

@@ -92,8 +92,11 @@ Each step quotes its anchor in the epic: «ядро расчёта … мест�
 - [ ] 🔧 **S7 · loads.** Part 1 ✅ 2026-11-17: `IEC_SWT_CLASS`, `SLM`, `IEC_GAMMA`, `bladePlanArea`, `slmMaxThrust`
   (case D), `slmParked` (case H), `slmCentrifugal` (case E), `iecAllowable_MPa`; criterion 11 green, 95 of 95, `--control`
   49 of 49. Left: case A (fatigue ranges need the generator's design torque — after the MVP's generator), and the owner
-  question, filed in `interviews/` with the core's numbers for the default rotor: strict IEC factors (no PETG root
-  passes, §6.2) or a stated hobby margin. The step as planned: IEC 61400-2 SLM cases that load the blade: A fatigue, D thrust, E max rpm (centrifugal), H parked
+  question — filed 2026-11-17 as `interviews/interview_003_blade_margin_policy.md` with the core's numbers for the default
+  rotor (the «default seam» cases, 97 of 97, `--control` 50 of 50): homebuilder's margin → M5 4.8 at 2.78 kN; strict IEC →
+  F0 6.8 kN, σ_max 20.9 MPa against 4.3, no printed root passes. Finding on the way: the core's linear blade gives 63 mm
+  of chord at the root block (r 110 mm) — no policy holds that seam; the printed root needs its own chord (recon 02
+  §0/§10: 0.18R, bed-limited) — STATUS pool, first item, for phase 2's geometry. The step as planned: IEC 61400-2 SLM cases that load the blade: A fatigue, D thrust, E max rpm (centrifugal), H parked
   (`researches/01` §6.1). Owner question before closing the step, filed in `interviews/`: strict IEC factors (no PETG root
   passes, §6.2) or a stated hobby margin.
 - [x] **S8 · structure.** ✅ 2026-11-17: second part — `wallT_mm` (T(N), recon 02 §0), `bladeSection` (section A: shell
