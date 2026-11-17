@@ -7,8 +7,8 @@
 //   node kalculator/test.mjs --control    # gate 5: break one constant per case on purpose and expect RED (plan 02 S9)
 //
 // Criteria: plans/02_epic01_phase1_core.md. Covered now: criterion 1 (air density) and the identities S2 rests on (Γ, log
-// and power shear, Weibull/Rayleigh scale, the energy integral); then S3–S6 and half of S8 — criteria 1–7 are covered.
-// Not covered yet: criterion 8 as a whole (S9), loads (S7), flanges/tube/web in the section (S8).
+// and power shear, Weibull/Rayleigh scale, the energy integral); then S3–S6 and S8 — criteria 1–7 and 9 are covered.
+// Not covered yet: criterion 8 as a whole (S9), loads (S7).
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 
@@ -42,7 +42,17 @@ const MUTANTS = [
   ['return M_Nm * 1000 / k_mm + Fc_N', 'return M_Nm * 1000 / k_mm'],     // breaks the preload (criterion 5)
   ['tc: tcRoot + (tcTip - tcRoot) * f', 'tc: tcRoot + (tcTip - tcRoot) * f * f'], // breaks the linear t/c along the span
   ['(a * a + a * b + b * b) / 3', '(a * a + b * b) / 2'], // breaks the exact segment integral of the shell's I
-  ['{ ok: 3, limit: 7 }', '{ ok: 3, limit: 9 }'],       // breaks the anchor-bearing limit
+  ['{ ok: 3, limit: 7 }', '{ ok: 3, limit: 9 }'],       // breaks the long-term PETG limit (anchor and seam verdicts)
+  ['N * 1.125 * nozzle_mm', 'N * 1.0 * nozzle_mm'],     // breaks the wall of N lines (researches/02 §0)
+  ['const sh = shell / 2;', 'const sh = 0;'],           // breaks the shell strip's half-wall shift inward
+  ['xFlange: [0.15, 0.50]', 'xFlange: [0.15, 0.40]'],   // breaks the flange range (criterion 9, A2)
+  ['const fh = shell + flange_mm / 2', 'const fh = flange_mm / 2'], // breaks the flange's place under the shell
+  ['const ri = stud_d_mm / 2 + gap_mm', 'const ri = stud_d_mm + gap_mm'], // breaks the tube radius
+  ['const webA = web * webH;', 'const webA = web * webH / 2;'],          // breaks the web
+  ['- 2 * shell, webY', '- shell, webY'],              // breaks the web's height between the inner faces
+  ['sq(s.x1 - xc, s.x2 - xc)', 'sq(s.x1, s.x2)'],       // breaks Iy about the centroid (the chordwise kern)
+  ['const sigmaB = M_Nm * 1000 * yMax / I', 'const sigmaB = M_Nm * yMax / I'], // breaks the bending stress units
+  ['opens: sigmaP - sigmaB < 0', 'opens: sigmaP + sigmaB < 0'],              // breaks the open-seam flag
   ['Math.ceil(span_mm / maxZ_mm)', 'Math.round(span_mm / maxZ_mm)'], // breaks the section count (a section taller than the bed)
 ];
 
@@ -240,6 +250,59 @@ function run(K, log = true) {
     `A ${box.A}, I ${box.I.toFixed(1)}, k ${box.k.toFixed(4)}`);
   const shifted = K.shellSection([[0, 5], [100, 5], [100, 25], [0, 25]], 1);
   check('shell section: moving the box does not change I and k (centroidal axis)', near(shifted.I, box.I, 1e-6) && near(shifted.k, box.k, 1e-9) && near(shifted.yc, 15, 1e-12));
+
+  if (log) console.log('S8. structure, second part — section A (researches/02 §0, §2.3, §2.4)');
+  check('wall of N lines: T(2) 0.857 · T(3) 1.264 · T(4) 1.671 mm ± 0.001 (researches/02 §0)',
+    near(K.wallT_mm(2), 0.857, 1e-3) && near(K.wallT_mm(3), 1.264, 1e-3) && near(K.wallT_mm(4), 1.671, 1e-3),
+    [2, 3, 4].map((N) => K.wallT_mm(N).toFixed(4)).join(' · '));
+  // Criterion 9 — the root seam of the R 1.0 m blade (researches/02 §2.4): chord 180, t/c 18 %, NACA 44xx, M8 at 0.40c.
+  // Tolerances = the spread of three independent routes (re-derived 2026-11-17 per EXPERIENCE.md EXP-0004): the recon's own
+  // script, this thin-walled sum and a raster of the material region at 0.05 mm (A 511 / 890.5, Ix 63 594 / 127 109,
+  // k 6.92 / 8.21 for A1 / A2) differ by ≤ 1.4 % in A, ≤ 0.9 % in Ix, ≤ 2.5 % in k → ± 2 %, ± 2 %, ± 3 %.
+  const rel = (a, b, r) => Math.abs(a - b) <= r * Math.abs(b);
+  const seam = { chord_mm: 180, t: 0.18, stud_d_mm: 8 };
+  const A1 = K.bladeSection({ ...seam, flange_mm: 0 }), A2 = K.bladeSection({ ...seam, flange_mm: 3 });
+  check('criterion 9: section A1 (shell T(3) + tube + web) — A 518 ± 2 %, Ix 63 560 ± 2 %, k 6.75 ± 3 % (researches/02 §2.4)',
+    rel(A1.A, 518, 0.02) && rel(A1.Ix, 63560, 0.02) && rel(A1.k, 6.75, 0.03), `A ${A1.A.toFixed(1)}, Ix ${A1.Ix.toFixed(0)}, k ${A1.k.toFixed(3)}`);
+  check('criterion 9: section A2 (+ flanges 3 mm over 0.15–0.50c) — A 894 ± 2 %, Ix 126 000 ± 2 %, k 8.04 ± 3 %',
+    rel(A2.A, 894, 0.02) && rel(A2.Ix, 126000, 0.02) && rel(A2.k, 8.04, 0.03), `A ${A2.A.toFixed(1)}, Ix ${A2.Ix.toFixed(0)}, k ${A2.k.toFixed(3)}`);
+  // the parts the recon's totals cannot see one by one: the tube (≈ 5 % of A1) and the web (≈ 4 %) by hand
+  const tubeHand = Math.PI * ((4 + 0.2 + K.wallT_mm(2)) ** 2 - 4.2 ** 2);
+  check('section parts: the tube around M8 = π·((4 + 0.2 + T(2))² − 4.2²) = 24.93 mm² (hand)', near(A1.parts.tubeA, tubeHand, 1e-9) && near(tubeHand, 24.93, 0.01),
+    A1.parts.tubeA.toFixed(3));
+  const webHand = K.wallT_mm(2) * (2 * K.nacaHalfThickness(0.6, 0.18) * 180 - 2 * K.wallT_mm(3));
+  check('section parts: the web at 0.60c = T(2)·(thickness there − 2·T(3)) = 18.95 mm² ± 1 % (hand, 24.64 mm thick)',
+    rel(A1.parts.webA, webHand, 0.01) && near(webHand, 18.95, 0.01), `${A1.parts.webA.toFixed(2)} (hand ${webHand.toFixed(2)})`);
+  check('section parts add up to A; the flanges appear only in A2', near(A2.parts.shellA + A2.parts.flangeA + A2.parts.tubeA + A2.parts.webA, A2.A, 1e-6)
+    && A1.parts.flangeA === 0 && A2.parts.flangeA > 0, `A2 flanges ${A2.parts.flangeA.toFixed(1)} mm²`);
+  // The stud must stand in the chordwise kern, or the preload bends the section by itself (researches/02 §2.3–2.4): at 0.40c
+  // the centroid is 3.5 mm off, deep inside ky; at 0.30c it is 21 mm off, outside ky 17.8. (Raster: 3.0 and 20.5 mm.)
+  const A2at30 = K.bladeSection({ ...seam, flange_mm: 3, xStud: 0.30 });
+  check('stud in the kern at 0.40c: centroid 3.5 ± 0.6 mm toward the edge, |xc| < ky (researches/02 §2.4)',
+    near(A2.xc, 3.5, 0.6) && Math.abs(A2.xc) < A2.ky, `xc ${A2.xc.toFixed(2)}, ky ${A2.ky.toFixed(2)}`);
+  check('stud OUT of the kern at 0.30c: centroid 21 ± 0.6 mm, ky 17.8 ± 0.6, |xc| > ky — why the stud goes to 0.40c',
+    near(A2at30.xc, 21, 0.6) && near(A2at30.ky, 17.8, 0.6) && Math.abs(A2at30.xc) > A2at30.ky, `xc ${A2at30.xc.toFixed(2)}, ky ${A2at30.ky.toFixed(2)}`);
+  const F0chain = K.jointPreload_N(30, A2.k, 1220);
+  check('criterion 5 through the core\'s own section: F0 = 30 N·m / k(A2) + 1.22 kN → 4.95 kN ± 0.05', near(F0chain / 1000, 4.95, 0.05),
+    (F0chain / 1000).toFixed(3));
+  // The seam stresses of the recon's table (researches/02 §2.4), at the recon's own preloads (5.7 kN for A1, 4.95 kN for A2):
+  // σ_b and σ_max carry k's ± 3 %, σ_p carries A's ± 2 %.
+  const s2 = K.jointStress_MPa({ M_Nm: 30, F0_N: 4950, A: A2.A, I: A2.Ix, yMax: A2.yMax });
+  check('seam A2 at 30 N·m, F0 4.95 kN: σ_b 4.2, σ_p 5.5 «caution», σ_max 9.7 MPa, the seam stays closed',
+    rel(s2.sigmaB, 4.2, 0.03) && rel(s2.sigmaP, 5.5, 0.02) && rel(s2.sigmaMax, 9.7, 0.03) && s2.verdict === 'caution' && !s2.opens,
+    `σ_b ${s2.sigmaB.toFixed(2)}, σ_p ${s2.sigmaP.toFixed(2)} ${s2.verdict}, σ_max ${s2.sigmaMax.toFixed(2)}, σ_min ${s2.sigmaMin.toFixed(2)}`);
+  const s2u = K.jointStress_MPa({ M_Nm: 60, F0_N: 4950, A: A2.A, I: A2.Ix, yMax: A2.yMax });
+  check('seam A2 at the ultimate 60 N·m: the windward side −2.8 ± 0.4 MPa — the seam OPENS (researches/02 §2.4)',
+    near(s2u.sigmaMin, -2.8, 0.4) && s2u.opens, `σ_min ${s2u.sigmaMin.toFixed(2)}`);
+  const s1 = K.jointStress_MPa({ M_Nm: 30, F0_N: 5700, A: A1.A, I: A1.Ix, yMax: A1.yMax });
+  check('seam A1 at 30 N·m, F0 5.7 kN: σ_b 8.6, σ_p 10.9 «too high», σ_max 19.5 MPa — the thin shell alone does not do',
+    rel(s1.sigmaB, 8.6, 0.03) && rel(s1.sigmaP, 10.9, 0.02) && rel(s1.sigmaMax, 19.5, 0.03) && s1.verdict === 'too high',
+    `σ_b ${s1.sigmaB.toFixed(2)}, σ_p ${s1.sigmaP.toFixed(2)} ${s1.verdict}, σ_max ${s1.sigmaMax.toFixed(2)}`);
+  check('a flange as thick as the shell is still counted as a flange, not as shell', (() => {
+    const s = K.bladeSection({ ...seam, flange_mm: K.wallT_mm(3) });
+    return s.parts.flangeA > 0 && near(s.parts.shellA, A1.parts.shellA, 1e-9);
+  })());
+
   const ab = K.anchorBearing(2600, 12, 40);
   check('tip anchor: 2.6 kN on a 12 × 40 mm plate → 5.42 MPa, «caution» (3–7 MPa, researches/02 §5.2)', near(ab.p, 5.417, 1e-3) && ab.verdict === 'caution', `${ab.p.toFixed(3)} MPa, ${ab.verdict}`);
   check('tip anchor: verdicts on both sides — 1 kN → ok, 4 kN → too high', K.anchorBearing(1000, 12, 40).verdict === 'ok' && K.anchorBearing(4000, 12, 40).verdict === 'too high');

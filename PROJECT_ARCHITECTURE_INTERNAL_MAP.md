@@ -2,16 +2,16 @@
 
 > **The INTERNAL map: how the system thinks** — the abstractions of the calculator and how they interact. Companion:
 > `PROJECT_STRUCTURE_EXTERNAL_MAP.md` (where things live). **Living reference — never DONE-tagged.**
-> Status 2026-11-16 22:04: **partly built** in `kalculator/index.html` (core only, no UI; `node kalculator/test.mjs` 66/66,
-> `--control` 23/23 — hygiene, not a functional run). Where each abstraction lives in the core:
+> Status 2026-11-17: **partly built** in `kalculator/index.html` (core only, no UI; `node kalculator/test.mjs` 81/81,
+> `--control` 35/35 — hygiene, not a functional run). Where each abstraction lives in the core:
 >
 > | Abstraction | Core functions (plan 02 step) | State |
 > |---|---|---|
-> | Site | `airDensity`, `shearLog`, `shearTwoLayer`, `shearPower`, `gamma`, `weibullScale`, `weibullPdf`, `yearlyEnergy_kWh`, `SITE_DEFAULT` (S2) | built |
+> | Site | `airDensity`, `shearLog`, `shearTwoLayer`, `shearPower`, `gamma`, `weibullScale`, `weibullPdf`, `yearlyEnergy_kWh`, `SITE_DEFAULT` (S2; hub 7 m — interview 002) | built |
 > | Rotor design | `nacaHalfThickness`, `nacaCamber`, `minChordForStud_mm`, `printableTrailingEdgeX`, `airfoilSection`, `schmitz*`, `linearBlade`, `bladeStations` (S3–S4) | built; the polar (FORK in plan 02) open |
 > | Performance | `prandtlF`, `bemStation`, `bemRotor` (S5); `powerCurve`, `tipSpeed` (S6) | built; the power curve still uses a fixed Cp_e |
 > | Loads | — (S7) | planned; an owner question first (IEC factors or a hobby margin) |
-> | Structure | `STUDS`, `studCapacity_kN`, `smallestStud`, `jointPreload_N`, `wrenchTorque_Nm`, `shellSection`, `anchorBearing` (S8) | half built: flanges, tube and web not yet in the section |
+> | Structure | `STUDS`, `studCapacity_kN`, `smallestStud`, `jointPreload_N`, `wrenchTorque_Nm`, `shellSection`, `wallT_mm`, `SECTION_A`, `bladeSection`, `jointStress_MPa`, `PETG_LONG_TERM_MPA`, `anchorBearing` (S8) | built for one section in the chord frame; the flange law along the span and the twisted section — next |
 > | Sectioning | `sectionCuts` | first helper; the mesh is phase 2 |
 > | Blade geometry · Hub · STL writer | — | phase 2 |
 

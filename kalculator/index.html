@@ -22,8 +22,9 @@
 // SI units inside; millimetres only at the print/STL boundary.
 
 // ---- S2 · air and wind — researches/01 §5.1 (the same formulas as KATAK, so the two calculators agree)
-// [NOT-TESTED] — hygiene green 2026-11-16: `node kalculator/test.mjs` 66/66 for the whole core so far (criteria 1–7 + the Γ, shear,
-// Weibull, NACA, section, station, Schmitz, BEM, power-curve, stud, shell, anchor and cut identities), `--control` 23/23. The marker flips only on a functional run of the page (TESTING_FRAMEWORK.md).
+// [NOT-TESTED] — hygiene green 2026-11-17: `node kalculator/test.mjs` 81/81 for the whole core so far (criteria 1–7 and 9 + the Γ,
+// shear, Weibull, NACA, section, station, Schmitz, BEM, power-curve, stud, shell, section-A, seam-stress, anchor and cut
+// identities), `--control` 35/35. The marker flips only on a functional run of the page (TESTING_FRAMEWORK.md).
 
 // International Standard Atmosphere: sea-level pressure, lapse rate, sea-level temperature, exponent g·M/(R·L);
 // specific gas constant of dry air. source: researches/01 §5.1 (KATAK researches/01 §3.1).
@@ -270,7 +271,7 @@ function bladeStations({ R, Rhub, B = 3, Cl, lambda, alphaD_rad, n = 20, tcRoot 
 }
 
 // ---- S8 · structure (first part) — the joint preload, the wrench torque, the smallest stud for the user's grade.
-// [NOT-TESTED] — hygiene: criteria 5 and 6 in test.mjs; the thin-walled shell section is below; flanges, tube and web next.
+// [NOT-TESTED] — hygiene: criteria 5 and 6 in test.mjs; the thin-walled shell is below, the full section A after it.
 
 // Metric coarse studs M3–M14: stress area As (mm²), proof loads of classes 4.8 and 8.8 (kN) — ISO 898-1 via
 // researches/02 §4.2; stainless A2-70: σ0.2 ≥ 450 MPa (researches/02 §4.2 [24]), capacity As·450.
@@ -308,7 +309,7 @@ function wrenchTorque_Nm(F_N, d_mm, K = 0.2) { return K * F_N * d_mm / 1000; }
 /** Thin-walled shell along a closed polygon (the wall's midline), wall w_mm: area A, centroid height yc, second moment I
  *  about the centroidal axis parallel to x (the chord — the flapwise bending axis), the extreme fibre yMax and the kern
  *  distance k = I / (A·yMax). Each straight segment contributes w·ds and w·∫(y − yc)² ds exactly (linear y along it).
- *  source: researches/02 §0 (thin-walled sum), §2.3 (k). Flanges, the stud tube and the web are added next session. */
+ *  source: researches/02 §0 (thin-walled sum), §2.3 (k). The section KHAWTAK prints (+ flanges, tube, web) — bladeSection. */
 function shellSection(poly, w_mm) {
   let A = 0, Sy = 0;
   const seg = poly.map((p, i) => { const q = poly[(i + 1) % poly.length]; return { y1: p[1], y2: q[1], ds: Math.hypot(q[0] - p[0], q[1] - p[1]) }; });
@@ -323,14 +324,101 @@ function shellSection(poly, w_mm) {
   return { A, yc, I, yMax, k: I / (A * yMax) };
 }
 
-// The tip anchor (interview 001 Q3) presses a steel plate into a solid cell of the tip section: long-term bearing pressure
-// on printed PETG should stay ≤ 3–7 MPa. source: researches/02 §5.2 [ОЦЕНКА — an estimate; PETG creep is unmeasured, §5.3]
-const ANCHOR_BEARING_MPA = { ok: 3, limit: 7 };
+// ---- S8 (second part) · the section KHAWTAK builds itself — variant A of researches/02 §7.1 (the owner chose it: interview
+// 001 Q2 «A»): the shell, the flanges (the shell thickened top and bottom), the tube around the stud and the web.
+// [NOT-TESTED] — hygiene: recon 02 §2.4 sections A1/A2 in test.mjs, re-derived by a raster route (plan 02 S8).
+
+/** A wall of N extrusion lines, mm: T(N) = N·w − (N−1)·h·(1 − π/4), line width w = 1.125·nozzle → T(2) 0.857 · T(3) 1.264.
+ *  source: researches/02 §0 (KATAK researches/02 §2, the Slic3r flow math) */
+function wallT_mm(N, nozzle_mm = 0.4, layer_mm = 0.2) { return N * 1.125 * nozzle_mm - (N - 1) * layer_mm * (1 - Math.PI / 4); }
+
+// Section A by default: shell 3 lines, tube and web 2 lines, 0.2 mm clearance around the stud, the web at 0.60c, the flanges
+// over 0.15–0.50c. source: researches/02 §0 (row «Сечение A»), §7.1, §11 S1 — the recon's [AI] engineering defaults.
+const SECTION_A = { shellLines: 3, tubeLines: 2, webLines: 2, gap_mm: 0.2, xWeb: 0.60, xFlange: [0.15, 0.50] };
+
+/** Thin-walled properties of the joint section KHAWTAK prints (untwisted, chord along x, origin at the stud axis): area A,
+ *  centroid (xc, yc), second moments about the centroid — Ix (flapwise, axis along the chord) and Iy (axis across it) — the
+ *  extreme fibres of the outer surface and the kern distances k = Ix/(A·yMax), ky = Iy/(A·xMax) (researches/02 §2.3: the
+ *  stud must stand in the kern, |xc| ≤ ky). The method of researches/02 §0: every shell strip is w·ds shifted half its
+ *  wall inward; the flanges are strips under the shell, clipped to their chord range; the tube and the web are added with
+ *  their own areas; I by Steiner. A strip's own I across its thickness is neglected (≤ 0.3 % for a 3 mm flange).
+ *  The recon warns (§ «Что не проверено»): the thin-walled sum overstates I for flanges above 4–5 mm. */
+function bladeSection({ chord_mm, t, m = 0.04, p = 0.4, xStud = 0.40, n = 60, stud_d_mm, flange_mm = 0,
+  shellLines = SECTION_A.shellLines, tubeLines = SECTION_A.tubeLines, webLines = SECTION_A.webLines,
+  gap_mm = SECTION_A.gap_mm, xWeb = SECTION_A.xWeb, xFlange = SECTION_A.xFlange }) {
+  const outer = airfoilSection({ chord_mm, t, m, p, n, xStud });
+  const shell = wallT_mm(shellLines), tube = wallT_mm(tubeLines), web = wallT_mm(webLines);
+  const strips = [];                                            // { kind, w, ds, x1, y1, x2, y2 } — a thin strip along a midline
+  const X0 = (xFlange[0] - xStud) * chord_mm, X1 = (xFlange[1] - xStud) * chord_mm;
+  for (let i = 0; i < outer.length; i++) {
+    const [ax, ay] = outer[i], [bx, by] = outer[(i + 1) % outer.length];
+    const ds = Math.hypot(bx - ax, by - ay);
+    if (ds === 0) continue;
+    const nx = -(by - ay) / ds, ny = (bx - ax) / ds;          // inward normal of a counter-clockwise polygon
+    const sh = shell / 2;
+    strips.push({ kind: 'shell', w: shell, ds, x1: ax + nx * sh, y1: ay + ny * sh, x2: bx + nx * sh, y2: by + ny * sh });
+    if (flange_mm > 0) {                                        // the part of this edge over the flange range, clipped in x
+      const lo = Math.max(Math.min(ax, bx), X0), hi = Math.min(Math.max(ax, bx), X1);
+      if (hi > lo && bx !== ax) {
+        const u0 = (lo - ax) / (bx - ax), u1 = (hi - ax) / (bx - ax);
+        const fh = shell + flange_mm / 2;
+        const px = (u) => ax + (bx - ax) * u + nx * fh, py = (u) => ay + (by - ay) * u + ny * fh;
+        strips.push({ kind: 'flange', w: flange_mm, ds: ds * Math.abs(u1 - u0), x1: px(u0), y1: py(u0), x2: px(u1), y2: py(u1) });
+      }
+    }
+  }
+  // the tube: a ring around the stud axis (the origin)
+  const ri = stud_d_mm / 2 + gap_mm, ro = ri + tube;
+  const tubeA = Math.PI * (ro * ro - ri * ri), tubeI = Math.PI / 4 * (ro ** 4 - ri ** 4);
+  // the web: a vertical wall at xWeb between the inner faces of the shell
+  const Xw = (xWeb - xStud) * chord_mm;
+  const ys = [];
+  for (let i = 0; i < outer.length; i++) {
+    const [ax, ay] = outer[i], [bx, by] = outer[(i + 1) % outer.length];
+    if ((ax - Xw) * (bx - Xw) <= 0 && ax !== bx) ys.push(ay + (by - ay) * (Xw - ax) / (bx - ax));
+  }
+  const webH = Math.max(...ys) - Math.min(...ys) - 2 * shell, webY = (Math.max(...ys) + Math.min(...ys)) / 2;
+  const webA = web * webH;
+  // centroid
+  let A = tubeA + webA, Sx = webA * Xw, Sy = webA * webY, shellA = 0, flangeA = 0;
+  for (const s of strips) {
+    const a = s.w * s.ds; A += a; Sx += a * (s.x1 + s.x2) / 2; Sy += a * (s.y1 + s.y2) / 2;
+    if (s.kind === 'shell') shellA += a; else flangeA += a;
+  }
+  const xc = Sx / A, yc = Sy / A;
+  // second moments about the centroid; along a straight strip ∫(y − yc)² ds = ds·(a² + ab + b²)/3 exactly
+  const sq = (a, b) => (a * a + a * b + b * b) / 3;
+  let Ix = tubeI + tubeA * yc * yc + web * webH ** 3 / 12 + webA * (webY - yc) ** 2;
+  let Iy = tubeI + tubeA * xc * xc + webH * web ** 3 / 12 + webA * (Xw - xc) ** 2;
+  for (const s of strips) {
+    Ix += s.w * s.ds * sq(s.y1 - yc, s.y2 - yc);
+    Iy += s.w * s.ds * sq(s.x1 - xc, s.x2 - xc);
+  }
+  let yMax = 0, xMax = 0;
+  for (const [x, y] of outer) { yMax = Math.max(yMax, Math.abs(y - yc)); xMax = Math.max(xMax, Math.abs(x - xc)); }
+  return { A, xc, yc, Ix, Iy, yMax, xMax, k: Ix / (A * yMax), ky: Iy / (A * xMax), outer,
+    parts: { shellA, flangeA, tubeA, webA, webH } };
+}
+
+/** Stresses in a tightened seam, MPa (compression positive): the bending σ_b = M·yMax/I, the sustained σ_p = F0/A, the
+ *  lee side in work σ_max = σ_p + σ_b, the windward side σ_min = σ_p − σ_b — the seam OPENS (tension across the layers and
+ *  the glue) when σ_min < 0. The verdict judges the SUSTAINED σ_p against the long-term limit of printed PETG.
+ *  source: researches/02 §2.2–2.3 (the formulas), §2.4 (≈ 3–7 MPa long-term — an estimate). M in N·m, F0 in N, mm units. */
+function jointStress_MPa({ M_Nm, F0_N, A, I, yMax }) {
+  const sigmaB = M_Nm * 1000 * yMax / I, sigmaP = F0_N / A;
+  return { sigmaB, sigmaP, sigmaMax: sigmaP + sigmaB, sigmaMin: sigmaP - sigmaB, opens: sigmaP - sigmaB < 0,
+    verdict: sigmaP <= PETG_LONG_TERM_MPA.ok ? 'ok' : sigmaP <= PETG_LONG_TERM_MPA.limit ? 'caution' : 'too high' };
+}
+
+// Long-term compression of printed PETG should stay ≤ 3–7 MPa: compressive yield 14.0–22.5 MPa over a material factor 3–5.
+// One limit for both places that press PETG for months — the tip anchor's plate (interview 001 Q3) and the tightened seam.
+// source: researches/02 §2.4, §5.2 [ОЦЕНКА — an estimate; PETG creep is unmeasured, §5.3]
+const PETG_LONG_TERM_MPA = { ok: 3, limit: 7 };
 
 /** Bearing pressure of the anchor plate (MPa) and its verdict: 'ok' ≤ 3 · 'caution' ≤ 7 · 'too high' above. */
 function anchorBearing(F_N, plateW_mm, plateL_mm) {
   const p = F_N / (plateW_mm * plateL_mm);
-  return { p, verdict: p <= ANCHOR_BEARING_MPA.ok ? 'ok' : p <= ANCHOR_BEARING_MPA.limit ? 'caution' : 'too high' };
+  return { p, verdict: p <= PETG_LONG_TERM_MPA.ok ? 'ok' : p <= PETG_LONG_TERM_MPA.limit ? 'caution' : 'too high' };
 }
 
 /** Cut the printed span (mm) into the fewest equal sections no taller than the bed's height maxZ_mm (printed upright,
@@ -351,7 +439,7 @@ const KHAWTAK = { airDensity, shearLog, shearTwoLayer, shearPower, gamma, weibul
   nacaHalfThickness, nacaCamber, minChordForStud_mm, printableTrailingEdgeX, airfoilSection, polygonArea, pointInPolygon,
   schmitzPhi, schmitzChord, schmitzTwist, linearBlade, prandtlF, bemStation, bemRotor, PERF_DEFAULT, powerCurve, tipSpeed,
   STUDS, studCapacity_kN, smallestStud, jointPreload_N, wrenchTorque_Nm, TC_DEFAULT, bladeStations, shellSection,
-  anchorBearing, sectionCuts };
+  wallT_mm, SECTION_A, bladeSection, jointStress_MPa, PETG_LONG_TERM_MPA, anchorBearing, sectionCuts };
 // ===== CORE-END
 window.KHAWTAK = KHAWTAK;
 </script>

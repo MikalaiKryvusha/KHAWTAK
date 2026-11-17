@@ -18,7 +18,7 @@ KHAWTAK/
 │   ├── 03_site_wind/           # the owner's site: 3.0 m/s at 10 m (Baranovichi), two-profile shear, yield per mast, mast rule
 │   └── 04_web_stl_blade_mesh/          # the page and STL from KATAK; NACA by formula, printable trailing edge, cavities
 ├── kalculator/             # the product: one offline HTML page
-│   ├── index.html          # the core between CORE-BEGIN / CORE-END (plan 02: S2 air and wind so far); the UI comes after KUIPS
+│   ├── index.html          # the core between CORE-BEGIN / CORE-END (plan 02: S1–S6 and S8 built); the UI comes after KUIPS
 │   └── test.mjs            # extracts the core and tests it in Node; `--control` = gate-5 mutants
 ├── design/
 │   ├── icon/               # build-icons.mjs → khawtak-icon.svg (the owner's choice A) + variants a..f + the comparison page (homeworks/01)
