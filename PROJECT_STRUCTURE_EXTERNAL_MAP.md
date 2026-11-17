@@ -19,7 +19,8 @@ KHAWTAK/
 │   └── 04_web_stl_blade_mesh/          # the page and STL from KATAK; NACA by formula, printable trailing edge, cavities
 ├── kalculator/             # the product: one offline HTML page
 │   ├── index.html          # the core between CORE-BEGIN / CORE-END (plan 02: S1–S6 and S8 built); the UI comes after KUIPS
-│   └── test.mjs            # extracts the core and tests it in Node; `--control` = gate-5 mutants
+│   ├── test.mjs            # extracts the core and tests it in Node; `--control` = gate-5 mutants
+│   └── control-golden.json # each mutant → the cases it must turn red (captured after two judges; guarded by `--control`)
 ├── design/
 │   ├── icon/               # build-icons.mjs → khawtak-icon.svg (the owner's choice A) + variants a..f + the comparison page (homeworks/01)
 │   └── flow-map/           # (planned) the KUIPS sheet

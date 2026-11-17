@@ -9,7 +9,7 @@
 // Criteria: plans/02_epic01_phase1_core.md. Covered now: criterion 1 (air density) and the identities S2 rests on (Γ, log
 // and power shear, Weibull/Rayleigh scale, the energy integral); then S3–S6 and S8 — criteria 1–7 and 9 are covered.
 // Covered since 2026-11-17: criteria 10 (BEM with drag) and 11 (SLM loads D, H, E), μ and Re. Not covered yet: criterion 8 as a whole (S9), load case A.
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import vm from 'node:vm';
 
 const html = readFileSync(new URL('./index.html', import.meta.url), 'utf8');
@@ -89,7 +89,8 @@ function load(src) {
 
 function run(K, log = true) {
   let bad = 0, total = 0;
-  const check = (name, ok, got = '') => { total++; if (!ok) bad++; if (log) console.log(`${ok ? 'ok  ' : 'FAIL'} ${name}${got !== '' ? ' — ' + got : ''}`); };
+  const failed = [];
+  const check = (name, ok, got = '') => { total++; if (!ok) { bad++; failed.push(name); } if (log) console.log(`${ok ? 'ok  ' : 'FAIL'} ${name}${got !== '' ? ' — ' + got : ''}`); };
   const near = (a, b, eps) => Math.abs(a - b) <= eps;
   const rel = (a, b, r) => Math.abs(a - b) <= r * Math.abs(b);
 
@@ -474,21 +475,42 @@ function run(K, log = true) {
   check('sections: 630 mm span, bed 240 mm → 3 equal sections of 210 mm', cuts.length === 4 && near(cuts[1], 210, 1e-9) && near(cuts[3], 630, 1e-9), cuts.join(' / '));
   check('sections: exactly one bed height fits in one section (240 → 1), one millimetre more needs two', K.sectionCuts(240, 240).length === 2 && K.sectionCuts(241, 240).length === 3);
 
-  return { bad, total };
+  return { bad, total, failed };
 }
 
+// The addressees of the mutants (the core judge of session 1, F1): which cases each mutant must turn red. Captured once into
+// kalculator/control-golden.json AFTER two clean judges had checked every addressee by hand (2026-11-17), then guarded: a
+// mutant whose expected case no longer goes red is an ADDRESSEE DRIFT — the check it was born for stopped seeing it, even if
+// some other case still catches the mutant. `--control --write-golden` re-captures (only with a reason in the commit).
+// @guard control-addressees
+// THREAT:         a test edit leaves a mutant red only through an unrelated case — the criterion it guards quietly blind
+// PROVED-AGAINST: the golden's addressee of the root-chord mutant renamed by hand → the run prints ADDRESSEE DRIFT, exit 1
+// GAP:            a mutant that gains NEW red cases is not flagged (only lost ones are); the golden is the judges' state
+// ON-REAL-PATH:   NOT YET (no page; the core's own control run)
+const GOLDEN = new URL('./control-golden.json', import.meta.url);
 if (!CONTROL) {
   const { bad, total } = run(load(core));
   console.log(`-- ${total - bad} of ${total} as expected`);
   process.exit(bad ? 1 : 0);
 } else {
-  let missed = 0;
+  const write = process.argv.includes('--write-golden');
+  let golden = {};
+  try { golden = JSON.parse(readFileSync(GOLDEN, 'utf8')); } catch { /* no golden yet */ }
+  const out = {};
+  let missed = 0, drift = 0;
   for (const [from, to] of MUTANTS) {
+    const key = `${from} → ${to}`;
     if (!core.includes(from)) { console.log(`MUTANT NOT APPLIED — "${from}" is not in the core`); missed++; continue; }
-    const { bad } = run(load(core.replace(from, to)), false);
-    console.log(`${bad > 0 ? 'red ' : 'GREEN?!'} mutant "${from}" → "${to}": ${bad} case(s) failed`);
+    const { bad, failed } = run(load(core.replace(from, to)), false);
+    out[key] = [...failed].sort();
+    const lost = (golden[key] || []).filter((name) => !failed.includes(name));
+    console.log(`${bad > 0 ? 'red ' : 'GREEN?!'} mutant "${from}" → "${to}": ${bad} case(s) failed${lost.length ? ` · ADDRESSEE DRIFT, no longer red: ${lost.join(' | ')}` : ''}`);
     if (bad === 0) missed++;
+    if (lost.length) drift++;
   }
-  console.log(`-- control: ${MUTANTS.length - missed} of ${MUTANTS.length} mutants seen red`);
-  process.exit(missed ? 1 : 0);
+  const unknown = write ? 0 : MUTANTS.filter(([f, t]) => !golden[`${f} → ${t}`]).length;
+  if (write) writeFileSync(GOLDEN, JSON.stringify(out, Object.keys(out).sort(), 2) + '\n');
+  console.log(`-- control: ${MUTANTS.length - missed} of ${MUTANTS.length} mutants seen red · addressee drift ${drift}` +
+    (write ? ' · golden written' : ` · mutants not in the golden ${unknown}`));
+  process.exit(missed || drift ? 1 : 0);
 }

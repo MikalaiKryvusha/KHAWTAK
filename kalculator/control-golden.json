@@ -1,0 +1,375 @@
+{
+  "(2 / 3) * Math.atan → (3 / 4) * Math.atan": [
+    "criterion 2: twist there at α_D 6° → 39.47° ± 0.05 (source table 39.466°)"
+  ],
+  "(R - r) / (r * s) → (R - r) / (R * s)": [
+    "Prandtl F: ≈ 1 mid-span, → 0 at the tip",
+    "criterion 10: BEM with drag, L/D 100, λ 4–10 → researches/01 §1.6 ± 2 %",
+    "criterion 10: BEM with drag, L/D 40, λ 4–10 → researches/01 §1.6 ± 2 %",
+    "criterion 10: BEM with drag, L/D 60, λ 4–10 → researches/01 §1.6 ± 2 %",
+    "criterion 3: BEM, Schmitz blade, λ 6, C_l 1, L/D ∞, hub 0.1R → Cp 0.518 ± 0.005 (researches/01 Appendix A)"
+  ],
+  "(a * a + a * b + b * b) / 3 → (a * a + b * b) / 2": [
+    "shell section, thin box 100 × 20, wall 1: A 240, I 21 333.3, centroid 0, k 8.889 (hand values)"
+  ],
+  "(lambda * rOverR) ** 2 → lambda ** 2": [
+    "Re at 0.75R, 5 m/s: D 0.6 / 1.0 / 1.4 / 2.0 / 3.0 → 27 / 44 / 62 / 89 / 133 thousand ± 0.5 (researches/01 §7)",
+    "Re warning: every rotor up to D 2.0 runs below the measured polars (< 100 000), D 3.0 does not"
+  ],
+  "(r - Rhub) / (Rhub * s) → (r - Rhub) / (R * s)": [
+    "Prandtl F: ≈ 1 mid-span, → 0 at the tip",
+    "criterion 10: BEM with drag, L/D 100, λ 4–10 → researches/01 §1.6 ± 2 %",
+    "criterion 10: BEM with drag, L/D 40, λ 4–10 → researches/01 §1.6 ± 2 %",
+    "criterion 10: BEM with drag, L/D 60, λ 4–10 → researches/01 §1.6 ± 2 %",
+    "criterion 3: BEM, Schmitz blade, λ 6, C_l 1, L/D ∞, hub 0.1R → Cp 0.518 ± 0.005 (researches/01 Appendix A)"
+  ],
+  "- 2 * shell, webY → - shell, webY": [
+    "section parts: the web at 0.60c = T(2)·(thickness there − 2·T(3)) = 18.95 mm² ± 1 % (hand, 24.64 mm thick)"
+  ],
+  "0.2969, -0.1260 → 0.2969, -0.1360": [
+    "NACA open edge: t 12 %, c 100 mm → 0.25 mm (researches/04 §2.1)",
+    "NACA thickness at x 0.30 = t (the maximum) ± 0.1 %",
+    "NACA thickness at x 0.40 = 0.967 t (researches/02 §4.5: «97 %»)",
+    "criterion 4: M8 + 2 × 2 mm walls at t/c 12 %, at max thickness → 100 mm ± 1 (researches/01 §2.3)",
+    "criterion 5 through the core's own section: F0 = 30 N·m / k(A2) + 1.22 kN → 4.95 kN ± 0.05",
+    "criterion 9: section A1 (shell T(3) + tube + web) — A 518 ± 2 %, Ix 63 560 ± 2 %, k 6.75 ± 3 % (researches/02 §2.4)",
+    "criterion 9: section A2 (+ flanges 3 mm over 0.15–0.50c) — A 894 ± 2 %, Ix 126 000 ± 2 %, k 8.04 ± 3 %",
+    "default seam, the owner's policy (homebuilder's margin, interview #003 «A»): F0 2.85 kN ± 2 % → M5 4.8, wrench 2.85 N·m, σ_p 5.3 MPa «caution», closed",
+    "default seam, the strict IEC line beside it (every load ×3, untested PETG → 4.3 MPa): F0 8.56 kN, σ_max 30.3 MPa — does not pass",
+    "printable edge: a thick enough edge is not cut (minTE 0.2 mm → x 1)",
+    "printable edge: t 12 %, c 100, two lines 0.857 mm → cut where the edge is 0.857 mm ± 0.001",
+    "seam A1 at 30 N·m, F0 5.7 kN: σ_b 8.6, σ_p 10.9 «too high», σ_max 19.5 MPa — the thin shell alone does not do",
+    "seam A2 at 30 N·m, F0 4.95 kN: σ_b 4.2, σ_p 5.5 «caution», σ_max 9.7 MPa, the seam stays closed",
+    "seam A2 at the ultimate 60 N·m: the windward side −2.8 ± 0.4 MPa — the seam OPENS (researches/02 §2.4)",
+    "section parts: the web at 0.60c = T(2)·(thickness there − 2·T(3)) = 18.95 mm² ± 1 % (hand, 24.64 mm thick)",
+    "section: symmetric NACA 0012, c 100 — area 0.68508·t·c² = 822.1 mm² ± 0.5 %",
+    "the same at the stud axis 0.40c → 103.4 mm (100 / 0.967)"
+  ],
+  "676.5203681218851 → 676.6203681218851": [
+    "Rayleigh scale: c = V̄/Γ(1.5) = 5/0.886227 = 5.642",
+    "Weibull pdf has the mean V̄ = 5",
+    "criterion 7: Brest region, mast 7 m — hub 2.39 m/s ± 0.01, D 1.4 → 50 kWh ± 1 % (two profiles, z0 0.25, k 1.8)",
+    "Γ(1) = 1",
+    "Γ(1/2) = √π",
+    "Γ(3/2) = √π/2 (Rayleigh)",
+    "Γ(5) = 24"
+  ],
+  "CT_D: 0.5 → CT_D: 0.6": [
+    "criterion 11: case D, maximum thrust (class IV, V_ave 6 and 4) — M_yB and F_x of recon 01 §7, all seven rotors",
+    "default seam, the owner's policy (homebuilder's margin, interview #003 «A»): F0 2.85 kN ± 2 % → M5 4.8, wrench 2.85 N·m, σ_p 5.3 MPa «caution», closed",
+    "default seam, the strict IEC line beside it (every load ×3, untested PETG → 4.3 MPa): F0 8.56 kN, σ_max 30.3 MPa — does not pass"
+  ],
+  "Cd / 4 * rho * v * v → Cd / 2 * rho * v * v": [
+    "criterion 11: case H, parked at V_e50 = 1.4·30 = 42 m/s — M_yB and F_x of recon 01 §7, all seven rotors",
+    "default seam, the owner's policy (homebuilder's margin, interview #003 «A»): F0 2.85 kN ± 2 % → M5 4.8, wrench 2.85 N·m, σ_p 5.3 MPa «caution», closed",
+    "default seam, the strict IEC line beside it (every load ×3, untested PETG → 4.3 MPa): F0 8.56 kN, σ_max 30.3 MPa — does not pass"
+  ],
+  "CpE: 0.25, vCutIn: 3 → CpE: 0.30, vCutIn: 3": [
+    "criterion 7 through the core's curve: Brest region, 10 m, D 1.4 → 72 kWh ± 1 %",
+    "power curve = the recons' model ½ρA·0.25·min(v, 10.5)³ from cut-in 3 m/s (5 sample speeds)"
+  ],
+  "ISA_EXP = 5.25588 → ISA_EXP = 5.0": [
+    "criterion 1: ρ(220 m, 7 °C) = 1.2275 kg/m³ ± 0.0005 (researches/01 Appendix A)",
+    "site air: ρ(160 m, 7.4 °C) = 1.2345 (researches/03 Appendix A)"
+  ],
+  "M5: { d: 5, As: 14.2, p48: 4.40 → M5: { d: 5, As: 14.2, p48: 3.40": [
+    "criterion 6: 2.6 kN at margin ≥ 1.5 → 4.8 M5 · 8.8 M4 · A2-70 M4",
+    "default seam, the owner's policy (homebuilder's margin, interview #003 «A»): F0 2.85 kN ± 2 % → M5 4.8, wrench 2.85 N·m, σ_p 5.3 MPa «caution», closed"
+  ],
+  "Math.atan(R / (r * lambda)) / 3 → Math.atan(R / (r * lambda)) / 2": [
+    "Re at 0.75R, 5 m/s: D 0.6 / 1.0 / 1.4 / 2.0 / 3.0 → 27 / 44 / 62 / 89 / 133 thousand ± 0.5 (researches/01 §7)",
+    "Re warning: every rotor up to D 2.0 runs below the measured polars (< 100 000), D 3.0 does not",
+    "Schmitz far from the root tends to Betz 16πR/(9 B C_l λ² μ) — at r = R, λ 10 within 1 %",
+    "criterion 10: BEM with drag, L/D 100, λ 4–10 → researches/01 §1.6 ± 2 %",
+    "criterion 10: BEM with drag, L/D 40, λ 4–10 → researches/01 §1.6 ± 2 %",
+    "criterion 10: BEM with drag, L/D 60, λ 4–10 → researches/01 §1.6 ± 2 %",
+    "criterion 11: case H, parked at V_e50 = 1.4·30 = 42 m/s — M_yB and F_x of recon 01 §7, all seven rotors",
+    "criterion 2: Schmitz chord at R 0.45, λ 4, B 3, C_l 1.26, r 0.045 → 89.4 mm ± 0.2 (researches/01 Appendix A)",
+    "criterion 3: Ct 0.878 ± 0.01 by blade-element loads (recon 01 §1.5; corrected checkpoint, bugs/01)",
+    "default seam, the owner's policy (homebuilder's margin, interview #003 «A»): F0 2.85 kN ± 2 % → M5 4.8, wrench 2.85 N·m, σ_p 5.3 MPa «caution», closed",
+    "default seam, the strict IEC line beside it (every load ×3, untested PETG → 4.3 MPa): F0 8.56 kN, σ_max 30.3 MPa — does not pass",
+    "drag loss = the optimum blade's (16/27)·λ/(L/D) ± 3 % in all 18 cells (an analytic route, not the recon)",
+    "plan area of a blade: the core's Schmitz chord from 0.1R to R → recon 01 §7, D 0.6 … 4.2 m (0.007 … 0.340 m²)",
+    "printed blade: chord 0.18R = 122.4 mm and t/c 25 % at the root block (r 110 mm); the linear blade there is 63 mm"
+  ],
+  "Math.ceil(span_mm / maxZ_mm) → Math.round(span_mm / maxZ_mm)": [
+    "sections: exactly one bed height fits in one section (240 → 1), one millimetre more needs two"
+  ],
+  "Math.log(z / z0) / Math.log(zRef / z0) → Math.log(z / z0) / Math.log(zRef)": [
+    "criterion 7 through the core's curve: Brest region, 10 m, D 1.4 → 72 kWh ± 1 %",
+    "criterion 7: Brest region, mast 10 m — hub 2.64 m/s ± 0.01, D 1.4 → 72 kWh ± 1 % (two profiles, z0 0.25, k 1.8)",
+    "criterion 7: Brest region, mast 12 m — hub 2.77 m/s ± 0.01, D 1.4 → 85 kWh ± 1 % (two profiles, z0 0.25, k 1.8)",
+    "criterion 7: Brest region, mast 7 m — hub 2.39 m/s ± 0.01, D 1.4 → 50 kWh ± 1 % (two profiles, z0 0.25, k 1.8)",
+    "default site: hub at the owner's 7 m mast (interview 002 Q2 «B») → 2.39 m/s ± 0.01",
+    "log law: 3.7 at 10 m → 7 m, z0 0.3 = 3.32 (researches/01 §5.3 upper bound 3.3)",
+    "log law: z = z_ref returns V_ref",
+    "recon 03 checkpoint, Minsk input: D 1.4, 7 m, z0 0.25, k 2 → 138 kWh ± 1"
+  ],
+  "Math.min(v, vRated) → Math.min(v, 2 * vRated)": [
+    "power curve = the recons' model ½ρA·0.25·min(v, 10.5)³ from cut-in 3 m/s (5 sample speeds)",
+    "power curve: 0 below cut-in, flat above rated"
+  ],
+  "MyB_Nm: Fx * 2 * R / (3 * B) → MyB_Nm: Fx * R / (2 * B)": [
+    "criterion 11: case D, maximum thrust (class IV, V_ave 6 and 4) — M_yB and F_x of recon 01 §7, all seven rotors",
+    "default seam, the owner's policy (homebuilder's margin, interview #003 «A»): F0 2.85 kN ± 2 % → M5 4.8, wrench 2.85 N·m, σ_p 5.3 MPa «caution», closed",
+    "default seam, the strict IEC line beside it (every load ×3, untested PETG → 4.3 MPa): F0 8.56 kN, σ_max 30.3 MPa — does not pass"
+  ],
+  "N * 1.125 * nozzle_mm → N * 1.0 * nozzle_mm": [
+    "blade mass → F_c: recon 02 §2.4 — the R 1.0 m blade + 0.8 m of M8 at 600 rpm → 1.22 kN ± 2 %",
+    "blade mass: recon 02 §7.2 R 1.0 m → 455 g ± 2 %; §10 classes 250 / 333 / 500 → 117 / 175 / 343 g ± 5 %",
+    "criterion 5 through the core's own section: F0 = 30 N·m / k(A2) + 1.22 kN → 4.95 kN ± 0.05",
+    "criterion 9: section A1 (shell T(3) + tube + web) — A 518 ± 2 %, Ix 63 560 ± 2 %, k 6.75 ± 3 % (researches/02 §2.4)",
+    "criterion 9: section A2 (+ flanges 3 mm over 0.15–0.50c) — A 894 ± 2 %, Ix 126 000 ± 2 %, k 8.04 ± 3 %",
+    "default seam, the owner's policy (homebuilder's margin, interview #003 «A»): F0 2.85 kN ± 2 % → M5 4.8, wrench 2.85 N·m, σ_p 5.3 MPa «caution», closed",
+    "default seam, the strict IEC line beside it (every load ×3, untested PETG → 4.3 MPa): F0 8.56 kN, σ_max 30.3 MPa — does not pass",
+    "seam A1 at 30 N·m, F0 5.7 kN: σ_b 8.6, σ_p 10.9 «too high», σ_max 19.5 MPa — the thin shell alone does not do",
+    "seam A2 at 30 N·m, F0 4.95 kN: σ_b 4.2, σ_p 5.5 «caution», σ_max 9.7 MPa, the seam stays closed",
+    "section parts: the tube around M8 = π·((4 + 0.2 + T(2))² − 4.2²) = 24.93 mm² (hand)",
+    "section parts: the web at 0.60c = T(2)·(thickness there − 2·T(3)) = 18.95 mm² ± 1 % (hand, 24.64 mm thick)",
+    "stud OUT of the kern at 0.30c: centroid 21 ± 0.6 mm, ky 17.8 ± 0.6, |xc| > ky — why the stud goes to 0.40c",
+    "stud in the kern at 0.40c: centroid 3.5 ± 0.6 mm toward the edge, |xc| < ky (researches/02 §2.4)",
+    "wall of N lines: T(2) 0.857 · T(3) 1.264 · T(4) 1.671 mm ± 0.001 (researches/02 §0)"
+  ],
+  "R_AIR = 287.05 → R_AIR = 297.05": [
+    "ISA sea level, 15 °C: ρ = 1.2250 kg/m³ ± 0.0005",
+    "criterion 1: ρ(220 m, 7 °C) = 1.2275 kg/m³ ± 0.0005 (researches/01 Appendix A)",
+    "criterion 7 through the core's curve: Brest region, 10 m, D 1.4 → 72 kWh ± 1 %",
+    "criterion 7: Brest region, mast 10 m — hub 2.64 m/s ± 0.01, D 1.4 → 72 kWh ± 1 % (two profiles, z0 0.25, k 1.8)",
+    "criterion 7: Brest region, mast 12 m — hub 2.77 m/s ± 0.01, D 1.4 → 85 kWh ± 1 % (two profiles, z0 0.25, k 1.8)",
+    "criterion 7: Brest region, mast 7 m — hub 2.39 m/s ± 0.01, D 1.4 → 50 kWh ± 1 % (two profiles, z0 0.25, k 1.8)",
+    "site air: ρ(160 m, 7.4 °C) = 1.2345 (researches/03 Appendix A)"
+  ],
+  "S: 110.4 → S: 120": [
+    "Sutherland at 15 °C = the 1976 Standard Atmosphere's sea level 1.7894e-5 Pa·s ± 0.0005e-5 (PDAS atmos76.f90)",
+    "Sutherland at 7 °C = 1.750e-5 Pa·s ± 0.0005e-5 (researches/01 §1.7, Appendix A)"
+  ],
+  "VE50_PER_VREF: 1.4 → VE50_PER_VREF: 1.5": [
+    "criterion 11: case H, parked at V_e50 = 1.4·30 = 42 m/s — M_yB and F_x of recon 01 §7, all seven rotors",
+    "default seam, the owner's policy (homebuilder's margin, interview #003 «A»): F0 2.85 kN ± 2 % → M5 4.8, wrench 2.85 N·m, σ_p 5.3 MPa «caution», closed",
+    "default seam, the strict IEC line beside it (every load ×3, untested PETG → 4.3 MPa): F0 8.56 kN, σ_max 30.3 MPa — does not pass"
+  ],
+  "cRoot_per_R: 0.18 → cRoot_per_R: 0.12": [
+    "default seam, the owner's policy (homebuilder's margin, interview #003 «A»): F0 2.85 kN ± 2 % → M5 4.8, wrench 2.85 N·m, σ_p 5.3 MPa «caution», closed",
+    "default seam, the strict IEC line beside it (every load ×3, untested PETG → 4.3 MPa): F0 8.56 kN, σ_max 30.3 MPa — does not pass",
+    "printed blade: chord 0.18R = 122.4 mm and t/c 25 % at the root block (r 110 mm); the linear blade there is 63 mm"
+  ],
+  "const FLANGE = { mmPerMetreR: 3 → const FLANGE = { mmPerMetreR: 2": [
+    "blade mass → F_c: recon 02 §2.4 — the R 1.0 m blade + 0.8 m of M8 at 600 rpm → 1.22 kN ± 2 %",
+    "blade mass: recon 02 §7.2 R 1.0 m → 455 g ± 2 %; §10 classes 250 / 333 / 500 → 117 / 175 / 343 g ± 5 %",
+    "default seam, the owner's policy (homebuilder's margin, interview #003 «A»): F0 2.85 kN ± 2 % → M5 4.8, wrench 2.85 N·m, σ_p 5.3 MPa «caution», closed",
+    "default seam, the strict IEC line beside it (every load ×3, untested PETG → 4.3 MPa): F0 8.56 kN, σ_max 30.3 MPa — does not pass",
+    "flanges along the span: 3 mm·R at the root block (2.04 mm at R 0.68, 3.0 at R 1.0), half by mid-taper, none from 0.4R"
+  ],
+  "const PETG_DENSITY_KG_M3 = 1250 → const PETG_DENSITY_KG_M3 = 1000": [
+    "blade mass → F_c: recon 02 §2.4 — the R 1.0 m blade + 0.8 m of M8 at 600 rpm → 1.22 kN ± 2 %",
+    "blade mass: recon 02 §7.2 R 1.0 m → 455 g ± 2 %; §10 classes 250 / 333 / 500 → 117 / 175 / 343 g ± 5 %",
+    "default seam, the owner's policy (homebuilder's margin, interview #003 «A»): F0 2.85 kN ± 2 % → M5 4.8, wrench 2.85 N·m, σ_p 5.3 MPa «caution», closed",
+    "default seam, the strict IEC line beside it (every load ×3, untested PETG → 4.3 MPa): F0 8.56 kN, σ_max 30.3 MPa — does not pass"
+  ],
+  "const PETG_Z_MPA = 39 → const PETG_Z_MPA = 59": [
+    "default seam, the strict IEC line beside it (every load ×3, untested PETG → 4.3 MPa): F0 8.56 kN, σ_max 30.3 MPa — does not pass"
+  ],
+  "const RE_POLAR_MIN = 100e3 → const RE_POLAR_MIN = 150e3": [
+    "Re warning: every rotor up to D 2.0 runs below the measured polars (< 100 000), D 3.0 does not"
+  ],
+  "const dr = (R - rHub) / n;\n  let A = 0; → const dr = R / n;\n  let A = 0;": [
+    "criterion 11: case H, parked at V_e50 = 1.4·30 = 42 m/s — M_yB and F_x of recon 01 §7, all seven rotors",
+    "default seam, the strict IEC line beside it (every load ×3, untested PETG → 4.3 MPa): F0 8.56 kN, σ_max 30.3 MPa — does not pass",
+    "plan area of a blade: the core's Schmitz chord from 0.1R to R → recon 01 §7, D 0.6 … 4.2 m (0.007 … 0.340 m²)"
+  ],
+  "const fh = shell + flange_mm / 2 → const fh = flange_mm / 2": [
+    "criterion 5 through the core's own section: F0 = 30 N·m / k(A2) + 1.22 kN → 4.95 kN ± 0.05",
+    "criterion 9: section A2 (+ flanges 3 mm over 0.15–0.50c) — A 894 ± 2 %, Ix 126 000 ± 2 %, k 8.04 ± 3 %",
+    "default seam, the owner's policy (homebuilder's margin, interview #003 «A»): F0 2.85 kN ± 2 % → M5 4.8, wrench 2.85 N·m, σ_p 5.3 MPa «caution», closed",
+    "default seam, the strict IEC line beside it (every load ×3, untested PETG → 4.3 MPa): F0 8.56 kN, σ_max 30.3 MPa — does not pass",
+    "seam A2 at 30 N·m, F0 4.95 kN: σ_b 4.2, σ_p 5.5 «caution», σ_max 9.7 MPa, the seam stays closed",
+    "seam A2 at the ultimate 60 N·m: the windward side −2.8 ± 0.4 MPa — the seam OPENS (researches/02 §2.4)"
+  ],
+  "const ox = xStud, oy → const ox = 0.9, oy": [
+    "blade mass → F_c: recon 02 §2.4 — the R 1.0 m blade + 0.8 m of M8 at 600 rpm → 1.22 kN ± 2 %",
+    "blade mass: recon 02 §7.2 R 1.0 m → 455 g ± 2 %; §10 classes 250 / 333 / 500 → 117 / 175 / 343 g ± 5 %",
+    "criterion 5 through the core's own section: F0 = 30 N·m / k(A2) + 1.22 kN → 4.95 kN ± 0.05",
+    "criterion 9: section A1 (shell T(3) + tube + web) — A 518 ± 2 %, Ix 63 560 ± 2 %, k 6.75 ± 3 % (researches/02 §2.4)",
+    "criterion 9: section A2 (+ flanges 3 mm over 0.15–0.50c) — A 894 ± 2 %, Ix 126 000 ± 2 %, k 8.04 ± 3 %",
+    "default seam, the owner's policy (homebuilder's margin, interview #003 «A»): F0 2.85 kN ± 2 % → M5 4.8, wrench 2.85 N·m, σ_p 5.3 MPa «caution», closed",
+    "default seam, the strict IEC line beside it (every load ×3, untested PETG → 4.3 MPa): F0 8.56 kN, σ_max 30.3 MPa — does not pass",
+    "seam A1 at 30 N·m, F0 5.7 kN: σ_b 8.6, σ_p 10.9 «too high», σ_max 19.5 MPa — the thin shell alone does not do",
+    "seam A2 at 30 N·m, F0 4.95 kN: σ_b 4.2, σ_p 5.5 «caution», σ_max 9.7 MPa, the seam stays closed",
+    "seam A2 at the ultimate 60 N·m: the windward side −2.8 ± 0.4 MPa — the seam OPENS (researches/02 §2.4)",
+    "section parts add up to A; the flanges appear only in A2",
+    "section parts: Ix of the tube = π/4·(ro⁴ − ri⁴) + A·yc², of the web = w·h³/12 + A·(y − yc)² (hand); the parts sum to Ix",
+    "section parts: the web at 0.60c = T(2)·(thickness there − 2·T(3)) = 18.95 mm² ± 1 % (hand, 24.64 mm thick)",
+    "section: the stud axis (origin) lies inside the section",
+    "section: the twist turns it about the stud axis — area kept, origin still inside",
+    "stud OUT of the kern at 0.30c: centroid 21 ± 0.6 mm, ky 17.8 ± 0.6, |xc| > ky — why the stud goes to 0.40c",
+    "stud in the kern at 0.40c: centroid 3.5 ± 0.6 mm toward the edge, |xc| < ky (researches/02 §2.4)",
+    "the strict IEC line can say «passes»: 0.1 N·m, no centrifugal pull, on the same seam → σ_max under 4.3 MPa"
+  ],
+  "const r1 = 0.7 * R, r2 = 0.9 * R → const r1 = 0.6 * R, r2 = 0.9 * R": [
+    "linear blade passes the Schmitz optimum at 0.7R and 0.9R (Burton)",
+    "printed blade: chord 0.18R = 122.4 mm and t/c 25 % at the root block (r 110 mm); the linear blade there is 63 mm"
+  ],
+  "const ri = stud_d_mm / 2 + gap_mm → const ri = stud_d_mm + gap_mm": [
+    "blade mass → F_c: recon 02 §2.4 — the R 1.0 m blade + 0.8 m of M8 at 600 rpm → 1.22 kN ± 2 %",
+    "blade mass: recon 02 §7.2 R 1.0 m → 455 g ± 2 %; §10 classes 250 / 333 / 500 → 117 / 175 / 343 g ± 5 %",
+    "criterion 9: section A1 (shell T(3) + tube + web) — A 518 ± 2 %, Ix 63 560 ± 2 %, k 6.75 ± 3 % (researches/02 §2.4)",
+    "criterion 9: section A2 (+ flanges 3 mm over 0.15–0.50c) — A 894 ± 2 %, Ix 126 000 ± 2 %, k 8.04 ± 3 %",
+    "default seam, the owner's policy (homebuilder's margin, interview #003 «A»): F0 2.85 kN ± 2 % → M5 4.8, wrench 2.85 N·m, σ_p 5.3 MPa «caution», closed",
+    "default seam, the strict IEC line beside it (every load ×3, untested PETG → 4.3 MPa): F0 8.56 kN, σ_max 30.3 MPa — does not pass",
+    "seam A1 at 30 N·m, F0 5.7 kN: σ_b 8.6, σ_p 10.9 «too high», σ_max 19.5 MPa — the thin shell alone does not do",
+    "seam A2 at 30 N·m, F0 4.95 kN: σ_b 4.2, σ_p 5.5 «caution», σ_max 9.7 MPa, the seam stays closed",
+    "section parts: Ix of the tube = π/4·(ro⁴ − ri⁴) + A·yc², of the web = w·h³/12 + A·(y − yc)² (hand); the parts sum to Ix",
+    "section parts: the tube around M8 = π·((4 + 0.2 + T(2))² − 4.2²) = 24.93 mm² (hand)"
+  ],
+  "const sh = shell / 2; → const sh = 0;": [
+    "criterion 5 through the core's own section: F0 = 30 N·m / k(A2) + 1.22 kN → 4.95 kN ± 0.05",
+    "criterion 9: section A1 (shell T(3) + tube + web) — A 518 ± 2 %, Ix 63 560 ± 2 %, k 6.75 ± 3 % (researches/02 §2.4)",
+    "criterion 9: section A2 (+ flanges 3 mm over 0.15–0.50c) — A 894 ± 2 %, Ix 126 000 ± 2 %, k 8.04 ± 3 %",
+    "default seam, the owner's policy (homebuilder's margin, interview #003 «A»): F0 2.85 kN ± 2 % → M5 4.8, wrench 2.85 N·m, σ_p 5.3 MPa «caution», closed",
+    "default seam, the strict IEC line beside it (every load ×3, untested PETG → 4.3 MPa): F0 8.56 kN, σ_max 30.3 MPa — does not pass",
+    "seam A1 at 30 N·m, F0 5.7 kN: σ_b 8.6, σ_p 10.9 «too high», σ_max 19.5 MPa — the thin shell alone does not do",
+    "seam A2 at 30 N·m, F0 4.95 kN: σ_b 4.2, σ_p 5.5 «caution», σ_max 9.7 MPa, the seam stays closed",
+    "seam A2 at the ultimate 60 N·m: the windward side −2.8 ± 0.4 MPa — the seam OPENS (researches/02 §2.4)"
+  ],
+  "const sigmaB = M_Nm * 1000 * yMax / I → const sigmaB = M_Nm * yMax / I": [
+    "default seam, the strict IEC line beside it (every load ×3, untested PETG → 4.3 MPa): F0 8.56 kN, σ_max 30.3 MPa — does not pass",
+    "seam A1 at 30 N·m, F0 5.7 kN: σ_b 8.6, σ_p 10.9 «too high», σ_max 19.5 MPa — the thin shell alone does not do",
+    "seam A2 at 30 N·m, F0 4.95 kN: σ_b 4.2, σ_p 5.5 «caution», σ_max 9.7 MPa, the seam stays closed",
+    "seam A2 at the ultimate 60 N·m: the windward side −2.8 ± 0.4 MPa — the seam OPENS (researches/02 §2.4)"
+  ],
+  "const tubeIx = tubeI + tubeA * yc * yc → const tubeIx = tubeI": [
+    "section parts: Ix of the tube = π/4·(ro⁴ − ri⁴) + A·yc², of the web = w·h³/12 + A·(y − yc)² (hand); the parts sum to Ix"
+  ],
+  "const webA = web * webH; → const webA = web * webH / 2;": [
+    "criterion 5 through the core's own section: F0 = 30 N·m / k(A2) + 1.22 kN → 4.95 kN ± 0.05",
+    "seam A1 at 30 N·m, F0 5.7 kN: σ_b 8.6, σ_p 10.9 «too high», σ_max 19.5 MPa — the thin shell alone does not do",
+    "section parts: the web at 0.60c = T(2)·(thickness there − 2·T(3)) = 18.95 mm² ± 1 % (hand, 24.64 mm thick)"
+  ],
+  "ct = Cl * sp - Cd * cp → ct = Cl * sp - 0.5 * Cd * cp": [
+    "criterion 10: BEM with drag, L/D 100, λ 4–10 → researches/01 §1.6 ± 2 %",
+    "criterion 10: BEM with drag, L/D 40, λ 4–10 → researches/01 §1.6 ± 2 %",
+    "criterion 10: BEM with drag, L/D 60, λ 4–10 → researches/01 §1.6 ± 2 %",
+    "drag loss = the optimum blade's (16/27)·λ/(L/D) ± 3 % in all 18 cells (an analytic route, not the recon)"
+  ],
+  "fSlm: { fatigue: 1.0, ultimate: 3.0 } → fSlm: { fatigue: 1.0, ultimate: 2.0 }": [
+    "allowable stress f_k/(γf·γm), ultimate, SLM loads: PETG Z 39 MPa untested → 4.3; steel 4.6 → 73, 8.8 → 194 MPa (recon 01 §6.1)",
+    "default seam, the strict IEC line beside it (every load ×3, untested PETG → 4.3 MPa): F0 8.56 kN, σ_max 30.3 MPa — does not pass"
+  ],
+  "gammaLoad: 1, studMargin: 1.5 → gammaLoad: 1, studMargin: 2.0": [
+    "default seam, the owner's policy (homebuilder's margin, interview #003 «A»): F0 2.85 kN ± 2 % → M5 4.8, wrench 2.85 N·m, σ_p 5.3 MPa «caution», closed"
+  ],
+  "gammaLoad: 1, studMargin: 1.5 → gammaLoad: 1.2, studMargin: 1.5": [
+    "default seam, the owner's policy (homebuilder's margin, interview #003 «A»): F0 2.85 kN ± 2 % → M5 4.8, wrench 2.85 N·m, σ_p 5.3 MPa «caution», closed"
+  ],
+  "hBlend = 60 → hBlend = 20": [
+    "criterion 7 through the core's curve: Brest region, 10 m, D 1.4 → 72 kWh ± 1 %",
+    "criterion 7: Brest region, mast 10 m — hub 2.64 m/s ± 0.01, D 1.4 → 72 kWh ± 1 % (two profiles, z0 0.25, k 1.8)",
+    "criterion 7: Brest region, mast 12 m — hub 2.77 m/s ± 0.01, D 1.4 → 85 kWh ± 1 % (two profiles, z0 0.25, k 1.8)",
+    "criterion 7: Brest region, mast 7 m — hub 2.39 m/s ± 0.01, D 1.4 → 50 kWh ± 1 % (two profiles, z0 0.25, k 1.8)",
+    "default site: hub at the owner's 7 m mast (interview 002 Q2 «B») → 2.39 m/s ± 0.01"
+  ],
+  "if (k <= 2 / 3) a = k / (1 + k); → if (k <= 2 / 3) a = k / (1 + 2 * k);": [
+    "BEM stays under the Betz limit 16/27 = 0.593",
+    "Ct: momentum with Buhl in the a > 0.4 stations agrees with the blade-element Ct ± 0.002",
+    "criterion 10: BEM with drag, L/D 100, λ 4–10 → researches/01 §1.6 ± 2 %",
+    "criterion 10: BEM with drag, L/D 40, λ 4–10 → researches/01 §1.6 ± 2 %",
+    "criterion 10: BEM with drag, L/D 60, λ 4–10 → researches/01 §1.6 ± 2 %",
+    "criterion 3: BEM, Schmitz blade, λ 6, C_l 1, L/D ∞, hub 0.1R → Cp 0.518 ± 0.005 (researches/01 Appendix A)",
+    "drag loss = the optimum blade's (16/27)·λ/(L/D) ± 3 % in all 18 cells (an analytic route, not the recon)"
+  ],
+  "k: 1.8 → k: 2.0": [
+    "criterion 7 through the core's curve: Brest region, 10 m, D 1.4 → 72 kWh ± 1 %",
+    "criterion 7: Brest region, mast 10 m — hub 2.64 m/s ± 0.01, D 1.4 → 72 kWh ± 1 % (two profiles, z0 0.25, k 1.8)",
+    "criterion 7: Brest region, mast 12 m — hub 2.77 m/s ± 0.01, D 1.4 → 85 kWh ± 1 % (two profiles, z0 0.25, k 1.8)",
+    "criterion 7: Brest region, mast 7 m — hub 2.39 m/s ± 0.01, D 1.4 → 50 kWh ± 1 % (two profiles, z0 0.25, k 1.8)"
+  ],
+  "kgm: 0.124 } → kgm: 0.248 }": [
+    "default seam, the owner's policy (homebuilder's margin, interview #003 «A»): F0 2.85 kN ± 2 % → M5 4.8, wrench 2.85 N·m, σ_p 5.3 MPa «caution», closed",
+    "default seam, the strict IEC line beside it (every load ×3, untested PETG → 4.3 MPa): F0 8.56 kN, σ_max 30.3 MPa — does not pass"
+  ],
+  "m / (p * p) * (2 * p * x - x * x) → m / p * (2 * p * x - x * x)": [
+    "NACA 44xx mean line, forward branch: y_c(0.2) = 0.04/0.16 · (0.16 − 0.04) = 0.03",
+    "NACA mean line continuous at x = p (both branches meet)",
+    "criterion 5 through the core's own section: F0 = 30 N·m / k(A2) + 1.22 kN → 4.95 kN ± 0.05",
+    "criterion 9: section A1 (shell T(3) + tube + web) — A 518 ± 2 %, Ix 63 560 ± 2 %, k 6.75 ± 3 % (researches/02 §2.4)",
+    "criterion 9: section A2 (+ flanges 3 mm over 0.15–0.50c) — A 894 ± 2 %, Ix 126 000 ± 2 %, k 8.04 ± 3 %",
+    "default seam, the owner's policy (homebuilder's margin, interview #003 «A»): F0 2.85 kN ± 2 % → M5 4.8, wrench 2.85 N·m, σ_p 5.3 MPa «caution», closed",
+    "default seam, the strict IEC line beside it (every load ×3, untested PETG → 4.3 MPa): F0 8.56 kN, σ_max 30.3 MPa — does not pass"
+  ],
+  "mB_kg * Rcog_m * omega * omega → mB_kg * Rcog_m * omega": [
+    "blade mass → F_c: recon 02 §2.4 — the R 1.0 m blade + 0.8 m of M8 at 600 rpm → 1.22 kN ± 2 %",
+    "case E, centrifugal pull: 1.2 kg at 0.39 m, 600 rpm → 1850 N ± 0.5 % (Alber et al. 2022); 0.33 kg at 0.28 m, λ 6, 10 m/s, R 0.7 → 673 N ± 1.5 %",
+    "default seam, the owner's policy (homebuilder's margin, interview #003 «A»): F0 2.85 kN ± 2 % → M5 4.8, wrench 2.85 N·m, σ_p 5.3 MPa «caution», closed",
+    "default seam, the strict IEC line beside it (every load ×3, untested PETG → 4.3 MPa): F0 8.56 kN, σ_max 30.3 MPa — does not pass"
+  ],
+  "mMinimal: { fatigue: 10, ultimate: 3.0 } → mMinimal: { fatigue: 10, ultimate: 2.0 }": [
+    "allowable stress f_k/(γf·γm), ultimate, SLM loads: PETG Z 39 MPa untested → 4.3; steel 4.6 → 73, 8.8 → 194 MPa (recon 01 §6.1)",
+    "default seam, the strict IEC line beside it (every load ×3, untested PETG → 4.3 MPa): F0 8.56 kN, σ_max 30.3 MPa — does not pass"
+  ],
+  "opens: sigmaP - sigmaB < 0 → opens: sigmaP + sigmaB < 0": [
+    "seam A2 at the ultimate 60 N·m: the windward side −2.8 ± 0.4 MPa — the seam OPENS (researches/02 §2.4)"
+  ],
+  "rBlend_per_R: 0.4 } → rBlend_per_R: 0.3 }": [
+    "default seam, the strict IEC line beside it (every load ×3, untested PETG → 4.3 MPa): F0 8.56 kN, σ_max 30.3 MPa — does not pass"
+  ],
+  "return M_Nm * 1000 / k_mm + Fc_N → return M_Nm * 1000 / k_mm": [
+    "criterion 5 through the core's own section: F0 = 30 N·m / k(A2) + 1.22 kN → 4.95 kN ± 0.05",
+    "criterion 5: section A2, M 30 N·m, k 8.04 mm, F_c 1.22 kN → F0 4.95 kN ± 0.05 (researches/02 §2.4)",
+    "criterion 5: wrench torque M8, K 0.2 → 7.9 N·m ± 0.1",
+    "default seam, the owner's policy (homebuilder's margin, interview #003 «A»): F0 2.85 kN ± 2 % → M5 4.8, wrench 2.85 N·m, σ_p 5.3 MPa «caution», closed",
+    "default seam, the strict IEC line beside it (every load ×3, untested PETG → 4.3 MPa): F0 8.56 kN, σ_max 30.3 MPa — does not pass"
+  ],
+  "section.k, g * Fc_D_N) → section.k, Fc_D_N)": [
+    "default seam, the strict IEC line beside it (every load ×3, untested PETG → 4.3 MPa): F0 8.56 kN, σ_max 30.3 MPa — does not pass"
+  ],
+  "segSq(s.x1 - xc, s.x2 - xc) → segSq(s.x1, s.x2)": [
+    "stud OUT of the kern at 0.30c: centroid 21 ± 0.6 mm, ky 17.8 ± 0.6, |xc| > ky — why the stud goes to 0.40c"
+  ],
+  "tc: tcRoot + (tcTip - tcRoot) * f → tc: tcRoot + (tcTip - tcRoot) * f * f": [
+    "stations: t/c 21 % at the root, 12 % at the tip, 16.5 % mid-span (linear)"
+  ],
+  "webIx = web * webH ** 3 / 12 + webA → webIx = webA": [
+    "section parts: Ix of the tube = π/4·(ro⁴ − ri⁴) + A·yc², of the web = w·h³/12 + A·(y − yc)² (hand); the parts sum to Ix"
+  ],
+  "xFlange: [0.15, 0.50] → xFlange: [0.15, 0.40]": [
+    "blade mass: recon 02 §7.2 R 1.0 m → 455 g ± 2 %; §10 classes 250 / 333 / 500 → 117 / 175 / 343 g ± 5 %",
+    "criterion 9: section A2 (+ flanges 3 mm over 0.15–0.50c) — A 894 ± 2 %, Ix 126 000 ± 2 %, k 8.04 ± 3 %",
+    "default seam, the owner's policy (homebuilder's margin, interview #003 «A»): F0 2.85 kN ± 2 % → M5 4.8, wrench 2.85 N·m, σ_p 5.3 MPa «caution», closed",
+    "default seam, the strict IEC line beside it (every load ×3, untested PETG → 4.3 MPa): F0 8.56 kN, σ_max 30.3 MPa — does not pass",
+    "seam A2 at 30 N·m, F0 4.95 kN: σ_b 4.2, σ_p 5.5 «caution», σ_max 9.7 MPa, the seam stays closed",
+    "seam A2 at the ultimate 60 N·m: the windward side −2.8 ± 0.4 MPa — the seam OPENS (researches/02 §2.4)",
+    "stud OUT of the kern at 0.30c: centroid 21 ± 0.6 mm, ky 17.8 ± 0.6, |xc| > ky — why the stud goes to 0.40c",
+    "stud in the kern at 0.40c: centroid 3.5 ± 0.6 mm toward the edge, |xc| < ky (researches/02 §2.4)"
+  ],
+  "yc + yt * Math.cos(th) → yc - yt * Math.cos(th)": [
+    "blade mass → F_c: recon 02 §2.4 — the R 1.0 m blade + 0.8 m of M8 at 600 rpm → 1.22 kN ± 2 %",
+    "blade mass: recon 02 §7.2 R 1.0 m → 455 g ± 2 %; §10 classes 250 / 333 / 500 → 117 / 175 / 343 g ± 5 %",
+    "criterion 5 through the core's own section: F0 = 30 N·m / k(A2) + 1.22 kN → 4.95 kN ± 0.05",
+    "criterion 9: section A1 (shell T(3) + tube + web) — A 518 ± 2 %, Ix 63 560 ± 2 %, k 6.75 ± 3 % (researches/02 §2.4)",
+    "criterion 9: section A2 (+ flanges 3 mm over 0.15–0.50c) — A 894 ± 2 %, Ix 126 000 ± 2 %, k 8.04 ± 3 %",
+    "default seam, the owner's policy (homebuilder's margin, interview #003 «A»): F0 2.85 kN ± 2 % → M5 4.8, wrench 2.85 N·m, σ_p 5.3 MPa «caution», closed",
+    "default seam, the strict IEC line beside it (every load ×3, untested PETG → 4.3 MPa): F0 8.56 kN, σ_max 30.3 MPa — does not pass",
+    "seam A1 at 30 N·m, F0 5.7 kN: σ_b 8.6, σ_p 10.9 «too high», σ_max 19.5 MPa — the thin shell alone does not do",
+    "seam A2 at 30 N·m, F0 4.95 kN: σ_b 4.2, σ_p 5.5 «caution», σ_max 9.7 MPa, the seam stays closed",
+    "seam A2 at the ultimate 60 N·m: the windward side −2.8 ± 0.4 MPa — the seam OPENS (researches/02 §2.4)",
+    "section parts: the web at 0.60c = T(2)·(thickness there − 2·T(3)) = 18.95 mm² ± 1 % (hand, 24.64 mm thick)",
+    "section: counter-clockwise (positive signed area)",
+    "section: symmetric NACA 0012, c 100 — area 0.68508·t·c² = 822.1 mm² ± 0.5 %",
+    "section: the cut trailing edge is 0.857 mm thick (two extrusion lines)",
+    "section: the stud axis (origin) lies inside the section",
+    "section: the twist turns it about the stud axis — area kept, origin still inside",
+    "stud OUT of the kern at 0.30c: centroid 21 ± 0.6 mm, ky 17.8 ± 0.6, |xc| > ky — why the stud goes to 0.40c",
+    "stud in the kern at 0.40c: centroid 3.5 ± 0.6 mm toward the edge, |xc| < ky (researches/02 §2.4)"
+  ],
+  "z0: 0.25, hub_m: 7 → z0: 0.25, hub_m: 10": [
+    "default site: hub at the owner's 7 m mast (interview 002 Q2 «B») → 2.39 m/s ± 0.01"
+  ],
+  "{ ok: 3, limit: 7 } → { ok: 3, limit: 9 }": [
+    "tip anchor: verdicts on both sides — 1 kN → ok, 4 kN → too high"
+  ],
+  "{ ok: 3, limit: 7 } → { ok: 6, limit: 7 }": [
+    "default seam, the owner's policy (homebuilder's margin, interview #003 «A»): F0 2.85 kN ± 2 % → M5 4.8, wrench 2.85 N·m, σ_p 5.3 MPa «caution», closed",
+    "seam A2 at 30 N·m, F0 4.95 kN: σ_b 4.2, σ_p 5.5 «caution», σ_max 9.7 MPa, the seam stays closed",
+    "tip anchor: 2.6 kN on a 12 × 40 mm plate → 5.42 MPa, «caution» (3–7 MPa, researches/02 §5.2)"
+  ]
+}
