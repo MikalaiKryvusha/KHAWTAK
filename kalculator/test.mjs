@@ -78,6 +78,8 @@ const MUTANTS = [
   ['const sigmaB = M_Nm * 1000 * yMax / I', 'const sigmaB = M_Nm * yMax / I'], // breaks the bending stress units
   ['opens: sigmaP - sigmaB < 0', 'opens: sigmaP + sigmaB < 0'],              // breaks the open-seam flag
   ['Math.ceil(span_mm / maxZ_mm)', 'Math.round(span_mm / maxZ_mm)'], // breaks the section count (a section taller than the bed)
+  ['const BED_DEFAULT = { w_mm: 220, d_mm: 220, margin_mm: 5 }', 'const BED_DEFAULT = { w_mm: 220, d_mm: 220, margin_mm: 0 }'], // forgets the 5 mm margin
+  ['for (let deg = 0; deg < 180; deg += 0.25)', 'for (let deg = 0; deg < 1; deg += 0.25)'], // forgets that the part may be turned
 ];
 
 function load(src) {
@@ -474,6 +476,19 @@ function run(K, log = true) {
   const cuts = K.sectionCuts(630, 240);
   check('sections: 630 mm span, bed 240 mm → 3 equal sections of 210 mm', cuts.length === 4 && near(cuts[1], 210, 1e-9) && near(cuts[3], 630, 1e-9), cuts.join(' / '));
   check('sections: exactly one bed height fits in one section (240 → 1), one millimetre more needs two', K.sectionCuts(240, 240).length === 2 && K.sectionCuts(241, 240).length === 3);
+  // The bed fit (bedFit) by hand on strips: the spot is 210 × 210 (220 minus 5 mm from each edge). A 200 × 10 strip fits
+  // straight; a 280 × 10 strip only on the diagonal — (280 + 10)/√2 = 205 ≤ 210; a 300 × 10 strip nowhere — 310/√2 = 219.
+  const strip = (L, t) => [[[0, 0], [L, 0], [L, t], [0, t]]];
+  const f200 = K.bedFit(strip(200, 10)), f280 = K.bedFit(strip(280, 10)), f300 = K.bedFit(strip(300, 10));
+  check('bed fit by hand: 200 × 10 straight · 280 × 10 only on the diagonal (≈ 45°) · 300 × 10 does not fit the 210 × 210 spot',
+    f200.fits && f280.fits && Math.abs(f280.angle_deg % 90 - 45) < 3 && !f300.fits, `280: ${f280.angle_deg}°, ${f280.w_mm.toFixed(1)} × ${f280.h_mm.toFixed(1)}`);
+  // The default blade's first section (rotor 1.36 m): the printed span 110 … 680 mm in three sections of 190 mm; its outlines
+  // at the bottom, the middle and the top, each at its own chord, t/c and twist, together — the footprint fits the bed.
+  const span136 = K.sectionCuts((0.68 - 0.11) * 1000, 240), rTop = 0.11 + span136[1] / 1000;
+  const outl = [0.11, (0.11 + rTop) / 2, rTop].map((r) => K.airfoilSection({ chord_mm: pb136.chord(r) * 1000, t: pb136.tc(r), twist_rad: pb136.twist(r), n: 40 }));
+  const fit136 = K.bedFit(outl);
+  check('the default blade\'s first section (r 110 … 300 mm, chord 122 → 75 mm, twisted) stands on the 220 × 220 bed',
+    span136.length === 4 && fit136.fits, `${span136.length - 1} sections · ${fit136.w_mm.toFixed(0)} × ${fit136.h_mm.toFixed(0)} mm at ${fit136.angle_deg}°`);
 
   return { bad, total, failed };
 }

@@ -93,7 +93,8 @@
     "printed blade: chord 0.18R = 122.4 mm and t/c 25 % at the root block (r 110 mm); the linear blade there is 63 mm"
   ],
   "Math.ceil(span_mm / maxZ_mm) → Math.round(span_mm / maxZ_mm)": [
-    "sections: exactly one bed height fits in one section (240 → 1), one millimetre more needs two"
+    "sections: exactly one bed height fits in one section (240 → 1), one millimetre more needs two",
+    "the default blade's first section (r 110 … 300 mm, chord 122 → 75 mm, twisted) stands on the 220 × 220 bed"
   ],
   "Math.log(z / z0) / Math.log(zRef / z0) → Math.log(z / z0) / Math.log(zRef)": [
     "criterion 7 through the core's curve: Brest region, 10 m, D 1.4 → 72 kWh ± 1 %",
@@ -152,6 +153,9 @@
     "default seam, the owner's policy (homebuilder's margin, interview #003 «A»): F0 2.85 kN ± 2 % → M5 4.8, wrench 2.85 N·m, σ_p 5.3 MPa «caution», closed",
     "default seam, the strict IEC line beside it (every load ×3, untested PETG → 4.3 MPa): F0 8.56 kN, σ_max 30.3 MPa — does not pass",
     "printed blade: chord 0.18R = 122.4 mm and t/c 25 % at the root block (r 110 mm); the linear blade there is 63 mm"
+  ],
+  "const BED_DEFAULT = { w_mm: 220, d_mm: 220, margin_mm: 5 } → const BED_DEFAULT = { w_mm: 220, d_mm: 220, margin_mm: 0 }": [
+    "bed fit by hand: 200 × 10 straight · 280 × 10 only on the diagonal (≈ 45°) · 300 × 10 does not fit the 210 × 210 spot"
   ],
   "const FLANGE = { mmPerMetreR: 3 → const FLANGE = { mmPerMetreR: 2": [
     "blade mass → F_c: recon 02 §2.4 — the R 1.0 m blade + 0.8 m of M8 at 600 rpm → 1.22 kN ± 2 %",
@@ -254,6 +258,9 @@
   "fSlm: { fatigue: 1.0, ultimate: 3.0 } → fSlm: { fatigue: 1.0, ultimate: 2.0 }": [
     "allowable stress f_k/(γf·γm), ultimate, SLM loads: PETG Z 39 MPa untested → 4.3; steel 4.6 → 73, 8.8 → 194 MPa (recon 01 §6.1)",
     "default seam, the strict IEC line beside it (every load ×3, untested PETG → 4.3 MPa): F0 8.56 kN, σ_max 30.3 MPa — does not pass"
+  ],
+  "for (let deg = 0; deg < 180; deg += 0.25) → for (let deg = 0; deg < 1; deg += 0.25)": [
+    "bed fit by hand: 200 × 10 straight · 280 × 10 only on the diagonal (≈ 45°) · 300 × 10 does not fit the 210 × 210 spot"
   ],
   "gammaLoad: 1, studMargin: 1.5 → gammaLoad: 1, studMargin: 2.0": [
     "default seam, the owner's policy (homebuilder's margin, interview #003 «A»): F0 2.85 kN ± 2 % → M5 4.8, wrench 2.85 N·m, σ_p 5.3 MPa «caution», closed"
