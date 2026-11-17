@@ -43,6 +43,15 @@ for (const [what, need] of [['the tube', tubeOd], [`the ${stud} tip nut`, NUT_NE
     : `${what} fits up to r ${(r * 1000).toFixed(0)} mm (r/R ${(r / R).toFixed(3)}) — a stud from the root nut reaching it: ${((r - ROOT_NUT_R_M) * 1000).toFixed(0)} mm`);
 }
 
+// The owner's 333 mm stud (332 after the saw cut — HOUSE_RULES.md product knowledge) from the root nut: where it ends, this
+// blade against recon 02 §0's planform (c/R 0.18 → 0.10 at 0.7R → 0.05; t/c 18 → 12 %), on which recon 02 §10 sized class 333.
+{
+  const rEnd = ROOT_NUT_R_M + 0.332, x = rEnd / R;
+  const cRecon = R * (x <= 0.15 ? 0.18 : x <= 0.7 ? 0.18 - 0.08 * (x - 0.15) / 0.55 : 0.10 - 0.05 * (x - 0.7) / 0.3), tcRecon = 0.18 - 0.06 * x;
+  console.log(`the 333 mm stud ends at r ${(rEnd * 1000).toFixed(0)} mm: this blade — chord ${(blade.chord(rEnd) * 1000).toFixed(1)} mm, ${thick(rEnd).toFixed(2)} mm thick;`
+    + ` recon 02 §0's planform — chord ${(cRecon * 1000).toFixed(1)} mm, ${(2 * K.nacaHalfThickness(0.40, tcRecon) * cRecon * 1000).toFixed(2)} mm thick`);
+}
+
 // The design λ against the stud: a lower λ gives a wider blade (Schmitz chord), so the tip nut fits farther out.
 if (NUT_NEED_MM[stud]) {
   console.log('');

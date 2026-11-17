@@ -4,6 +4,7 @@
 //
 //   node tools/section-raster.mjs [h_mm]      # default 0.1; plan 02 criterion 9 quotes the 0.05 mm run
 import { readFileSync } from 'node:fs';
+import { pathToFileURL } from 'node:url';
 import vm from 'node:vm';
 
 const html = readFileSync(new URL('../kalculator/index.html', import.meta.url), 'utf8');
@@ -18,11 +19,14 @@ function segDist(px, py, ax, ay, bx, by) {
   return Math.hypot(px - ax - u * dx, py - ay - u * dy);
 }
 
-function raster({ chord_mm, t, xStud = 0.40, stud_d_mm, flange_mm, n = 120, h = 0.05 }) {
-  const P = K.airfoilSection({ chord_mm, t, n, xStud });
+// xWeb — the web's chord station (the recon's section A: 0.60c; the printed section since plan 03 G2: the stud axis);
+// withTube — the stud's bore and ring are there (false beyond the stud's end: no hole, the web runs through);
+// minTE_mm — the printable trailing edge of the mesh (airfoilSection's flat cut). Exported for kalculator/test.mjs.
+export function raster({ chord_mm, t, xStud = 0.40, stud_d_mm, flange_mm, n = 120, h = 0.05, xWeb = 0.60, withTube = true, minTE_mm = 0 }) {
+  const P = K.airfoilSection({ chord_mm, t, n, xStud, minTE_mm });
   const shell = K.wallT_mm(3), tube = K.wallT_mm(2), web = K.wallT_mm(2);
   const ri = stud_d_mm / 2 + 0.2, ro = ri + tube;
-  const X0 = (0.15 - xStud) * chord_mm, X1 = (0.50 - xStud) * chord_mm, Xw = (0.60 - xStud) * chord_mm;
+  const X0 = (0.15 - xStud) * chord_mm, X1 = (0.50 - xStud) * chord_mm, Xw = (xWeb - xStud) * chord_mm;
   let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
   for (const [x, y] of P) { minX = Math.min(minX, x); maxX = Math.max(maxX, x); minY = Math.min(minY, y); maxY = Math.max(maxY, y); }
   let A = 0, Sx = 0, Sy = 0, Sxx = 0, Syy = 0;
@@ -31,8 +35,8 @@ function raster({ chord_mm, t, xStud = 0.40, stud_d_mm, flange_mm, n = 120, h = 
     for (let Y = minY + h / 2; Y < maxY; Y += h) {
       if (!K.pointInPolygon([X, Y], P)) continue;
       const r = Math.hypot(X, Y);
-      if (r < ri) continue;                                   // the stud hole
-      let mat = r <= ro || Math.abs(X - Xw) <= web / 2;       // tube ring, web strip
+      if (withTube && r < ri) continue;                       // the stud hole
+      let mat = (withTube && r <= ro) || Math.abs(X - Xw) <= web / 2;   // tube ring, web strip
       if (!mat) {
         let d = Infinity;
         for (let i = 0; i < P.length; i++) { const a = P[i], b = P[(i + 1) % P.length]; d = Math.min(d, segDist(X, Y, a[0], a[1], b[0], b[1])); if (d <= shell) break; }
@@ -49,8 +53,9 @@ function raster({ chord_mm, t, xStud = 0.40, stud_d_mm, flange_mm, n = 120, h = 
   return { A, xc, yc, Ix, Iy, k: Ix / (A * yMax), ky: Iy / (A * xMax), yMax, xMax };
 }
 
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {   // the CLI — not when imported
 const f = (o) => `A ${o.A.toFixed(1)} · xc ${o.xc.toFixed(2)} · yc ${o.yc.toFixed(2)} · Ix ${o.Ix.toFixed(0)} · Iy ${o.Iy.toFixed(0)} · yMax ${o.yMax.toFixed(2)} · k ${o.k.toFixed(3)} · ky ${o.ky.toFixed(2)}`;
-const base = { chord_mm: 180, t: 0.18, stud_d_mm: 8 };
+const base = { chord_mm: 180, t: 0.18, stud_d_mm: 8, xWeb: 0.60 };   // the recon's section A: the web at 0.60c
 for (const [name, flange_mm, xStud, recon] of [
   ['A1 (0.40c)', 0, 0.40, 'recon: A 518 · Ix 63 560 · k 6.75'],
   ['A2 (0.40c)', 3, 0.40, 'recon: A 894 · Ix 126 000 · k 8.04 · chordwise offset 3.5 mm'],
@@ -60,4 +65,5 @@ for (const [name, flange_mm, xStud, recon] of [
   for (const nn of [60, 120]) console.log(`  core thin-walled n ${nn}: ${f(K.bladeSection({ ...base, flange_mm, xStud, n: nn }))}`);
   const h = Number(process.argv[2] || 0.1);
   console.log(`  raster h ${h}:          ${f(raster({ ...base, flange_mm, xStud, h }))}`);
+}
 }

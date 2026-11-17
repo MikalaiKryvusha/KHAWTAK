@@ -352,7 +352,9 @@
     "default seam, the strict IEC line beside it (every load ×3, untested PETG → 4.3 MPa): F0 8.38 kN, σ_max 30.0 MPa — does not pass"
   ],
   "minTE_mm = wallT_mm(MESH_DEFAULT.teLines) }) { → minTE_mm = 0 }) {": [
-    "criterion 2: the mesh volume (divergence theorem) = ∫A dz of the same outlines (Simpson, 400 steps) within 0.5 %"
+    "criterion 2: the mesh volume (divergence theorem) = ∫A dz of the same outlines (Simpson, 400 steps) within 0.5 %",
+    "each section stands 0 … 190 mm (≤ the 240 mm bed), stations ≤ 5 mm apart, the trailing edge ≥ T(2) = 0.857 mm at every station",
+    "the mesh is the blade at its cuts: both ends' vertices = airfoilSection at the cut radius with its chord, t/c and twist (1e-9 mm)"
   ],
   "nx /= l; ny /= l; nz /= l; → nx /= 1; ny /= l; nz /= l;": [
     "binary STL: 84 + 50·N bytes, the header does not start with «solid», N = the triangles, unit normals, the vertices as float32"
@@ -379,6 +381,9 @@
   ],
   "segSq(s.x1 - xc, s.x2 - xc) → segSq(s.x1, s.x2)": [
     "stud OUT of the kern at 0.30c: centroid 21 ± 0.6 mm, ky 17.8 ± 0.6, |xc| > ky — why the stud goes to 0.40c"
+  ],
+  "stations_m.map((r) => airfoilSection({ chord_mm: blade.chord(r) * 1000, t: blade.tc(r), twist_rad: blade.twist(r), → stations_m.map((r) => airfoilSection({ chord_mm: blade.chord(r) * 1000, t: blade.tc(r), twist_rad: 0,": [
+    "the mesh is the blade at its cuts: both ends' vertices = airfoilSection at the cut radius with its chord, t/c and twist (1e-9 mm)"
   ],
   "tc: tcRoot + (tcTip - tcRoot) * f → tc: tcRoot + (tcTip - tcRoot) * f * f": [
     "stations: t/c 21 % at the root, 12 % at the tip, 16.5 % mid-span (linear)"

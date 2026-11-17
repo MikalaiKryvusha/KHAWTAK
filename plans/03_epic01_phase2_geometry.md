@@ -39,9 +39,14 @@ Each step quotes its anchor in the epic: «сечения профиля по р
   `sectionMesh`, `meshToSTL`. The default blade: three sections of 9 434 triangles, closed (criterion 1), the volume against
   ∫A dz 0.004–0.014 % (criterion 2), the seams 0 mm apart (criterion 6), the caps CCW, the STL read back; 7 cases, 11 mutants
   each red; 115/115, `--control` 75/75. Criterion 4 already on the outer mesh: `node tools/slicer-check.mjs` — PrusaSlicer
-  `manifold = yes`, one part, its volume = the core's (210 748.0 mm³), 190 mm high, 89 × 89 on the bed. Chrome = Node byte for
-  byte (`node tools/chrome-core-smoke.mjs`: the STL hash). Seen by eye: a Blender render of section 1 (the twisted root, the
-  kink of the linear root blend at 0.4R — `printedBlade`'s [AI] choice, cosmetic). The step as planned: Stations at the section cuts plus intermediate ones (the same point count per
+  `manifold = yes`, one part, the same facet count, no repair (any `facets_reversed`, `edges_fixed`… fails it — the fifth
+  judge; proven on a copy with one reversed facet), its volume = the core's (210 748.0 mm³), 190 mm high; the bed fit
+  89 × 89 mm is the core's `bedFit`, which the tool prints beside the slicer's box. Chrome = Node byte for byte
+  (`node tools/chrome-core-smoke.mjs`: the STL hash). Seen by eye — the command: `"C:/Program Files/Blender Foundation/Blender
+  5.3/blender.exe" -b -P <KATAK>/tools/render-stl.py -- .work/tmp/slicer-check/section1-r110-300.stl <png> iso`: the twisted
+  root, the kink of the linear root blend at 0.4R (`printedBlade`'s [AI] choice, cosmetic). After the fifth judge: a case ties
+  the mesh to the blade (both ends = `airfoilSection` at the cut radius, twist included) with a mutant, and the trailing edge
+  is measured on the mesh's own vertices. The step as planned: Stations at the section cuts plus intermediate ones (the same point count per
   outline, cosine spacing — `airfoilSection`); strips of triangles between neighbouring outlines; the end caps; the binary STL of
   KATAK (80-byte header not starting with `solid`, uint32 count, 50 bytes per triangle — recon 04 §1). The checks of criteria 1, 2,
   6 land in the same step (an edge map, the divergence-theorem volume).
@@ -51,6 +56,26 @@ Each step quotes its anchor in the epic: «сечения профиля по р
   offset + boolean | cavities built from the airfoil's own parametrisation (inner surface = outer point − wall × normal, the
   web as a vertical cut, the tube as its own closed cylinder)> · consulted <recon 04 §2.3, the industry's way (a clipping
   library's offset — Clipper — is the reference; the page has no libraries)>. Criterion 3.
+  **The two FORKs, closed by recon 2026-11-17 15:34 +03:00 (recon 04 §2.3 gains the notes):**
+  `FORK: options <a general polygon offset + boolean (Clipper's way) | the inner contour from the airfoil's own stations (inner
+  point = outer point − wall × normal at the same chord stations, trimmed where the inner upper and lower chains cross)> ·
+  price of error <a cavity whose outline changes its point count between stations cannot be lofted into a closed mesh | an
+  offset loop at a sharp nose> · consulted <the blade-structure tools (NuMAD, PreComp: the inner contour = the outer shape
+  offset by the layup thickness, webs as separate members); Clipper2 (Vatti 1992; Chen & McMains 2005 on offsetting) — the
+  general tool the slicers use, but its output re-meshes every station; recon 04 §2.2 (the same point count per station)>` →
+  the airfoil's own stations: the loft needs the same point count; the nose loop lies where the profile is thinner than two
+  shells, so the trim removes it (at the default tip, c 27.6 mm, the nose radius 0.44 mm < T(3), but the profile is < 2 × T(3)
+  thick there anyway).
+  `FORK: options <the tube free inside the front cell (recon 02 §0 section A as computed) | the web moved from 0.60c to the
+  stud axis 0.40c, the tube inside the web | a second web through the tube> · price of error <a free tube 7 × 190 mm printed
+  upright wobbles (forum practice: tall thin rods are braced at 1/3 and 2/3 of their height); a cell with a hole breaks the
+  loft where the tube meets the shell (from r ≈ 285 mm on the default blade) | the recon's numbers move | one more entity> ·
+  consulted <recon 02 §0/§7 (the web «≈ 0,60–0,65c» is its [AI] choice, no reason given; the tube's attachment not named);
+  FDM practice on tall thin features (Bambu Lab forum «layer wobble for tall and skinny parts»: bracing); the I-beam spar
+  of blade practice (the web joins the caps; our flanges span 0.15–0.50c, so 0.40c is inside them)>` → the web through the
+  stud axis: no new entity, the tube braced top and bottom, two cells without holes, and where the tube meets the shell the
+  web's height simply goes to 0. `bladeSection` follows (the web interrupted by the tube); plan 02 criterion 9 keeps the
+  recon's section A by passing `xWeb: 0.60` explicitly. [AI] — the owner sees it in the step's report.
 - [ ] **G3 · the 45° roofs.** Each cell closed at both ends of the section by a roof at 45° (prints without supports, recon 02
   §7.1); a solid end band under the collar.
 - [ ] **G4 · the joint.** The collar 5–8 mm on the inner contour of the top end, a 0.2 mm glue gap, one key at the rear, a 0.4 mm

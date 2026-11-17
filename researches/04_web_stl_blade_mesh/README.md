@@ -55,6 +55,18 @@
 каждой полости, 0 % заполнения). **Пробник фазы 2:** одна секция с двумя полостями → `prusa-slicer-console.exe --info`
 (manifold) и нарезка в G-code с заполнением 0 % → взгляд на слои (снимок предпросмотра).
 
+**Дополнение 2026-11-17 (план 03, шаг G2 — как строить полость) [AI]:**
+- Инструменты проектирования лопастей — NuMAD (Sandia) и PreComp (NREL) — задают внутренний контур как наружную форму,
+  сдвинутую внутрь на толщину слоя, а перегородки (стенки) — отдельными элементами [4][5].
+- Общий сдвиг многоугольника — библиотека Clipper (алгоритм Vatti 1992; сложности сдвига — Chen & McMains 2005); ею режут
+  слайсеры [6]. Но её результат на каждой станции имеет своё число точек, а сшить полость между станциями можно только при
+  одинаковом числе точек (раздел 2.2). Поэтому полость строится из точек самого профиля: внутренняя точка = наружная −
+  стенка × нормаль на тех же станциях хорды; полость кончается там, где внутренние верхняя и нижняя линии сходятся
+  (профиль тоньше двух оболочек). Петля сдвига у острого носка лежит именно там и отрезается.
+- Высокий тонкий элемент при печати раскачивается; практика — связать его с остальной деталью или поставить опоры на 1/3 и
+  2/3 высоты [7]. Свободная труба Ø 7 мм высотой 190 мм внутри ячейки — такой элемент. Решение плана 03 (G2): перегородка
+  проходит через ось шпильки (0,40c), труба сидит в ней — она связана с оболочкой сверху и снизу, ячеек две, без отверстий.
+
 ### 2.4 Карман закладной в вершинной секции
 
 Решение владельца (интервью 001 Q3, ответ дословно — коммит 59793d8): шпилька вкручивается в закладную вершинной секции. Карман — ещё одна полость: прорезь
@@ -75,6 +87,14 @@
 2. CFD Online — «4 digit NACA airfoil trailing edge not quite zero»: https://cfd-online.com/Forums/main/141569-4-digit-naca-airfoil-trailing-edge-airfoil-not-quite-zero.html
 3. PKWARE — APPNOTE.TXT, .ZIP File Format Specification: https://pkware.cachefly.net/webdocs/casestudies/APPNOTE.TXT —
    **не открыт в этой разведке**: формат «stored» описан по памяти, сверить при фазе 4.
+4. Sandia — NuMAD (Numerical Manufacturing And Design Tool): https://energy.sandia.gov/?p=91333 — по выдаче поиска
+   (2026-11-17), страница не открыта.
+5. NREL — PreComp User's Guide: https://www.nrel.gov/wind/nwtc/assets/pdfs/precomp.pdf — по выдаче поиска (2026-11-17):
+   «the blade external shape and the internal layup of composite laminates» как вход; документ не открыт.
+6. Angus Johnson — Clipper2, Polygon Clipping and Offsetting Library: https://angusj.com/clipper2/Docs/Overview.htm — по
+   выдаче поиска (2026-11-17): Vatti 1992; Chen & McMains, «Polygon Offsetting by Computing Winding Numbers», ASME 2005.
+7. Bambu Lab forum — «How to fix layer wobble for tall and skinny parts»:
+   https://forum.bambulab.com/t/how-to-fix-layer-wobble-for-tall-and-skinny-parts/56301/3 — практика форума, не стандарт.
 
 ## 4. Не проверено
 

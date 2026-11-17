@@ -95,6 +95,8 @@ const MUTANTS = [
   ["('KHAWTAK binary STL - ' + name)", "('solid KHAWTAK - ' + name)"],  // a binary file that claims to be ASCII
   ['dv.setUint32(80, N, true);', 'dv.setUint32(80, N, false);'],    // the count big-endian
   ['nx /= l; ny /= l; nz /= l;', 'nx /= 1; ny /= l; nz /= l;'],      // a normal that is not a unit vector
+  ['stations_m.map((r) => airfoilSection({ chord_mm: blade.chord(r) * 1000, t: blade.tc(r), twist_rad: blade.twist(r),',
+    'stations_m.map((r) => airfoilSection({ chord_mm: blade.chord(r) * 1000, t: blade.tc(r), twist_rad: 0,'],   // the mesh forgets the twist (the fifth judge)
 ];
 
 function load(src) {
@@ -557,8 +559,17 @@ function run(K, log = true) {
   const gaps = meshes.slice(0, -1).map((m, i) => Math.max(...m.top.map((p, j) => Math.hypot(p[0] - meshes[i + 1].bottom[j][0], p[1] - meshes[i + 1].bottom[j][1]))));
   check('criterion 6: neighbours meet without a step — the top outline of section i is the bottom outline of i + 1 to 1e-6 mm',
     gaps.every((g) => g <= 1e-6), gaps.map((g) => g.toExponential(1)).join(' · '));
-  const teOk = meshes.every((m) => m.stations_m.every((r) => { const ol = K.airfoilSection({ chord_mm: pb136.chord(r) * 1000, t: pb136.tc(r), twist_rad: pb136.twist(r), n: K.MESH_DEFAULT.n, minTE_mm: minTE });
-    return Math.hypot(ol[0][0] - ol.at(-1)[0], ol[0][1] - ol.at(-1)[1]) >= minTE - 1e-6; }));
+  // the trailing edge measured on the MESH itself (the fifth judge: it read airfoilSection): station k's outline is vertices
+  // k·P … k·P + P − 1, its edge the first and the last of them
+  const teOk = meshes.every((m) => { const P = m.bottom.length;
+    return m.stations_m.every((_, k) => Math.hypot(m.v[k * P][0] - m.v[k * P + P - 1][0], m.v[k * P][1] - m.v[k * P + P - 1][1]) >= minTE - 1e-6); });
+  // The mesh IS the blade at its cuts (the fifth judge: a twist of 0, −1× or 3× stayed green): the vertices of both ends equal
+  // airfoilSection at the cut radius — chord, t/c and twist — to 1e-9 mm.
+  const endsOk = meshes.every((m) => [0, m.stations_m.length - 1].every((k) => { const r = m.stations_m[k];
+    const ol = K.airfoilSection({ chord_mm: pb136.chord(r) * 1000, t: pb136.tc(r), twist_rad: pb136.twist(r), n: K.MESH_DEFAULT.n, minTE_mm: minTE });
+    return ol.every(([x, y], i) => Math.abs(m.v[k * ol.length + i][0] - x) < 1e-9 && Math.abs(m.v[k * ol.length + i][1] - y) < 1e-9); }));
+  check('the mesh is the blade at its cuts: both ends\' vertices = airfoilSection at the cut radius with its chord, t/c and twist (1e-9 mm)',
+    endsOk, `twist ${(pb136.twist(r0m) * 180 / Math.PI).toFixed(2)}° at the root cut … ${(pb136.twist(0.68) * 180 / Math.PI).toFixed(2)}° at the tip`);
   const zs = meshes.map((m) => { const b = K.meshBounds(m); return [b.lo[2], b.hi[2]]; });
   const step = Math.max(...meshes.flatMap((m) => m.stations_m.slice(1).map((r, k) => (r - m.stations_m[k]) * 1000)));
   check('each section stands 0 … 190 mm (≤ the 240 mm bed), stations ≤ 5 mm apart, the trailing edge ≥ T(2) = 0.857 mm at every station',

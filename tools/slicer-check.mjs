@@ -36,11 +36,17 @@ for (let i = 0; i + 1 < cuts.length; i++) {
   const info = execFileSync(SLICER, ['--info', decodeURIComponent(file.pathname.replace(/^\/([A-Za-z]:)/, '$1'))], { encoding: 'utf8' });
   const get = (key) => (info.match(new RegExp(`^${key} = (.*)$`, 'm')) || [])[1]?.trim();
   const manifold = get('manifold'), parts = Number(get('number_of_parts')), vol = Number(get('volume')), z = Number(get('size_z'));
-  const fit = K.bedFit([m.v.map(([x, y]) => [x, y])]);          // every vertex of the mesh — the true footprint, not two ends
-  const ok = manifold === 'yes' && parts === 1 && Math.abs(vol / V - 1) < 1e-4 && z <= BED_Z_MM && fit.fits;
+  const facets = Number(get('number_of_facets'));
+  // PrusaSlicer repairs what it reads and still says «manifold = yes» (the fifth judge: one reversed facet → facets_reversed = 1,
+  // manifold yes): any repair it reports is a defect of OUR file
+  const repairs = [...info.matchAll(/^(degenerate_facets|edges_fixed|facets_removed|facets_added|facets_reversed|backwards_edges) = (\d+)/gm)]
+    .filter(([, , n]) => Number(n) > 0).map(([, k, n]) => `${k} ${n}`);
+  const fit = K.bedFit([m.v.map(([x, y]) => [x, y])]);          // the core's bedFit over every vertex — not the slicer's
+  const ok = manifold === 'yes' && parts === 1 && facets === m.f.length && !repairs.length && Math.abs(vol / V - 1) < 1e-4 && z <= BED_Z_MM && fit.fits;
   if (!ok) bad++;
-  console.log(`${ok ? 'ok  ' : 'FAIL'} ${name}: manifold ${manifold}, parts ${parts}, volume ${vol.toFixed(1)} mm³ (core ${V.toFixed(1)}),`
-    + ` ${get('size_x')} × ${get('size_y')} × ${z} mm; on the bed ${fit.w_mm.toFixed(0)} × ${fit.h_mm.toFixed(0)} at ${fit.angle_deg}°`);
+  console.log(`${ok ? 'ok  ' : 'FAIL'} ${name}: manifold ${manifold}, parts ${parts}, facets ${facets} (core ${m.f.length}), repairs ${repairs.join(', ') || 'none'},`
+    + ` volume ${vol.toFixed(1)} mm³ (core ${V.toFixed(1)}), the slicer's box ${get('size_x')} × ${get('size_y')} × ${z} mm;`
+    + ` the core's bedFit ${fit.w_mm.toFixed(0)} × ${fit.h_mm.toFixed(0)} at ${fit.angle_deg}°`);
 }
 console.log(`-- slicer-check: ${cuts.length - 1 - bad} of ${cuts.length - 1} sections pass · STL in .work/tmp/slicer-check/`);
 process.exit(bad ? 1 : 0);
