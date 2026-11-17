@@ -86,6 +86,19 @@
 
 ## Entries
 
+### EXP-0007 · 2026-11-17 · ❌→✅ · #grep #cyrillic #shell #count
+class: shell-lied
+**Context:** counting where the village name stands before an owner question about public files.
+**Tried / did:** `git ls-files | xargs grep -liE "<название>|<латиницей>"` in Git Bash.
+**Result:** ❌→✅ — 7 files, 9 lines, exit 0; `-i` did not fold the Cyrillic capitals («[…]», «[…]»), so GOAL.md and
+HOUSE_RULES.md were missing. Node with `/…/iu` found 38 lines in 14 files.
+**Lesson:** a count of Cyrillic text is taken by Node (or `review.mjs --search`), never by the shell's `grep -i` — the shell
+returns a smaller number with a green exit code.   → link: interviews/interview_004_place_in_public_files.md
+**Repro:** `node -e "…/<название>/iu…"` over `git ls-files` (the session's command, kept in interview 004's context).
+**Trigger:** about to count or prove the ABSENCE of a Russian word with grep → use Node.
+**Not for:** ASCII patterns; exact-case Cyrillic searches where the case is known.
+none-cheap: first strike here; the KAIF door already searches through Node (`review.mjs --search`) for exactly this reason.
+
 ### EXP-0006 · 2026-11-17 · ❌→✅ · #recon #checkpoint #scripts #reproducibility
 class: evidence-discarded
 **Context:** two recon checkpoint tables (recon 02 §2.4 sections, recon 01 §1.6 BEM with drag) were re-derived by the core.
