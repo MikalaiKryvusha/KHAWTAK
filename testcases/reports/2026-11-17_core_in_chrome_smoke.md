@@ -23,6 +23,7 @@ the page opened from disk as `file://`. No production exists — no `REAL WORLD:
 | 1 | 2026-11-17 10:25 +03:00 | `node kalculator/test.mjs` | exit 0 · 90 of 90 as expected |
 | 2 | 2026-11-17 10:25 +03:00 | `node .work/tmp/chrome-smoke/smoke.mjs` (now `node tools/chrome-core-smoke.mjs`) | exit 0 · the core evaluated in Chrome, no errors |
 | 3 | 2026-11-17 10:20 +03:00 | `node kalculator/test.mjs --control` | exit 0 · 42 of 42 mutants seen red (≈ 41 s) |
+| 6 | 2026-11-17 16:08 +03:00 (recorded 2026-11-17 16:08 +03:00) | `node tools/chrome-core-smoke.mjs` (after plan 03 G2a: the web through the stud axis) | exit 0 · no errors, no requests; the seam F0 2767.040020442789 N = Node's 2767.0; the mesh unchanged; `node kalculator/test.mjs` 117/117, `--control` 79/79 |
 | 5 | ≈ 2026-11-17 15:27 +03:00 (recorded 2026-11-17 15:29 +03:00) | `node tools/chrome-core-smoke.mjs` (+ the mesh of section 1) | exit 0 · no errors, no requests; `node kalculator/test.mjs` 115/115, `--control` 75/75 |
 | 4 | ≈ 2026-11-17 14:53 +03:00 (recorded 14:54) | `node tools/chrome-core-smoke.mjs` (after the third judge's fixes: the tube only along the stud) | exit 0 · no errors, no requests; the default seam case below; `node kalculator/test.mjs` 106/106, `--control` 62/62 |
 

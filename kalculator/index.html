@@ -379,12 +379,12 @@ function flangeAt_mm(r, R, r0 = ROOT_DEFAULT.r0_m) {
 
 /** Mass (kg) and centre of mass (m) of the blade outboard of rFrom: section A at every station (PETG; chord(r) in m, tc(r)) plus
  *  the stud from its root nut (r 35 mm, researches/02 §0) over its length — the mass integral of researches/02 §7.2, 2 mm step. */
-function bladeMass({ blade, R, stud, studLen_m, rFrom = ROOT_DEFAULT.r0_m, studFrom_m = 0.035, dr = 0.002 }) {
+function bladeMass({ blade, R, stud, studLen_m, rFrom = ROOT_DEFAULT.r0_m, studFrom_m = 0.035, dr = 0.002, xWeb = SECTION_A.xWeb }) {
   const { d, kgm } = STUDS[stud], studTo = studFrom_m + studLen_m;
   let m = 0, mr = 0, petg = 0;
   for (let r = rFrom + dr / 2; r < R; r += dr) {
     const s = bladeSection({ chord_mm: blade.chord(r) * 1000, t: blade.tc(r), stud_d_mm: d, flange_mm: flangeAt_mm(r, R), n: 40,
-      withTube: r < studTo });
+      withTube: r < studTo, xWeb });
     const dp = PETG_DENSITY_KG_M3 * s.A * 1e-6 * dr, dm = dp + (r < studTo ? kgm * dr : 0);
     petg += dp;
     m += dm; mr += dm * r;
@@ -459,9 +459,13 @@ function shellSection(poly, w_mm) {
  *  source: researches/02 §0 (KATAK researches/02 §2, the Slic3r flow math) */
 function wallT_mm(N, nozzle_mm = 0.4, layer_mm = 0.2) { return N * 1.125 * nozzle_mm - (N - 1) * layer_mm * (1 - Math.PI / 4); }
 
-// Section A by default: shell 3 lines, tube and web 2 lines, 0.2 mm clearance around the stud, the web at 0.60c, the flanges
-// over 0.15–0.50c. source: researches/02 §0 (row «Сечение A»), §7.1, §11 S1 — the recon's [AI] engineering defaults.
-const SECTION_A = { shellLines: 3, tubeLines: 2, webLines: 2, gap_mm: 0.2, xWeb: 0.60, xFlange: [0.15, 0.50] };
+// Section A by default: shell 3 lines, tube and web 2 lines, 0.2 mm clearance around the stud, the flanges over 0.15–0.50c.
+// source: researches/02 §0 (row «Сечение A»), §7.1, §11 S1 — the recon's [AI] engineering defaults. The web: the recon put it
+// at 0.60c; the PRINTED section puts it through the stud axis (0.40c) with the tube inside it — plan 03 G2, FORK 2 (a free
+// 7 × 190 mm tube wobbles in print; the web braces it; the I-beam of the flanges). The recon's own section A — plan 02
+// criterion 9 — passes xWeb 0.60 explicitly (RECON_WEB_X). [AI]
+const SECTION_A = { shellLines: 3, tubeLines: 2, webLines: 2, gap_mm: 0.2, xWeb: 0.40, xFlange: [0.15, 0.50] };
+const RECON_WEB_X = 0.60;                                       // researches/02 §0, §7.1: «стенка T(2) на ≈ 0,60–0,65c»
 
 /** Thin-walled properties of the joint section KHAWTAK prints (untwisted, chord along x, origin at the stud axis): area A,
  *  centroid (xc, yc), second moments about the centroid — Ix (flapwise, axis along the chord) and Iy (axis across it) — the
@@ -498,18 +502,24 @@ function bladeSection({ chord_mm, t, m = 0.04, p = 0.4, xStud = 0.40, n = 60, st
   // stud's end have none, researches/02 §4.7 — the third judge, finding 7)
   const ri = stud_d_mm / 2 + gap_mm, ro = ri + tube;
   const tubeA = withTube ? Math.PI * (ro * ro - ri * ri) : 0, tubeI = withTube ? Math.PI / 4 * (ro ** 4 - ri ** 4) : 0;
-  // the web: a vertical wall at xWeb between the inner faces of the shell
+  // the web: a vertical wall at xWeb between the inner faces of the shell — and of the flanges where it stands inside their
+  // range; through the stud axis (plan 03 G2, FORK 2: the printed section's default) the tube's ring interrupts it, so it is
+  // two pieces, above and below the ring
   const Xw = (xWeb - xStud) * chord_mm;
   const ys = [];
   for (let i = 0; i < outer.length; i++) {
     const [ax, ay] = outer[i], [bx, by] = outer[(i + 1) % outer.length];
     if ((ax - Xw) * (bx - Xw) <= 0 && ax !== bx) ys.push(ay + (by - ay) * (Xw - ax) / (bx - ax));
   }
-  const webH0 = Math.max(...ys) - Math.min(...ys) - 2 * shell, webY = (Math.max(...ys) + Math.min(...ys)) / 2;
+  const inFlange = flange_mm > 0 && Xw >= X0 && Xw <= X1 ? flange_mm : 0;
+  const yTop = Math.max(...ys) - shell - inFlange, yBot = Math.min(...ys) + shell + inFlange;
+  const ringHalf = withTube && Math.abs(Xw) < ro ? Math.sqrt(ro * ro - Xw * Xw) : 0;   // the ring's half-height on the web's line
+  const webPieces = (ringHalf > 0 ? [[yBot, Math.min(yTop, -ringHalf)], [Math.max(yBot, ringHalf), yTop]] : [[yBot, yTop]])
+    .map(([lo, hi]) => ({ h: Math.max(0, hi - lo), y: (lo + hi) / 2 }));
   // near the tip the profile is thinner than two shells: no web (0); a web line that misses the profile altogether is broken
   // geometry and stays NaN — the clamp must not hide it (the addressee golden caught exactly that, 2026-11-17)
-  const webH = ys.length < 2 ? NaN : Math.max(0, webH0);
-  const webA = web * webH;
+  const webH = ys.length < 2 ? NaN : webPieces.reduce((s, q) => s + q.h, 0);
+  const webA = web * webH, webY = webH > 0 ? webPieces.reduce((s, q) => s + q.h * q.y, 0) / webH : (yTop + yBot) / 2;
   // centroid
   let A = tubeA + webA, Sx = webA * Xw, Sy = webA * webY, shellA = 0, flangeA = 0;
   for (const s of strips) {
@@ -518,7 +528,8 @@ function bladeSection({ chord_mm, t, m = 0.04, p = 0.4, xStud = 0.40, n = 60, st
   }
   const xc = Sx / A, yc = Sy / A;
   // second moments about the centroid, part by part (each part's own I + its Steiner term); strips by segSq exactly
-  const tubeIx = tubeI + tubeA * yc * yc, webIx = web * webH ** 3 / 12 + webA * (webY - yc) ** 2;
+  const tubeIx = tubeI + tubeA * yc * yc;
+  const webIx = ys.length < 2 ? NaN : webPieces.reduce((s, q) => s + web * q.h ** 3 / 12 + web * q.h * (q.y - yc) ** 2, 0);   // piece by piece
   let shellIx = 0, flangeIx = 0, Iy = tubeI + tubeA * xc * xc + webH * web ** 3 / 12 + webA * (Xw - xc) ** 2;
   for (const s of strips) {
     const ix = s.w * s.ds * segSq(s.y1 - yc, s.y2 - yc);
@@ -710,7 +721,7 @@ const KHAWTAK = { airDensity, shearLog, shearTwoLayer, shearPower, gamma, weibul
   designReynolds, PERF_DEFAULT, powerCurve, tipSpeed,
   STUDS, studCapacity_kN, smallestStud, jointPreload_N, wrenchTorque_Nm, TC_DEFAULT, bladeStations, shellSection,
   ROOT_DEFAULT, printedBlade, FLANGE, PETG_DENSITY_KG_M3, flangeAt_mm, bladeMass, IEC_SWT_CLASS, SLM, IEC_GAMMA, bladePlanArea, slmMaxThrust, slmParked, slmCentrifugal, iecAllowable_MPa,
-  MARGIN_POLICY, PETG_Z_MPA, seamCheck, segSq, wallT_mm, SECTION_A, bladeSection, jointStress_MPa, PETG_LONG_TERM_MPA, anchorBearing, BED_DEFAULT, bedFit, sectionCuts,
+  MARGIN_POLICY, PETG_Z_MPA, seamCheck, segSq, wallT_mm, SECTION_A, RECON_WEB_X, bladeSection, jointStress_MPa, PETG_LONG_TERM_MPA, anchorBearing, BED_DEFAULT, bedFit, sectionCuts,
   meshClosed, meshVolume, meshBounds, airfoilCap, MESH_DEFAULT, sectionMesh, meshToSTL };
 // ===== CORE-END
 window.KHAWTAK = KHAWTAK;

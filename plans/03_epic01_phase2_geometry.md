@@ -76,6 +76,11 @@ Each step quotes its anchor in the epic: «сечения профиля по р
   stud axis: no new entity, the tube braced top and bottom, two cells without holes, and where the tube meets the shell the
   web's height simply goes to 0. `bladeSection` follows (the web interrupted by the tube); plan 02 criterion 9 keeps the
   recon's section A by passing `xWeb: 0.60` explicitly. [AI] — the owner sees it in the step's report.
+  **G2a ✅ 2026-11-17 16:08 +03:00 — the section model:** `SECTION_A.xWeb` 0.40 (the stud axis), `RECON_WEB_X` 0.60 for the recon comparisons
+  (criterion 9, the recon masses, F_c); `bladeSection`'s web between the flanges' inner faces, two pieces around the ring;
+  `bladeMass` takes `xWeb`. The default seam moves < 1 % (2.79 → 2.77 kN). A hand case and three mutants; five mutants re-aimed
+  at the rewritten lines; two addressees lost on purpose (the tube-to-the-tip mutant no longer moves the default seam past
+  ± 2 % — the web now loses what the tube adds; `ox = 0.9` no longer sends the 0.60c web out of the profile).
 - [ ] **G3 · the 45° roofs.** Each cell closed at both ends of the section by a roof at 45° (prints without supports, recon 02
   §7.1); a solid end band under the collar.
 - [ ] **G4 · the joint.** The collar 5–8 mm on the inner contour of the top end, a 0.2 mm glue gap, one key at the rear, a 0.4 mm

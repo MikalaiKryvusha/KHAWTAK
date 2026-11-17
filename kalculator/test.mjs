@@ -66,14 +66,14 @@ const MUTANTS = [
   ['{ ok: 3, limit: 7 }', '{ ok: 3, limit: 9 }'],       // breaks the long-term PETG upper limit (the anchor's verdicts)
   ['{ ok: 3, limit: 7 }', '{ ok: 6, limit: 7 }'],       // breaks the long-term PETG lower limit (the anchor's and the seam's verdicts)
   ['const tubeIx = tubeI + tubeA * yc * yc', 'const tubeIx = tubeI'], // drops the tube's Steiner term
-  ['webIx = web * webH ** 3 / 12 + webA', 'webIx = webA'],          // drops the web's own I
+  ['s + web * q.h ** 3 / 12 + web * q.h * (q.y - yc) ** 2', 's + web * q.h * (q.y - yc) ** 2'],   // drops the web's own I (re-aimed, G2a)
   ['N * 1.125 * nozzle_mm', 'N * 1.0 * nozzle_mm'],     // breaks the wall of N lines (researches/02 §0)
   ['const sh = shell / 2;', 'const sh = 0;'],           // breaks the shell strip's half-wall shift inward
   ['xFlange: [0.15, 0.50]', 'xFlange: [0.15, 0.40]'],   // breaks the flange range (criterion 9, A2)
   ['const fh = shell + flange_mm / 2', 'const fh = flange_mm / 2'], // breaks the flange's place under the shell
   ['const ri = stud_d_mm / 2 + gap_mm', 'const ri = stud_d_mm + gap_mm'], // breaks the tube radius
-  ['const webA = web * webH;', 'const webA = web * webH / 2;'],          // breaks the web
-  ['- 2 * shell, webY', '- shell, webY'],              // breaks the web's height between the inner faces
+  ['const webA = web * webH, webY', 'const webA = web * webH / 2, webY'],   // breaks the web (re-aimed, G2a)
+  ['Math.max(...ys) - shell - inFlange, yBot', 'Math.max(...ys) - inFlange, yBot'],   // breaks the web's height between the inner faces (re-aimed, G2a)
   ['segSq(s.x1 - xc, s.x2 - xc)', 'segSq(s.x1, s.x2)'], // breaks Iy about the centroid (the chordwise kern)
   ['const sigmaB = M_Nm * 1000 * yMax / I', 'const sigmaB = M_Nm * yMax / I'], // breaks the bending stress units
   ['opens: sigmaP - sigmaB < 0', 'opens: sigmaP + sigmaB < 0'],              // breaks the open-seam flag
@@ -81,8 +81,8 @@ const MUTANTS = [
   ['const BED_DEFAULT = { w_mm: 220, d_mm: 220, margin_mm: 5 }', 'const BED_DEFAULT = { w_mm: 220, d_mm: 220, margin_mm: 0 }'], // forgets the 5 mm margin
   ['for (let deg = 0; deg < 180; deg += 0.25)', 'for (let deg = 0; deg < 1; deg += 0.25)'], // forgets that the part may be turned
   ['const pts = polys.flat()', 'const pts = polys[0]'],     // forgets the union of the outlines (the third judge, F1)
-  ['withTube: r < studTo });', 'withTube: true });'],         // the tube to the tip again (the fourth judge, finding 4)
-  ['const webH = ys.length < 2 ? NaN : Math.max(0, webH0);', 'const webH = ys.length < 2 ? NaN : webH0;'], // a negative web (finding 3)
+  ['withTube: r < studTo, xWeb });', 'withTube: true, xWeb });'],   // the tube to the tip again (the fourth judge, finding 4; re-aimed, G2a)
+  ['({ h: Math.max(0, hi - lo), y:', '({ h: hi - lo, y:'],      // a negative web (the fourth judge, finding 3; re-aimed, G2a)
   // plan 03 G1 — the section mesh and the STL
   ['closed: open === 0 && doubled === 0', 'closed: open === 0'],    // forgets the doubled edges
   ['return s / 6;', 'return s / 3;'],                               // the divergence theorem's sixth
@@ -95,6 +95,10 @@ const MUTANTS = [
   ["('KHAWTAK binary STL - ' + name)", "('solid KHAWTAK - ' + name)"],  // a binary file that claims to be ASCII
   ['dv.setUint32(80, N, true);', 'dv.setUint32(80, N, false);'],    // the count big-endian
   ['nx /= l; ny /= l; nz /= l;', 'nx /= 1; ny /= l; nz /= l;'],      // a normal that is not a unit vector
+  // plan 03 G2a — the printed web through the stud axis
+  ['const ringHalf = withTube && Math.abs(Xw) < ro ? Math.sqrt(ro * ro - Xw * Xw) : 0;', 'const ringHalf = 0;'],   // the ring does not cut the web
+  ['const inFlange = flange_mm > 0 && Xw >= X0 && Xw <= X1 ? flange_mm : 0;', 'const inFlange = 0;'],              // the web ignores the flanges
+  ['gap_mm: 0.2, xWeb: 0.40, xFlange', 'gap_mm: 0.2, xWeb: 0.60, xFlange'],                                       // the web back at 0.60c
   ['stations_m.map((r) => airfoilSection({ chord_mm: blade.chord(r) * 1000, t: blade.tc(r), twist_rad: blade.twist(r),',
     'stations_m.map((r) => airfoilSection({ chord_mm: blade.chord(r) * 1000, t: blade.tc(r), twist_rad: 0,'],   // the mesh forgets the twist (the fifth judge)
 ];
@@ -354,7 +358,9 @@ function run(K, log = true) {
   // 2.04 mm here, not a typed 3 mm), F_c from the blade's own mass (bladeMass), and the strict line factors F_c too. Since the
   // third judge (F7): the stud tube only where the stud runs — 155.9 g outboard of the seam (PETG 124.1 g, steel 31.7 g), CoG
   // 0.287 m, at case D's ω → F_c 785 N. The homebuilder's numbers: F0 2.79 kN, M5 4.8, σ_p 5.15 MPa «caution»; the strict line:
-  // 8.38 kN, σ_max 30.0 MPa (still fails). The storm moment of the printed blade is 19.74 N·m (its wider root).
+  // 8.38 kN, σ_max 30.0 MPa (still fails). The storm moment of the printed blade is 19.74 N·m (its wider root). Since plan 03
+  // G2a (the web through the stud axis, the tube inside it): 154.9 g outboard (PETG 123.2 g), F_c 783 N → F0 2.77 kN, σ_p
+  // 5.15 MPa; the strict line 8.30 kN, σ_max 29.9 MPa.
   const R136 = 0.68, pb136 = K.printedBlade({ R: R136, Cl: 1.2, lambda: 6, alphaD_rad: 6 * deg });
   const Ap136 = K.bladePlanArea(pb136.chord, 0.1 * R136, R136);
   const root136 = K.bladeSection({ chord_mm: pb136.chord(0.11) * 1000, t: pb136.tc(0.11), stud_d_mm: 5, flange_mm: K.flangeAt_mm(0.11, R136) });
@@ -362,12 +368,12 @@ function run(K, log = true) {
   const Fc136 = K.slmCentrifugal({ mB_kg: mass136.m_kg, Rcog_m: mass136.cog_m, omega: 6 * K.SLM.VHUB_PER_VAVE_D * IV.vAve / R136 });
   const seamOf = (MH, MD, Fc = Fc136) => K.seamCheck({ section: root136, grade: '4.8', Fc_D_N: Fc, MyB_H_Nm: MH, MyB_D_Nm: MD });
   const seam136 = seamOf(K.slmParked({ R: R136, rho: 1.225, vRef: IV.vRef, Aproj: Ap136 }).MyB_Nm, K.slmMaxThrust({ R: R136, rho: 1.225, vAve: IV.vAve }).MyB_Nm);
-  check(`default seam, the owner's policy (homebuilder's margin, interview #003 «A»): F0 2.79 kN ± 2 % → M5 4.8, wrench 2.79 N·m, σ_p 5.15 MPa «caution», closed`,
-    rel(seam136.F0_N, 2792, 0.02) && seam136.stud === 'M5' && near(seam136.wrench_Nm, 2.79, 0.06) && rel(seam136.sigmaP, 5.15, 0.02)
+  check(`default seam, the owner's policy (homebuilder's margin, interview #003 «A»): F0 2.77 kN ± 2 % → M5 4.8, wrench 2.77 N·m, σ_p 5.15 MPa «caution», closed`,
+    rel(seam136.F0_N, 2767, 0.02) && seam136.stud === 'M5' && near(seam136.wrench_Nm, 2.77, 0.06) && rel(seam136.sigmaP, 5.15, 0.02)
     && seam136.verdict === 'caution' && !seam136.opens && K.smallestStud(seam136.F0_N / 1000, '8.8') === 'M4',
     `F_c ${Fc136.toFixed(0)} N, F0 ${(seam136.F0_N / 1000).toFixed(2)} kN, ${seam136.stud ?? 'no stud ≤ M14'} 4.8, wrench ${seam136.wrench_Nm?.toFixed(2) ?? '—'} N·m, σ_p ${seam136.sigmaP.toFixed(2)}, σ_max ${seam136.sigmaMax.toFixed(1)} MPa`);
-  check(`default seam, the strict IEC line beside it (every load ×3, untested PETG → 4.3 MPa): F0 8.38 kN, σ_max 30.0 MPa — does not pass`,
-    rel(seam136.iec.F0_N, 8375, 0.02) && rel(seam136.iec.sigmaMax, 30.0, 0.02) && near(seam136.iec.allowed, 4.33, 0.01) && !seam136.iec.passes,
+  check(`default seam, the strict IEC line beside it (every load ×3, untested PETG → 4.3 MPa): F0 8.30 kN, σ_max 29.9 MPa — does not pass`,
+    rel(seam136.iec.F0_N, 8301, 0.02) && rel(seam136.iec.sigmaMax, 29.9, 0.02) && near(seam136.iec.allowed, 4.33, 0.01) && !seam136.iec.passes,
     `F0 ${(seam136.iec.F0_N / 1000).toFixed(2)} kN, σ_max ${seam136.iec.sigmaMax.toFixed(1)} vs ${seam136.iec.allowed.toFixed(1)} MPa`);
   // the strict line's pass branch, exercised once (the judge, F4): a breeze and a stopped rotor — with the rotor turning, F_c ×3
   // alone already presses the seam to 4.8 MPa (the first draft of this case forgot it and went red on its own premise)
@@ -389,9 +395,9 @@ function run(K, log = true) {
   check('flanges along the span: 3 mm·R at the root block (2.04 mm at R 0.68, 3.0 at R 1.0), half by mid-taper, none from 0.4R',
     near(K.flangeAt_mm(0.11, 0.68), 2.04, 1e-9) && near(K.flangeAt_mm(0.11, 1.0), 3, 1e-9) && near(K.flangeAt_mm(0.255, 1.0), 1.5, 1e-9)
     && K.flangeAt_mm(0.4, 1.0) === 0 && K.flangeAt_mm(0.05, 1.0) === 3);
-  const mR1 = K.bladeMass({ blade: reconBlade(1.0), R: 1.0, stud: 'M8', studLen_m: 0.8 });   // the recon's own stud: 0.8 m of M8 (§2.4)
+  const mR1 = K.bladeMass({ blade: reconBlade(1.0), R: 1.0, stud: 'M8', studLen_m: 0.8, xWeb: K.RECON_WEB_X });   // the recon's own section A and stud: 0.8 m of M8 (§2.4)
   const mAll = [[0.58, 'M4', 0.25, 117], [0.68, 'M5', 0.333, 175], [0.89, 'M6', 0.5, 343], [1.42, 'M8', 1.0, 1066], [1.94, 'M10', 1.5, 2327],
-    [2.43, 'M12', 2.0, 4098]].map(([R, s, L, w]) => [K.bladeMass({ blade: reconBlade(R), R, stud: s, studLen_m: L }).petg_kg * 1000, w]);
+    [2.43, 'M12', 2.0, 4098]].map(([R, s, L, w]) => [K.bladeMass({ blade: reconBlade(R), R, stud: s, studLen_m: L, xWeb: K.RECON_WEB_X }).petg_kg * 1000, w]);
   const mCls = mAll.slice(0, 3);                                // the MVP's classes (interview 001); 1000+ are printed only
   check('blade mass (PETG, the tube along the stud): recon 02 §7.2 R 1.0 m → 455 g ± 2 %; §10 classes 250 / 333 / 500 → 117 / 175 / 343 g ± 4 %',
     rel(mR1.petg_kg * 1000, 455, 0.02) && mCls.every(([g, w]) => rel(g, w, 0.04)), `${(mR1.petg_kg * 1000).toFixed(1)} · ${mCls.map(([g]) => g.toFixed(1)).join(' · ')} g`
@@ -401,11 +407,11 @@ function run(K, log = true) {
   // from the root block to the stud's end: ρ·A_tube·(0.035 + 0.332 − 0.110) — hand, ± 1 % (the 2 mm stations).
   const noTube = K.bladeSection({ chord_mm: 180, t: 0.18, stud_d_mm: 8, flange_mm: 3, withTube: false });
   const tubeM5 = K.bladeSection({ chord_mm: 180, t: 0.18, stud_d_mm: 5 }).parts.tubeA;
-  const dPetg = (K.bladeMass({ blade: pb136, R: R136, stud: 'M5', studLen_m: 0.332 }).petg_kg - K.bladeMass({ blade: pb136, R: R136, stud: 'M5', studLen_m: 0 }).petg_kg) * 1000;
+  const dPetg = (K.bladeMass({ blade: pb136, R: R136, stud: 'M5', studLen_m: 0.332, xWeb: K.RECON_WEB_X }).petg_kg - K.bladeMass({ blade: pb136, R: R136, stud: 'M5', studLen_m: 0, xWeb: K.RECON_WEB_X }).petg_kg) * 1000;
   const dHand = K.PETG_DENSITY_KG_M3 * tubeM5 * 1e-6 * (0.035 + 0.332 - 0.110) * 1000;
   check('the tube only along the stud: no tube without it; the 332 mm stud adds ρ·A_tube·(r_end − r_root) of PETG (hand, ± 1 %)',
     noTube.parts.tubeA === 0 && rel(dPetg, dHand, 0.01), `+${dPetg.toFixed(2)} g (hand ${dHand.toFixed(2)} g, A_tube ${tubeM5.toFixed(2)} mm²)`);
-  const m8 = K.bladeMass({ blade: reconBlade(1.0), R: 1.0, stud: 'M8', studLen_m: 0.8 });
+  const m8 = K.bladeMass({ blade: reconBlade(1.0), R: 1.0, stud: 'M8', studLen_m: 0.8, xWeb: K.RECON_WEB_X });
   const fc8 = K.slmCentrifugal({ mB_kg: m8.m_kg, Rcog_m: m8.cog_m, omega: 600 * Math.PI / 30 });
   check('blade mass → F_c: recon 02 §2.4 — the R 1.0 m blade + 0.8 m of M8 at 600 rpm → 1.22 kN ± 3 %', rel(fc8, 1220, 0.03), `${fc8.toFixed(0)} N`);
   // The printed blade (the root transition): the recon's root at the root block, the linear blade from 0.4R out, no jump.
@@ -455,7 +461,7 @@ function run(K, log = true) {
   // region at 0.05 mm (A 511.1 / 890.5, Ix 63 594 / 127 109, k 6.92 / 8.21 for A1 / A2). Largest pairs: A 1.55 % (core vs
   // raster), Ix 1.02 % (core vs recon), k 2.4 % (recon vs raster) → ± 2 %, ± 2 %, ± 3 % (the judge, finding 1, 2026-11-17).
   // The bands cannot see terms below ~1 % of Ix — those are guarded part by part below.
-  const seam = { chord_mm: 180, t: 0.18, stud_d_mm: 8 };
+  const seam = { chord_mm: 180, t: 0.18, stud_d_mm: 8, xWeb: K.RECON_WEB_X };   // the recon's section A: its web at 0.60c
   const A1 = K.bladeSection({ ...seam, flange_mm: 0 }), A2 = K.bladeSection({ ...seam, flange_mm: 3 });
   check('criterion 9: section A1 (shell T(3) + tube + web) — A 518 ± 2 %, Ix 63 560 ± 2 %, k 6.75 ± 3 % (researches/02 §2.4)',
     rel(A1.A, 518, 0.02) && rel(A1.Ix, 63560, 0.02) && rel(A1.k, 6.75, 0.03), `A ${A1.A.toFixed(1)}, Ix ${A1.Ix.toFixed(0)}, k ${A1.k.toFixed(3)}`);
@@ -468,6 +474,13 @@ function run(K, log = true) {
   const webHand = K.wallT_mm(2) * (2 * K.nacaHalfThickness(0.6, 0.18) * 180 - 2 * K.wallT_mm(3));
   check('section parts: the web at 0.60c = T(2)·(thickness there − 2·T(3)) = 18.95 mm² ± 1 % (hand, 24.64 mm thick)',
     rel(A1.parts.webA, webHand, 0.01) && near(webHand, 18.95, 0.01), `${A1.parts.webA.toFixed(2)} (hand ${webHand.toFixed(2)})`);
+  // The PRINTED section's web (plan 03 G2, FORK 2): through the stud axis, between the flanges' inner faces, cut by the tube's
+  // ring into two pieces. At 0.40c the NACA 44xx mean line is level (p = 0.4), so the thickness there is vertical: 2·y_t·c.
+  const A2p = K.bladeSection({ chord_mm: 180, t: 0.18, stud_d_mm: 8, flange_mm: 3 });          // the default xWeb — the stud axis
+  const ro8h = 4 + 0.2 + K.wallT_mm(2), webPrinted = K.wallT_mm(2) * (2 * K.nacaHalfThickness(0.4, 0.18) * 180 - 2 * (K.wallT_mm(3) + 3) - 2 * ro8h);
+  check('the printed web through the stud: T(2)·(2·y_t(0.40)·c − 2·(T(3) + flange) − 2·r_o) — two pieces around the ring (hand, ± 0.2 %: the 60-point outline)',
+    K.SECTION_A.xWeb === 0.40 && rel(A2p.parts.webA, webPrinted, 0.002) && near(A2p.parts.webA + A2p.parts.shellA + A2p.parts.flangeA + A2p.parts.tubeA, A2p.A, 1e-6),
+    `${A2p.parts.webA.toFixed(2)} mm² (hand ${webPrinted.toFixed(2)}), A ${A2p.A.toFixed(1)} vs the recon's web at 0.60c ${A2.A.toFixed(1)}`);
   check('section parts add up to A; the flanges appear only in A2', near(A2.parts.shellA + A2.parts.flangeA + A2.parts.tubeA + A2.parts.webA, A2.A, 1e-6)
     && A1.parts.flangeA === 0 && A2.parts.flangeA > 0, `A2 flanges ${A2.parts.flangeA.toFixed(1)} mm²`);
   // A profile thinner than two shells has no room for a web (the clamp at 0 — the fourth judge: nothing reached it): chord 15 mm,
