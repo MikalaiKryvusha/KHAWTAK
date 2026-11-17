@@ -38,7 +38,7 @@
   - Check. В файлах `0`, в истории — больше нуля.
 - **D) your own answer** — <напиши своё>
 
-**Answer:**
+**Answer:** A) <!-- owner-review: by Mikalai Kryvusha · 17 ноября 2026, 11:00 (+03:00) -->
 
 ## Proposed implementation plan (after answers)
 

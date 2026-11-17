@@ -1,0 +1,17 @@
+{
+  "kind": "interview",
+  "document": "interviews/interview_004_place_in_public_files.md",
+  "by": "Mikalai Kryvusha",
+  "at": "2026-11-17T08:00:04.975Z",
+  "atHuman": "17 ноября 2026, 11:00 (+03:00)",
+  "comment": "",
+  "answers": {
+    "Q1": {
+      "choice": "A",
+      "text": "",
+      "comment": ""
+    }
+  },
+  "rev": "4fed8402355cafdef4083c2c21a694e8c015910d36c13f90dd5433cacbc8c192",
+  "revAfter": "9c888e799d8641ce681b49598be749bded5ad7493a210cbdadc52abf9a99d7a7"
+}
